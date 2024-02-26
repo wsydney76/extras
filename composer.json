@@ -1,0 +1,40 @@
+{
+  "name": "wsydney76/extras",
+  "description": "Extra features for Craft5",
+  "type": "craft-plugin",
+  "require": {
+    "php": ">=8.2",
+    "craftcms/cms": "^5.0.0-beta.3"
+  },
+  "require-dev": {
+    "craftcms/ecs": "dev-main",
+    "craftcms/phpstan": "dev-main"
+  },
+  "autoload": {
+    "psr-4": {
+      "wsydney76\\extras\\": "src/"
+    }
+  },
+  "extra": {
+    "handle": "_extras",
+    "name": "Extras",
+    "developer": "wsydney76",
+    "documentationUrl": "",
+    "class": "wsydney76\\extras\\ExtrasPlugin"
+  },
+  "scripts": {
+    "check-cs": "ecs check --ansi",
+    "fix-cs": "ecs check --ansi --fix",
+    "phpstan": "phpstan --memory-limit=1G"
+  },
+  "config": {
+    "sort-packages": true,
+    "platform": {
+      "php": "8.2"
+    },
+    "allow-plugins": {
+      "yiisoft/yii2-composer": true,
+      "craftcms/plugin-installer": true
+    }
+  }
+}

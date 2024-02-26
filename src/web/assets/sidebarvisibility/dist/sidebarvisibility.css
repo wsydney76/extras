@@ -1,0 +1,37 @@
+/* toggle sidebar visibility */
+
+
+#sidebar li.heading > span {
+    font-size: 14px;
+    letter-spacing: 1px;
+    display: block;
+}
+
+#sidebar ul li.heading > span {
+    cursor: pointer;
+}
+
+#sidebar ul li.heading > span:hover::after {
+    content: '  [-]';
+    font-weight: normal;
+    font-size: 10px;
+}
+
+/* TODO: Check how to avoid vertical shift on hover without this hack: */
+#sidebar ul li.heading > span::after {
+    content: '  ';
+    font-weight: normal;
+    font-size: 10px;
+}
+
+#sidebar ul li.heading.collapsed > span::after {
+    content: ' [+]';
+    font-weight: normal;
+    font-size: 10px;
+}
+
+
+#sidebar li.heading.collapsed ul {
+    display: none;
+}
+

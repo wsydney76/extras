@@ -1,0 +1,34 @@
+{# @var plugin \wsydney76\extras\ExtrasPlugin #}
+{# @var settings \wsydney76\extras\models\Settings #}
+
+{% import '_includes/forms.twig' as forms %}
+
+{{ forms.lightswitchField({
+    first: true,
+    label: 'Enable Sidebar Visibility'|t('_extras'),
+    name: 'enableSidebarVisibility',
+    on: settings.enableSidebarVisibility,
+    instructions: 'Make heading in element indexes collabsible'|t('_extras')
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Enable Elementmap'|t('_extras'),
+    name: 'enableElementmap',
+    on: settings.enableElementmap,
+    instructions: 'Show relationships'|t('_extras')
+}) }}
+
+<div style="margin-left: 48px">
+    {{ forms.lightswitchField({
+        label: 'Show relationships to all sites'|t('_extras'),
+        name: 'showAllSites',
+        on: settings.showAllSites,
+    }) }}
+</div>
+
+{{ forms.lightswitchField({
+    label: 'Enable Condition Rules'|t('_extras'),
+    name: 'enableConditionRules',
+    on: settings.enableConditionRules,
+    instructions: 'Enable Has Drafts, All Types condition rules'|t('_extras')
+}) }}

@@ -1,0 +1,42 @@
+{% from _self import showElement %}
+<div class="map">
+    <label>{{ 'References to This Element'|t('_extras') }}</label>
+    <ul>
+        {% for element in map.incoming %}
+            {{ showElement(element) }}
+        {% endfor %}
+        {% if map.incoming | length == 0 %}
+            <li>{{ 'None'|t('_extras') }}</li>
+        {% endif %}
+    </ul>
+</div>
+<div class="map">
+    <label>{{ 'References to Other Elements'|t('_extras') }}</label>
+    <ul>
+        {% for element in map.outgoing %}
+            {{ showElement(element) }}
+        {% endfor %}
+        {% if map.outgoing | length == 0 %}
+            <li>{{ 'None'|t('_extras') }}</li>
+        {% endif %}
+    </ul>
+</div>
+
+{% macro showElement(element) %}
+    <li>
+        <div style="display: flex; align-items: center">
+            {% if element.icon is defined %}
+                <div class="icon icon-mask">{{ svg(element.icon) }}</div>
+            {% endif %}
+
+            {% if element.image is defined %}
+                <div >
+                    <img class="thumbnail" src="{{ element.image }}" height="32" width="32">
+                </div>
+            {% endif %}
+            <a href="{{ element.url }}" data-id="{{ element.id }}" data-editable>
+                {{ element.title }}
+            </a>
+        </div>
+    </li>
+{% endmacro %}

@@ -1,0 +1,11 @@
+{%- do view.registerAssetBundle("wsydney76\\extras\\web\\assets\\elementmap\\ElementMapAsset") -%}
+
+<a class="btn" id="map-btn">{{ 'Relationships'|t('_extras') }}</a>
+
+{% set ajaxBaseUrl = cpUrl("elementmap-getrelations/#{element.site.handle}/#{class}/#{element.id}") %}
+
+{% js at POS_END %}
+    ajaxBaseUrl = '{{ ajaxBaseUrl }}';
+    draftId = 0;
+{% endjs %}
+
