@@ -1,0 +1,120 @@
+
+/* Increase font size */
+
+html, body {
+    font-size: 15px;
+}
+
+/*.fields .element-index .toolbar > div, .fields .element-index .footer  {
+    display: none;
+}*/
+
+/* Set link color back to V3, increase contrast
+:root {
+    --text-color: var(--gray-800);
+    --medium-dark-text-color: var(--gray-700);
+    --link-color: #0c4a6e;
+    --red-050: #fecaca;
+    --max-width: 1700px;
+}
+*/
+
+
+
+
+input.text, textarea.text, .text > input, .text > textarea, table.editable textarea, .selectize-text > .selectize-control > .selectize-input {
+    font-size: 16px;
+}
+
+#crumbs {
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.crumb {
+    padding-top: 4px;
+}
+
+.context-label, .context-menu-container {
+    font-size: 15px;
+    font-weight: 500;
+    margin-top: 4px;
+    background-color: #E4EDF6;
+}
+
+h2 {
+    font-size: 18px;
+}
+
+#content-container h2 {
+    border-color: var(--gray-400);
+    font-size: 20px;
+
+}
+
+#content-container .error-summary h2 {
+    font-size: 16px;
+}
+
+.readable blockquote.note.tip {
+    color: var(--blue-800);
+    border-color: var(--blue-800);
+}
+
+.readable blockquote.note.tip:before {
+    color: var(--blue-800);
+}
+
+/* TODO: without this, there is a vertical shift in 4.5
+#global-header {
+    min-height: 50px;
+}
+*/
+
+#global-sidebar {
+    background-color: var(--gray-100);
+}
+
+/*
+#global-sidebar .nav-item:hover, #sidebar-trigger:hover {
+    color: black;
+}
+*/
+
+
+/* 4.2 toasts */
+#notifications [data-type="error"] {
+    background-color: #D61F2B;
+    color: white;
+}
+
+#notifications [data-type="success"] {
+    background-color: #16a34a;
+    color: white;
+}
+
+#notifications [data-type="notice"] {
+    background-color: #2C5F2D;
+    color: white;
+}
+
+#notifications .notification .notification-icon {
+    color: white;
+}
+body.ltr #notifications {
+    bottom: initial;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+#notifications .notification-details {
+    background-color: white;
+    padding: 4px;
+}
+
+#notifications [data-type="success"] .notification-details {
+    background-color: #f0fdf4;
+    padding: 4px;
+}
+

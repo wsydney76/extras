@@ -14,4 +14,8 @@ class Settings extends Model
     public bool $enableElementmap = false;
     public bool $enableConditionRules= false;
     public bool $showAllSites = true;
+    public bool $enableCpAssets = false;
+    public string $customCss = '';
+    public bool $enableOwnerPath = false;
+    public bool $enableExtrasVariable = false;
 }

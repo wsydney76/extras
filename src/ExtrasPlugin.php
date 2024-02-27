@@ -7,12 +7,18 @@ use craft\base\conditions\BaseCondition;
 use craft\base\Event;
 use craft\base\Model;
 use craft\base\Plugin;
+use craft\elements\Entry;
+use craft\events\DefineBehaviorsEvent;
 use craft\events\RegisterConditionRulesEvent;
+use craft\web\twig\variables\CraftVariable;
+use wsydney76\extras\behaviors\EntryBehavior;
 use wsydney76\extras\elements\conditions\AllTypesConditionRule;
 use wsydney76\extras\elements\conditions\HasDraftsConditionRule;
 use wsydney76\extras\models\Settings;
 use wsydney76\extras\services\Elementmap;
 use wsydney76\extras\services\ElementmapRenderer;
+use wsydney76\extras\variables\ExtrasVariable;
+use wsydney76\extras\web\assets\cpassets\CustomCpAsset;
 use wsydney76\extras\web\assets\sidebarvisibility\SidebarVisibilityAsset;
 
 /**
@@ -63,9 +69,12 @@ class ExtrasPlugin extends Plugin
     private function attachEventHandlers(): void
     {
 
+        $this->initExtrasVariable();
         $this->initSidebarVisibility();
         $this->initConditionRules();
         $this->initElementMap();
+        $this->initCpAssets();
+        $this->initOwnerPath();
     }
 
     /**
@@ -95,5 +104,71 @@ class ExtrasPlugin extends Plugin
             $this->elementmap->initElementMap();
         }
     }
+
+    protected function initCpAssets()
+    {
+        if (Craft::$app->request->isCpRequest) {
+
+            $css = trim($this->getSettings()->customCss);
+            if ($css) {
+                Craft::$app->view->registerCss($css);
+            }
+
+            if ($this->getSettings()->enableCpAssets) {
+                Craft::$app->view->registerAssetBundle(CustomCpAsset::class);
+            }
+        }
+    }
+
+    protected function initOwnerPath()
+    {
+        $this->initEntryBehavior();
+        Event::on(
+            Entry::class,
+            Entry::EVENT_REGISTER_TABLE_ATTRIBUTES,
+            function($event) {
+                $event->tableAttributes['ownerPath'] = ['label' => Craft::t('_extras', 'Owner Path')];
+            }
+        );
+
+        Event::on(
+            Entry::class,
+            Entry::EVENT_DEFINE_ATTRIBUTE_HTML,
+            function($event) {
+                if ($event->attribute === 'ownerPath') {
+                    $event->html = Craft::$app->view->renderTemplate('_extras/_ownerpath_indexcolumn', ['entry' => $event->sender]);
+                    $event->handled = true;
+                }
+            }
+        );
+    }
+
+    private function initEntryBehavior()
+    {
+        Event::on(
+            Entry::class,
+            Entry::EVENT_DEFINE_BEHAVIORS,
+            function(DefineBehaviorsEvent $event) {
+                $event->behaviors[] = EntryBehavior::class;
+            });
+    }
+
+    protected function initExtrasVariable()
+    {
+        if ($this->getSettings()->enableExtrasVariable) {
+            Event::on(
+                CraftVariable::class,
+                CraftVariable::EVENT_INIT,
+                function(\yii\base\Event $event) {
+
+                    /** @var CraftVariable $variable */
+                    $variable = $event->sender;
+
+                    $variable->set('_extras', ExtrasVariable::class);
+                }
+            );
+        }
+    }
+
 
 }

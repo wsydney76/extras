@@ -1,6 +1,7 @@
 {# @var plugin \wsydney76\extras\ExtrasPlugin #}
 {# @var settings \wsydney76\extras\models\Settings #}
 
+{% import 'codeeditor/codeEditor' as codeEditor %}
 {% import '_includes/forms.twig' as forms %}
 
 {{ forms.lightswitchField({
@@ -32,3 +33,50 @@
     on: settings.enableConditionRules,
     instructions: 'Enable Has Drafts, All Types condition rules'|t('_extras')
 }) }}
+
+{{ forms.lightswitchField({
+    label: 'Enable Owner Path functionality'|t('_extras'),
+    name: 'enableOwnerPath',
+    on: settings.enableOwnerPath,
+    instructions: 'Enable getOwnerPath() method, Owner Path entries index column'|t('_extras')
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Enable Extras Variable'|t('_extras'),
+    name: 'enableExtrasVariable',
+    on: settings.enableExtrasVariable,
+    instructions: 'Enable craft._extras variable'|t('_extras')
+}) }}
+<hr>
+
+<h2 class="heading">{{ 'Assets'|t }}</h2>
+
+{{ forms.lightswitchField({
+    label: 'Enable CP Assets'|t('_extras'),
+    name: 'enableCpAssets',
+    on: settings.enableCpAssets,
+    instructions: 'Enable custom CSS for the Control Panel'|t('_extras')
+}) }}
+
+
+{% set monacoOptions = {
+    language: 'css',
+    theme: 'vs-light',
+    lineNumbers: 'on',
+    lineNumbersMinChars: 4,
+    lineDecorationsWidth: 6,
+    folding: true,
+} %}
+
+{% set codeEditorOptions = {
+    wrapperClass: 'monaco-editor-background-frame'
+} %}
+
+{{ codeEditor.textareaField({
+    label: "Additional CSS"|t,
+    instructions: "Enter any additional CSS here."|t,
+    id: 'customCss',
+    name: 'customCss',
+    value: settings.customCss,
+    rows: 5
+}, 'CodeField', monacoOptions, codeEditorOptions) }}

@@ -1,0 +1,5 @@
+{% set ownerPath = entry.getOwnerPath %}
+{% for entry in ownerPath %}
+    <span class="status {{ entry.status }}"></span>
+    <a href="{{ entry.cpEditUrl }}">{{ entry.title ?: entry.type.name }}</a>{{ not loop.last ? '&nbsp;>&nbsp;' }}
+{% endfor %}
