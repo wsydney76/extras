@@ -9,7 +9,8 @@
   "require-dev": {
     "craftcms/ecs": "dev-main",
     "craftcms/phpstan": "dev-main",
-    "nystudio107/craft-code-editor": "^1.0.7"
+    "nystudio107/craft-code-editor": "^1.0.7",
+    "jfcherng/php-diff": "^6.10.0"
   },
   "autoload": {
     "psr-4": {

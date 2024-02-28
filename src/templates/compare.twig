@@ -1,0 +1,59 @@
+{# @var transferHistory \wsydney76\extras\records\TransferHistoryRecord #}
+{% set draftId = craft.app.request.requiredQueryParam('draftId') %}
+{% set siteId = craft.app.request.requiredQueryParam('siteId') %}
+{% set isProvisionalDraft = craft.app.request.requiredQueryParam('isProvisionalDraft', 0) %}
+
+{% set entry = craft.entries
+    .draftId(draftId)
+    .provisionalDrafts(isProvisionalDraft)
+    .siteId(siteId)
+    .anyStatus()
+.one %}
+
+{% if not entry %}
+    {% exit 404 %}
+{% endif %}
+
+{% if entry.creatorId != currentUser.id and not currentUser.can('viewpeerprovisionaldrafts') %}
+    {% exit 403 %}
+{% endif %}
+
+{% set canonicalEntry = entry.canonical %}
+
+<div class="compare-heading">
+    {% set user = craft.users.id(entry.creatorId).one %}
+    {{ entry.draftName }}:
+    {{ 'Draft created by'|t('_extras') }} {{ user ? user.fullName : entry.creatorId }}, {{ 'last updated'|t('_extras') }}
+    : {{ entry.dateUpdated|datetime }}
+</div>
+
+<div class="compare-body">
+
+    {% include '_extras/compare/transfer_provisionalDraft.twig' with {
+        entry
+    } only %}
+
+    <h1>
+        {% embed '_extras/compare/columns.twig' %}
+            {% block left %}
+                {{ entry.isProvisionalDraft ? 'Edited'|t('_extras') : 'Draft'|t('_extras') }}
+            {% endblock %}
+            {% block right %}
+                {{ 'Current'|t('_extras') }}
+            {% endblock %}
+        {% endembed %}
+    </h1>
+
+    {# Compare default attributes #}
+    {% include '_extras/compare/attributes_diff.twig' with {
+        entry, canonicalEntry
+    } only %}
+
+
+    {# Compare custom fields #}
+    {% include '_extras/compare/element_diff.twig' with {
+        element: entry, canonicalElement: canonicalEntry
+    } only %}
+
+</div>
+

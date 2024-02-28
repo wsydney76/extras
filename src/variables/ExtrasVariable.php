@@ -3,6 +3,9 @@
 namespace wsydney76\extras\variables;
 
 use Craft;
+use craft\errors\EntryTypeNotFoundException;
+use craft\errors\FieldNotFoundException;
+use craft\errors\InvalidFieldException;
 use yii\base\InvalidCallException;
 
 class ExtrasVariable
@@ -11,19 +14,19 @@ class ExtrasVariable
     {
         $entryType = Craft::$app->entries->getEntryTypeByHandle($entryTypeHandle);
         if (!$entryType) {
-            throw new InvalidCallException("Entry type '{$entryTypeHandle}' not found");
+            throw new EntryTypeNotFoundException("Entry type '{$entryTypeHandle}' not found");
         }
 
         $fieldLayout = $entryType->getFieldLayout();
         $field = $fieldLayout->getFieldByHandle($fieldHandle);
 
         if(!$field) {
-            throw new InvalidCallException("Field '{$fieldHandle}' not found");
+            throw new InvalidFieldException("Field '{$fieldHandle}' not found");
         }
 
         $sql = $field->getValueSql();
         if (!$sql) {
-            throw new InvalidCallException("No SQL value for field '{$fieldHandle}'");
+            throw new InvalidFieldException("Field '{$fieldHandle}' does not support JSON custom field queries");
         }
 
         return $sql;

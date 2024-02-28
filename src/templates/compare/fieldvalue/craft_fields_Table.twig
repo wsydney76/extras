@@ -1,0 +1,6 @@
+{% for row in value %}
+    <h3>Row {{ loop.index }}</h3>
+    {% for col in field.columns %}
+        {{ col.heading }}: {{ col.type == 'date' ? row[col.handle]|date : row[col.handle] }}<br>
+    {% endfor %}
+{% endfor %}

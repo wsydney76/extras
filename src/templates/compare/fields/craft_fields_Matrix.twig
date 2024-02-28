@@ -1,0 +1,93 @@
+{# @var canonicalBlock \craft\elements\MatrixBlock #}
+
+{% set draftBlocks = value.anyStatus().collect %}
+{% set currentBlocks = canonicalValue.anyStatus().collect %}
+
+{% for block in draftBlocks %}
+    {% set canonicalBlock = block.canonical %}
+    {% set blockIsNew = canonicalBlock.ownerId == block.primaryOwnerId %}
+
+    {% set blockHasChanged = false %}
+
+    {# TODO: canonicalBlock.sortOrder not reliable? #}
+    {% set currentSortOrder = craft.query
+        .select('sortOrder')
+        .from('{{%elements_owners}}')
+        .where("ownerId = #{block.primaryOwnerId} AND elementId = #{block.id}")
+        .scalar()
+    %}
+
+    {% set blockHasMoved = block.sortOrder != currentSortOrder %}
+    {% set blockStatusChanged = block.status != canonicalBlock.status %}
+
+    {% for field in block.fieldLayout.customFields %}
+        {% if block.isFieldModified(field.handle) %}
+            {% set blockHasChanged = true %}
+        {% endif %}
+    {% endfor %}
+
+    {% set showAll = false %}
+
+    {% if showAll or blockIsNew or blockHasChanged or blockHasMoved or blockStatusChanged %}
+        <div class="matrixblock field-diff-block">
+            <div class="titlebar field-diff-blockname {{ blockIsNew ? 'field-diff-new' }}">
+                <div>
+                    {{ block.type.name|t }}
+                    {{ blockIsNew ? " - #{'New'|t('_extras')}" }}
+                    {{ blockHasMoved and not blockHasChanged and not blockIsNew ? " - #{'Moved without changes'|t('_extras')}" }}
+                    {{ blockStatusChanged ? "- #{'Status changed'|t('_extras')} from #{block.status|t('_extras')} to #{canonicalBlock.status|t('_extras')}" }}
+                </div>
+                <div>
+                    {{ 'Order'|t('_extras') }}: {{ 'Draft'|t('_extras') }}: {{ block.sortOrder }} /
+                    {{ 'Current'|t('_extras') }}: {{ currentSortOrder }}
+                </div>
+            </div>
+
+            {% if blockIsNew %}
+                {{ _self.blockContent(block) }}
+            {% elseif blockHasMoved and not blockHasChanged %}
+                {{ _self.blockContent(block, 1) }}
+            {% elseif blockStatusChanged and not blockHasChanged %}
+                {{ _self.blockContent(block) }}
+            {% else %}
+                {% include '_extras/compare/element_diff.twig' with {
+                    element: block, canonicalElement: canonicalBlock, level: 1
+                } only %}
+            {% endif %}
+        </div>
+    {% endif %}
+
+{% endfor %}
+
+{# Deleted blocks #}
+{% set draftBlocksCanonicalIds = draftBlocks|map(b => b.canonicalId) %}
+{% for block in currentBlocks  %}
+    {% if block.id not in draftBlocksCanonicalIds %}
+        <div class="matrixblock field-diff-block">
+            <div class="titlebar field-diff-blockname field-diff-deleted">
+                <div>
+                    {{ block.type.name }} - {{ 'Deleted'|t('_extras') }}
+                </div>
+                <div>
+                    {{ 'Order'|t('_extras') }}: {{ 'Draft'|t }}: {{ block.sortOrder }}
+                    / {{ 'Deleted'|t('_extras') }}
+                </div>
+            </div>
+            {{ _self.blockContent(block) }}
+        </div>
+    {% endif %}
+{% endfor %}
+
+
+{% macro blockContent(block, count = 9999) %}
+    {% for field in block.fieldLayout.customFields %}
+        {% if loop.index <= count %}
+            <div class="field-diff field-diff-level-1">
+                <h2>{{ field.name }}</h2>
+                {% include '_extras/compare/display_value.twig' with {
+                    field, value: block.fieldValue(field.handle)
+                } only %}
+            </div>
+        {% endif %}
+    {% endfor %}
+{% endmacro %}

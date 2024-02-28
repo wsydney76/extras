@@ -1,0 +1,21 @@
+{% if field is not string %}
+    {% if element.isFieldModifiedForDiff(field, canonicalElement) %}
+        <div class="field-diff field-diff-level-{{ level }}">
+
+            <h2>{{ field.name == '__blank__' ? field.handle|capitalize : field.name|t }}</h2>
+
+            {% set value = element.fieldValue(field.handle) %}
+            {% set canonicalValue = canonicalElement.fieldValue(field.handle) %}
+
+            {% set template = className(field)|replace({'\\':'_'}) %}
+
+            {% include [
+                "customwork/compare/fields/#{template}",
+                "_extras/compare/fields/#{template}.twig",
+                "_extras/compare/fields/default"] with {
+                field, value, canonicalValue
+            } only %}
+
+        </div>
+    {% endif %}
+{% endif %}

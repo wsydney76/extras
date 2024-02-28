@@ -1,0 +1,56 @@
+{% if entry.title != canonicalEntry.title %}
+    <div class="field-diff">
+        <h2>{{ 'Title'|t('_extras') }}</h2>
+        {{ craft.compare.calculateDiff(canonicalEntry.title, entry.title)|raw }}
+    </div>
+{% endif %}
+
+{% if entry.slug != canonicalEntry.slug %}
+    <div class="field-diff">
+        <h2>{{ 'Slug'|t('_extras') }}</h2>
+        {{ _self.attrDiff(entry.slug, canonicalEntry.slug) }}
+    </div>
+{% endif %}
+
+{% if entry.authorId != canonicalEntry.authorId %}
+    <div class="field-diff">
+        <h2>{{ 'Author'|t('_extras') }}</h2>
+        {{ _self.attrDiff(entry.author.fullName, canonicalEntry.author.fullName) }}
+    </div>
+{% endif %}
+
+{% set date = entry.postDate ? entry.postDate|datetime : '' %}
+{% set date2 = canonicalEntry.postDate ? canonicalEntry.postDate|datetime : '' %}
+{% if date != date2 %}
+    <div class="field-diff">
+        <h2>{{ 'Post Date'|t('_extras') }}</h2>
+        {{ _self.attrDiff(date, date2) }}
+    </div>
+{% endif %}
+
+{% set date = entry.expiryDate ? entry.expiryDate|datetime : '' %}
+{% set date2 = canonicalEntry.expiryDate ? canonicalEntry.expiryDate|datetime : '' %}
+{% if date != date2 %}
+    <div class="field-diff">
+        <h2>{{ 'Expiry Date'|t('_extras') }}</h2>
+        {{ _self.attrDiff(date, date2) }}
+    </div>
+{% endif %}
+
+{% if entry.status != canonicalEntry.status %}
+    <div class="field-diff">
+        <h2>{{ 'Status'|t('_extras') }}</h2>
+        {{ _self.attrDiff(entry.status, canonicalEntry.status) }}
+    </div>
+{% endif %}
+
+{% macro attrDiff(value, value2) %}
+    {% embed '_extras/compare/columns.twig' %}
+        {% block left %}
+            {{ value }}
+        {% endblock %}
+        {% block right %}
+            {{ value2 }}
+        {% endblock %}
+    {% endembed %}
+{% endmacro %}

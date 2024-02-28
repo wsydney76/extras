@@ -47,6 +47,21 @@
     on: settings.enableExtrasVariable,
     instructions: 'Enable craft._extras variable'|t('_extras')
 }) }}
+
+{{ forms.lightswitchField({
+    label: 'Enable dashboard widgets'|t('_extras'),
+    name: 'enableWidgets',
+    on: settings.enableWidgets,
+    instructions: 'Enable dashboard widgets.'|t('_extras')
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Enable draft helpers'|t('_extras'),
+    name: 'enableDraftHelpers',
+    on: settings.enableDraftHelpers,
+    instructions: 'Enable draft helpers like hints about existing drafts and compare feature.'|t('_extras')
+}) }}
+
 <hr>
 
 <h2 class="heading">{{ 'Assets'|t }}</h2>

@@ -1,0 +1,8 @@
+{% for item in value.all %}
+    {% if item.kind == 'image' %}
+        <div class="elementthumb">
+            {{ item.img({width:120, height:80})|attr({class: 'field-diff-image'}) }}
+        </div>
+    {% endif %}
+    {{ item.title }}
+{% endfor %}

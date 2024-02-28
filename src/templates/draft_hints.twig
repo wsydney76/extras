@@ -1,0 +1,126 @@
+{# TODO: Permissions for nested entries #}
+
+{#{% set draftPermission = 'editpeerentrydrafts:' ~ entry.section.uid %}#}
+
+{# Compare opened draft #}
+<div class="compare-current">
+    {% if  entry.isCanonical %}
+        <span id="draft-new" style="display:none">
+            <button type="button" class="btn"
+                    onclick="compare(-1, {{ entry.siteId }}, 1)">
+                {{ 'Compare Edited with Current'|t('_extras') }}
+            </button>
+        </span>
+    {% else %}
+        <button type="button" class="btn"
+                onclick="compare({{ entry.draftId }}, {{ entry.siteId }}, {{ entry.isProvisionalDraft ?: 0 }})">
+            {% if entry.isProvisionalDraft %}
+                {{ 'Compare Edited with Current'|t('_extras') }}
+            {% else %}
+                {{ 'Compare Draft with Current'|t('_extras') }}
+            {% endif %}
+        </button>
+    {% endif %}
+</div>
+
+{# Show existing drafts --------------------------------------------------------------------- #}
+
+{% set query = craft.entries
+    .draftOf(entry.canonical)
+    .site('*')
+    .unique()
+    .anyStatus()
+    .preferSites([entry.site.handle])
+    .orderBy('dateUpdated desc') %}
+
+{% if entry.isDraft %}
+    {% set query = query.id("not #{entry.id}") %}
+{% endif %}
+
+{% set drafts = query.all %}
+{% if drafts %}
+
+    {% set textOne = 'msg_draftwarningone'|t('_extras') %}
+    {% set textMultiple = 'msg_draftwarningmultiple'|t('_extras') %}
+
+    <div class="meta warning">
+        <p>{{ '{count,plural,=1{Open draft} other{Open drafts}}'|t('_extras', {count: drafts|length}) }}:</p>
+        <div class="flex flex-wrap">
+            {% for draft in drafts %}
+                {#{% set canEdit = (draft.creatorId == currentUser.id or currentUser.can(draftPermission)) %}#}
+                {% set canEdit = true %}
+                {% if canEdit %}
+                    {{ tag('a', {
+                        class: ['btn', 'drafts-warning'],
+                        title: draft.draftName,
+                        href: "#{ draft.cpEditUrl }&draftId=#{ draft.draftId }",
+                        text: "#{'Edit'|t('_extras')}: #{draft.draftName}"
+                    }) }}
+                {% else %}
+                    {% set user = craft.users.id(draft.creatorId).one %}
+                    {{ tag('button', {
+                        type: 'button',
+                        class: ['btn', 'drafts-warning', 'drafts-noteditable'],
+                        title: draft.draftName ~ ' ' ~ (user ? user.fullName : 'n/a' ~ ' ') ~ draft.dateUpdated|date,
+                        text: "#{draft.draftName}",
+                        onclick:"compare(#{ draft.draftId }, #{ draft.siteId }, #{ draft.isProvisionalDraft ?: 0})"
+                    }) }}
+                {% endif %}
+            {% endfor %}
+
+        </div>
+    </div>
+
+{% endif %}
+
+
+{# Show existing provisional drafts --------------------------------------------------------------------- #}
+{% if currentUser.can('viewpeerprovisionaldrafts') %}
+    {% set query = craft.entries
+        .draftOf(entry.canonical)
+        .provisionalDrafts(true)
+        .id("not #{entry.id}")
+        .anyStatus()
+        .site('*')
+        .unique()
+        .preferSites([entry.site.handle])
+        .orderBy('dateUpdated desc') %}
+
+    {% set drafts = query.all %}
+    {% if drafts %}
+
+        <div class="meta warning">
+            <p>{{ '{count,plural,=1{Open edit} other{Open edits}}'|t('_extras', {count: drafts|length}) }}:</p>
+            <div class="flex flex-wrap">
+                {% for draft in drafts %}
+                    {% set user = craft.users.id(draft.creatorId).one %}
+                    {% if user %}
+                        {{ tag('button', {
+                            type: 'button',
+                            class: ['btn', 'drafts-warning', 'drafts-noteditable'],
+                            title: draft.draftName ~ ' ' ~ (user ? user.fullName : 'n/a' ~ ' ') ~ draft.dateUpdated|date,
+                            text: "#{user.fullName} #{draft.dateUpdated|date}",
+                            onclick:"compare(#{ draft.draftId }, #{ draft.siteId }, #{ draft.isProvisionalDraft})"
+                        }) }}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+    {% endif %}
+{% endif %}
+
+{# Separate js tag because twig stuff will break PhpStorms syntax check #}
+{% js %}
+compareUrl = "{{ cpUrl('_extras/compare') }}"
+newDraftId = -1
+{% endjs %}
+
+{% js %}
+{% include '_extras/js/work.js' %}
+{% endjs %}
+
+{% css %}
+{% include '_extras/css/work.css' %}
+{% endcss %}
+

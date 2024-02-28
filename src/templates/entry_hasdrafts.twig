@@ -1,0 +1,11 @@
+{% if entry.isCanonical and not entry.isFresh %}
+    {% set hasDrafts = craft.entries.draftOf(entry).anyStatus().exists() %}
+    {% if not hasDrafts %}
+        {% set hasDrafts = craft.entries.draftOf(entry).provisionalDrafts(true).anyStatus().exists() %}
+    {% endif %}
+    {% if hasDrafts %}
+        <div class="meta warning">
+            {{ 'This entry has open drafts'|t('_extras') }}!
+        </div>
+    {% endif %}
+{% endif %}

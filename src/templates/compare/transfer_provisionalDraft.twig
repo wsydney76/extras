@@ -1,0 +1,28 @@
+{% if entry.canTransfer() %}
+    <form method="post" class="transfer-form"
+          onsubmit="return confirm('{{ 'Transfer provisional Draft?'|t('_extras') }}')">
+        {{ csrfInput() }}
+        {{ actionInput('_extras/content/transfer') }}
+        {{ hiddenInput('id', entry.id) }}
+        {{ hiddenInput('draftId', entry.draftId|hash) }}
+        {{ hiddenInput('creatorId', entry.creatorId|hash) }}
+        <button type="submit" class="btn submit">{{ 'Transfer to my account'|t('_extras') }}</button>
+    </form>
+
+{% endif %}
+
+{% if entry.isProvisionalDraft %}
+    {% set transferHistories = entry.transferHistory %}
+    {% if transferHistories %}
+        <h3>{{ 'Transfer History'|t('_extras') }}</h3>
+        <div class="transfer-history">
+            {% for transferHistory in transferHistories %}
+                <div>
+                    {{ craft.app.formatter.asDatetime(transferHistory.dateCreated) }}
+                    {{ 'from'|t('_extras') }} {{ transferHistory.fromUserName }}
+                    {{ 'to'|t('_extras') }} {{ transferHistory.toUserName }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endif %}

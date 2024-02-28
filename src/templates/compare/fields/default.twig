@@ -1,0 +1,12 @@
+{% embed '_extras/compare/columns.twig' %}
+    {% block left %}
+        {% include '_extras/compare/display_value.twig' with {
+            field, value
+        } only %}
+    {% endblock %}
+    {% block right %}
+        {% include '_extras/compare/display_value.twig' with {
+            field, value: canonicalValue
+        } only %}
+    {% endblock %}
+{% endembed %}

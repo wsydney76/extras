@@ -1,0 +1,14 @@
+{% if value %}
+    {% if field.showTime %}
+        {% if field.showTimeZone %}
+            {{ value|datetime(null, value.getTimeZone()) }}
+            {{ value.getTimezone().getName() }}
+            <br>
+            {{ value|datetime }} {{ 'System Time Zone'|t }} ({{ craft.app.timeZone }})
+        {% else %}
+            {{ value|datetime }}
+        {% endif %}
+    {% else %}
+        {{ value|date }}
+    {% endif %}
+{% endif %}

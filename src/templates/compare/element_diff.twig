@@ -1,0 +1,5 @@
+{% for field in element.fieldLayout.customFields %}
+    {% include '_extras/compare/field_diff.twig' with {
+        element, canonicalElement, field, level: level ?? 1
+    } only %}
+{% endfor %}
