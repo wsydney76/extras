@@ -84,9 +84,15 @@
         {% if loop.index <= count %}
             <div class="field-diff field-diff-level-1">
                 <h2>{{ field.name }}</h2>
-                {% include '_extras/compare/display_value.twig' with {
-                    field, value: block.fieldValue(field.handle)
-                } only %}
+                {% set value = block.fieldValue(field.handle) %}
+                {% if className(field) == 'craft\\fields\\Matrix' %}
+                	NEW MATRIX IN MATRIX
+                {% else %}
+                    {% include '_extras/compare/display_value.twig' with {
+                        field, value: block.fieldValue(field.handle)
+                    } only %}
+                {% endif %}
+
             </div>
         {% endif %}
     {% endfor %}

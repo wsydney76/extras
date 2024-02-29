@@ -7,6 +7,7 @@ use craft\base\ElementInterface;
 use craft\base\Field;
 use craft\elements\Entry;
 use craft\fields\Matrix;
+use Illuminate\Support\Collection;
 use wsydney76\extras\records\TransferHistoryRecord;
 use yii\base\Behavior;
 
@@ -17,10 +18,11 @@ class EntryBehavior extends Behavior
         /** @var Entry $entry */
         $entry = $this->owner;
 
-        $path = [];
+        $path = Collection::make();
 
         while ($entry = $entry->getOwner()) {
-            array_unshift($path, $entry);
+            $path = $path->prepend($entry);
+            // array_unshift($path, $entry);
             if ($entry->section !== null) {
                 break;
             }
@@ -135,5 +137,17 @@ class EntryBehavior extends Behavior
         }
 
         return $this->owner->isFieldModified($field->handle);
+    }
+
+    public function getSectionPermissionKey(string $baseKey) :string
+    {
+        /** @var Entry $entry */
+        $entry = $this->owner;
+
+        if ($entry->section) {
+               return $baseKey . ':' . $entry->section->uid;
+        }
+
+        return $baseKey . ':' . $this->getOwnerPath()->first()->section->uid;
     }
 }

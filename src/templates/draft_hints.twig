@@ -1,6 +1,6 @@
 {# TODO: Permissions for nested entries #}
 
-{#{% set draftPermission = 'editpeerentrydrafts:' ~ entry.section.uid %}#}
+{% set draftPermission = entry.getSectionPermissionKey('editpeerentrydrafts') %}
 
 {# Compare opened draft #}
 <div class="compare-current">

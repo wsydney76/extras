@@ -21,15 +21,15 @@ class Settings extends Model
     public bool $enableWidgets = false;
     public bool $enableDraftHelpers = false;
 
-    public $diffRendererName = 'Combined';
-    public $diffContext = 1;
-    public $diffIgnoreCase = false;
-    public $diffIgnoreWhitespace = true;
-    public $diffDetailLevel = 'word';
+    public string $diffRendererName = 'Combined';
+    public int $diffContext = 1;
+    public bool $diffIgnoreCase = false;
+    public bool $diffIgnoreWhitespace = true;
+    public string $diffDetailLevel = 'word';
 
-    public $diffLineNumbers = true;
-    public $diffSeparateBlock = true;
-    public $diffShowHeader = false;
+    public bool $diffLineNumbers = true;
+    public bool $diffSeparateBlock = true;
+    public bool $diffShowHeader = false;
 
-    public $diffMergeThreshold = 0.8;
+    public float $diffMergeThreshold = 0.8;
 }

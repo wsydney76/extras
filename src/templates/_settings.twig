@@ -4,6 +4,8 @@
 {% import 'codeeditor/codeEditor' as codeEditor %}
 {% import '_includes/forms.twig' as forms %}
 
+
+
 {{ forms.lightswitchField({
     first: true,
     label: 'Enable Sidebar Visibility'|t('_extras'),
@@ -20,18 +22,18 @@
 }) }}
 
 <div style="margin-left: 48px">
-    {{ forms.lightswitchField({
-        label: 'Show relationships to all sites'|t('_extras'),
-        name: 'showAllSites',
-        on: settings.showAllSites,
-    }) }}
+{{ forms.lightswitchField({
+    label: 'Show relationships to all sites'|t('_extras'),
+    name: 'showAllSites',
+    on: settings.showAllSites,
+}) }}
 </div>
 
 {{ forms.lightswitchField({
-    label: 'Enable Condition Rules'|t('_extras'),
-    name: 'enableConditionRules',
-    on: settings.enableConditionRules,
-    instructions: 'Enable Has Drafts, All Types condition rules'|t('_extras')
+label: 'Enable Condition Rules'|t('_extras'),
+name: 'enableConditionRules',
+on: settings.enableConditionRules,
+instructions: 'Enable Has Drafts, All Types condition rules'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
@@ -67,10 +69,10 @@
 <h2 class="heading">{{ 'Assets'|t }}</h2>
 
 {{ forms.lightswitchField({
-    label: 'Enable CP Assets'|t('_extras'),
-    name: 'enableCpAssets',
-    on: settings.enableCpAssets,
-    instructions: 'Enable custom CSS for the Control Panel'|t('_extras')
+label: 'Enable CP Assets'|t('_extras'),
+name: 'enableCpAssets',
+on: settings.enableCpAssets,
+instructions: 'Enable custom CSS for the Control Panel'|t('_extras')
 }) }}
 
 
@@ -95,3 +97,88 @@
     value: settings.customCss,
     rows: 5
 }, 'CodeField', monacoOptions, codeEditorOptions) }}
+
+
+<hr>
+<h2 class="heading">{{ 'Compare Settings'|t('_extras') }}</h2>
+
+{{ forms.selectField({
+    label: 'Renderer'|t('_extras'),
+    name: 'diffRendererName',
+    value: settings.diffRendererName,
+    options: [
+        {label: 'Combined', value: 'Combined'},
+        {label: 'Inline', value: 'Inline'},
+        {label: 'JsonHtml', value: 'JsonHtml'},
+        {label: 'SideBySide', value: 'SideBySide'}
+    ],
+    instructions: 'HTML Renderer Class Name'|t('_extras')
+}) }}
+
+{{ forms.textField({
+    label: 'Context'|t('_extras'),
+    type: 'number',
+    name: 'diffContext',
+    value: settings.diffContext,
+    min: 1,
+    instructions: 'Show how many neighbor lines'|t('_extras')
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Ignore Case'|t('_extras'),
+    name: 'diffIgnoreCase',
+    on: settings.diffIgnoreCase,
+    instructions: 'Ignore case difference'|t('_extras')
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Ignore White space'|t('_extras'),
+    name: 'diffIgnoreWhitespace',
+    on: settings.diffIgnoreWhitespace,
+    instructions: 'Ignore whitespace difference'|t('_extras')
+}) }}
+
+{{ forms.selectField({
+    label: 'Detail Level'|t('_extras'),
+    name: 'diffDetailLevel',
+    value: settings.diffDetailLevel,
+    options: [
+        {label: 'None'|t('_extras'), value: 'none'},
+        {label: 'Word'|t('_extras'), value: 'word'},
+        {label: 'Line'|t('_extras'), value: 'line'},
+        {label: 'Character'|t('_extras'), value: 'char'}
+    ],
+    instructions: 'How detailed the rendered HTML in-line diff is'|t('_extras')
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Show Line Numbers'|t('_extras'),
+    name: 'diffLineNumbers',
+    on: settings.diffLineNumbers,
+    instructions: 'Show line numbers in HTML renderers'|t('_extras')
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Separate Blocks'|t('_extras'),
+    name: 'diffSeparateBlock',
+    on: settings.diffSeparateBlock,
+    instructions: 'Show a separator between different diff hunks in HTML renderers'|t('_extras')
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Show Header'|t('_extras'),
+    name: 'diffShowHeader',
+    on: settings.diffShowHeader,
+    instructions: 'Show the (table) header'|t('_extras')
+}) }}
+
+{{ forms.textField({
+    label: 'Merge Threshold'|t('_extras'),
+    type: 'number',
+    name: 'diffMergeThreshold',
+    value: settings.diffMergeThreshold,
+    min: 0,
+    max: 1,
+    step: 0.1,
+    instructions: 'this option is currently only for the Combined renderer. It determines whether a replace-type block should be merged or not depending on the content changed ratio, which values between 0 and 1'|t('_extras')
+}) }}

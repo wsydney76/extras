@@ -28,11 +28,11 @@ class CompareService extends Component
         $differOptions = [
             // show how many neighbor lines
             // Differ::CONTEXT_ALL can be used to show the whole file
-            'context' => $settings->diffContext,
+            'context' => (int)$settings->diffContext,
             // ignore case difference
-            'ignoreCase' => $settings->diffIgnoreCase,
+            'ignoreCase' => (bool)$settings->diffIgnoreCase,
             // ignore whitespace difference
-            'ignoreWhitespace' => $settings->diffIgnoreWhitespace,
+            'ignoreWhitespace' => (bool)$settings->diffIgnoreWhitespace,
         ];
 
         // the renderer class options
@@ -56,7 +56,7 @@ class CompareService extends Component
             // this option is currently only for the Combined renderer.
             // it determines whether a replace-type block should be merged or not
             // depending on the content changed ratio, which values between 0 and 1.
-            'mergeThreshold' => $settings->diffMergeThreshold,
+            'mergeThreshold' => (float)$settings->diffMergeThreshold,
             // this option is currently only for the Unified and the Context renderers.
             // RendererConstant::CLI_COLOR_AUTO = colorize the output if possible (default)
             // RendererConstant::CLI_COLOR_ENABLE = force to colorize the output
