@@ -19,6 +19,7 @@ use craft\events\RegisterUserPermissionsEvent;
 use craft\services\Dashboard;
 use craft\services\UserPermissions;
 use craft\web\twig\variables\CraftVariable;
+use Illuminate\Support\Collection;
 use wsydney76\extras\behaviors\EntryBehavior;
 use wsydney76\extras\elements\conditions\AllTypesConditionRule;
 use wsydney76\extras\elements\conditions\HasDraftsConditionRule;
@@ -30,6 +31,8 @@ use wsydney76\extras\variables\ExtrasVariable;
 use wsydney76\extras\web\assets\cpassets\CustomCpAsset;
 use wsydney76\extras\web\assets\sidebarvisibility\SidebarVisibilityAsset;
 use wsydney76\extras\widgets\MyProvisionsalDraftsWidget;
+use function setlocale;
+use const LC_COLLATE;
 
 /**
  * Extras plugin
@@ -56,10 +59,19 @@ class ExtrasPlugin extends Plugin
     {
         parent::init();
 
+        setlocale(LC_COLLATE, str_replace('-', '_', Craft::$app->locale->id));
+
         // Defer most setup tasks until Craft is fully initialized
         Craft::$app->onInit(function() {
-            $this->attachEventHandlers();
-            // ...
+            $this->initExtrasVariable();
+            $this->initSidebarVisibility();
+            $this->initConditionRules();
+            $this->initElementMap();
+            $this->initCpAssets();
+            $this->initOwnerPath();
+            $this->initWidgets();
+            $this->initDraftHelpers();
+            $this->enableCollectionMakros();
         });
     }
 
@@ -76,18 +88,6 @@ class ExtrasPlugin extends Plugin
         ]);
     }
 
-    private function attachEventHandlers(): void
-    {
-
-        $this->initExtrasVariable();
-        $this->initSidebarVisibility();
-        $this->initConditionRules();
-        $this->initElementMap();
-        $this->initCpAssets();
-        $this->initOwnerPath();
-        $this->initWidgets();
-        $this->initDraftHelpers();
-    }
 
     /**
      * @return void
@@ -285,7 +285,10 @@ class ExtrasPlugin extends Plugin
                     $hasOwnProvisionalDraft = $query->exists();
 
                     if ($hasOwnProvisionalDraft) {
-                        $event->html .= '<span class="status active"></span>';
+                        // $event->html .= '<span class="status active"></span>';
+                        $event->html .= Craft::$app->view->renderTemplate('_extras/_drafts_indexcolumn', [
+                            'count' => $countProvisionalDrafts
+                        ]);
                     }
 
                     if (Craft::$app->user->identity->can('viewpeerprovisionaldrafts')) {
@@ -294,10 +297,35 @@ class ExtrasPlugin extends Plugin
                             --$countProvisionalDrafts;
                         }
                         if ($countProvisionalDrafts) {
-                            $event->html .= '<span class="status"></span>';
+                            // $event->html .= '<span class="status"></span>';
+
                         }
                     }
                 }
+            });
+        }
+    }
+
+    protected function enableCollectionMakros()
+    {
+        if ($this->getSettings()->enableCollectionMakros) {
+            Collection::macro('sortByLocale', function(string $key, bool $descending = false): Collection {
+                $oldLocale = setlocale(LC_COLLATE, 0);
+                setlocale(LC_COLLATE, str_replace('-', '_', Craft::$app->language));
+                $sorted = $this->sortBy($key, SORT_LOCALE_STRING, $descending);
+                setlocale(LC_COLLATE, $oldLocale);
+                return $sorted;
+            });
+
+            Collection::macro('addToCollection', function(string $key, mixed $value) {
+                if ($this->has($key)) {
+                    /** @phpstan-ignore-next-line */
+                    $this->put($key, $this->get($key)->push($value));
+                } else {
+                    /** @phpstan-ignore-next-line */
+                    $this->put($key, new Collection([$value]));
+                }
+                return $this;
             });
         }
     }

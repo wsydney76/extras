@@ -71,9 +71,9 @@ h2 {
 }
 */
 
-#global-sidebar {
-    background-color: var(--gray-100);
-}
+/*#global-sidebar {
+    background-color: var(--gray-100) !important;
+}*/
 
 /*
 #global-sidebar .nav-item:hover, #sidebar-trigger:hover {

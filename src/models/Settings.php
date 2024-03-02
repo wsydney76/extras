@@ -21,6 +21,8 @@ class Settings extends Model
     public bool $enableWidgets = false;
     public bool $enableDraftHelpers = false;
 
+    public bool $enableCollectionMakros = false;
+
     public string $diffRendererName = 'Combined';
     public int $diffContext = 1;
     public bool $diffIgnoreCase = false;
