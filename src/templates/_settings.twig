@@ -82,6 +82,13 @@ on: settings.enableCpAssets,
 instructions: 'Enable custom CSS for the Control Panel'|t('_extras')
 }) }}
 
+{{ forms.textField({
+    label: 'Body Font Size'|t('_extras'),
+    name: 'bodyFontSize',
+    value: settings.bodyFontSize,
+    instructions: 'CSS value for general font size'|t('_extras'),
+    tip: 'User specific setting can be enabled by creating a custom plaintext user field with the handle extrasBodyFontSize'|t('_extras')
+}) }}
 
 {% set monacoOptions = {
     language: 'css',

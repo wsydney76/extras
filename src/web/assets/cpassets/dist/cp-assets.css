@@ -5,6 +5,13 @@ html, body {
     font-size: 15px;
 }
 
+.titlebar {
+    --gray-050: var(--gray-100);
+    --green-050: var(--green-100);
+    --teal-050: var(--teal-100);
+    --emerald-050: var(--emerald-100);
+}
+
 /*.fields .element-index .toolbar > div, .fields .element-index .footer  {
     display: none;
 }*/

@@ -15,6 +15,7 @@ class Settings extends Model
     public bool $enableConditionRules= false;
     public bool $showAllSites = true;
     public bool $enableCpAssets = false;
+    public string $bodyFontSize = '15px';
     public string $customCss = '';
     public bool $enableOwnerPath = false;
     public bool $enableExtrasVariable = false;

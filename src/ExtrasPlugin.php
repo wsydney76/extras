@@ -121,6 +121,17 @@ class ExtrasPlugin extends Plugin
     {
         if (Craft::$app->request->isCpRequest) {
 
+            $bodyFontSize = $this->getSettings()->bodyFontSize;
+            $userBodyFontSize = Craft::$app->user->identity->extrasBodyFontSize ?? '';
+
+            if ($userBodyFontSize) {
+                $bodyFontSize = $userBodyFontSize;
+            }
+
+            if ($bodyFontSize) {
+                Craft::$app->view->registerCss("html, body {font-size: {$bodyFontSize};}");
+            }
+
             $css = trim($this->getSettings()->customCss);
             if ($css) {
                 Craft::$app->view->registerCss($css);

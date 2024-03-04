@@ -27,6 +27,10 @@ class MyProvisionsalDraftsWidget extends Widget
 
     public function getBodyHtml(): ?string
     {
+
+        // make it look the same as core My Drafts widget
+        Craft::$app->view->registerCss('.wsydney76\\\\extras\\\\widgets\\\\myprovisionsaldraftswidget .widget__list-item {padding-top: 0;padding-bottom: 0;}');
+
         $drafts = Entry::find()
             ->drafts(true)
             ->provisionalDrafts(true)
