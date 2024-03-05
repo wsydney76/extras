@@ -1,1 +1,20 @@
-{{ svg('@appicons/pen-to-square.svg')|attr({style: "width: 16px; heigh: 16px; fill: #1F5FEA;"}) }}
+<div style="display: flex">
+    {% if hasOwnProvisionalDraft %}
+        <div title="{{ 'Own Provisional Draft'|t('_extras') }}" style="margin-right: 4px;">
+            {{ svg('@appicons/pen-to-square.svg')|attr({
+                style: "width: 16px; heigh: 16px; fill: #1F5FEA;",
+            }) }}
+        </div>
+    {% endif %}
+    {% if countProvisionalDraftsByOtherUsers %}
+        <div title="{{ '{count} provisional draft(s) by other users'|t('_extras', {count: countProvisionalDraftsByOtherUsers}) }}"
+             style="margin-right: 4px;">
+            {{ svg('@appicons/pencil.svg')|attr({style: "width: 16px; heigh: 16px; fill: var(--gray-400);"}) }}
+        </div>
+    {% endif %}
+    {% if countDrafts %}
+        <div title="{{ '{count} regular draft(s) by other users'|t('_extras', {count: countDrafts}) }}"
+             style="margin-right: 4px;">
+            {{ svg('@appicons/draft.svg')|attr({style: "width: 16px; heigh: 16px; fill: var(--gray-400);"}) }}
+        </div>
+    {% endif %}

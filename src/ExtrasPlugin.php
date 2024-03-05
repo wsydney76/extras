@@ -25,6 +25,7 @@ use wsydney76\extras\elements\conditions\AllTypesConditionRule;
 use wsydney76\extras\elements\conditions\HasDraftsConditionRule;
 use wsydney76\extras\models\Settings;
 use wsydney76\extras\services\CompareService;
+use wsydney76\extras\services\DraftsHelper;
 use wsydney76\extras\services\Elementmap;
 use wsydney76\extras\services\ElementmapRenderer;
 use wsydney76\extras\variables\ExtrasVariable;
@@ -51,6 +52,7 @@ class ExtrasPlugin extends Plugin
             'components' => [
                 'elementmap' => Elementmap::class,
                 'renderer' => ElementmapRenderer::class,
+                'draftsHelper' => DraftsHelper::class
             ],
         ];
     }
@@ -211,109 +213,10 @@ class ExtrasPlugin extends Plugin
 
     private function initDraftHelpers()
     {
-
-        Event::on(
-            UserPermissions::class,
-            UserPermissions::EVENT_REGISTER_PERMISSIONS, function(RegisterUserPermissionsEvent $event) {
-            $event->permissions['Extras Plugin'] = [
-                'heading' => 'Extras Plugin',
-                'permissions' => [
-                    'accessPlugin-work' => [
-                        'label' => Craft::t('_extras', 'Access Extras Plugin'),
-                    ],
-                    'viewpeerprovisionaldrafts' => [
-                        'label' => Craft::t('_extras', 'View provisional drafts of other users')
-                    ],
-                    'transferprovisionaldrafts' => [
-                        'label' => Craft::t('_extras', 'Transfer other users provisional draft to own account')
-                    ]
-                ]
-
-            ];
-        });
-
+        $this->draftsHelper->createPermissions();
         if (Craft::$app->request->isCpRequest && $this->getSettings()->enableDraftHelpers) {
-
-
-            Event::on(
-                CraftVariable::class,
-                CraftVariable::EVENT_INIT,
-                function(\yii\base\Event $event) {
-
-                    /** @var CraftVariable $variable */
-                    $variable = $event->sender;
-
-                    $variable->set('compare', CompareService::class);
-                }
-            );
-
-
             $this->initEntryBehavior();
-
-            Event::on(
-                Element::class,
-                Element::EVENT_DEFINE_SIDEBAR_HTML, function(DefineHtmlEvent $event) {
-                if ($event->sender instanceof Entry) {
-                    $event->html =
-                        Craft::$app->view->renderTemplate('_extras/entry_hasdrafts.twig', [
-                            'entry' => $event->sender
-                        ]) . $event->html;
-
-                    if (!Craft::$app->request->isAjax) {
-                        $event->html .= Craft::$app->view->renderTemplate('_extras/draft_hints.twig', [
-                            'entry' => $event->sender
-                        ]);
-                    }
-                }
-            });
-
-            // Register element index column
-            Event::on(
-                Entry::class,
-                Element::EVENT_REGISTER_TABLE_ATTRIBUTES, function(RegisterElementTableAttributesEvent $event) {
-                $event->tableAttributes['hasProvisionalDraft'] = ['label' => Craft::t('_extras', 'Edited')];
-            });
-
-            Event::on(
-                Entry::class,
-                Element::EVENT_DEFINE_ATTRIBUTE_HTML, function(DefineAttributeHtmlEvent $event) {
-
-                if ($event->attribute === 'hasProvisionalDraft') {
-                    $event->handled = true;
-                    /** @var Entry $entry */
-                    $entry = $event->sender;
-                    $event->html = '';
-
-                    $query = Entry::find()
-                        ->draftOf($entry)
-                        ->provisionalDrafts(true)
-                        ->site($entry->site)
-                        ->anyStatus();
-
-                    $countProvisionalDrafts = $query->count();
-
-                    $query->draftCreator(Craft::$app->user->identity);
-                    $hasOwnProvisionalDraft = $query->exists();
-
-                    if ($hasOwnProvisionalDraft) {
-                        // $event->html .= '<span class="status active"></span>';
-                        $event->html .= Craft::$app->view->renderTemplate('_extras/_drafts_indexcolumn', [
-                            'count' => $countProvisionalDrafts
-                        ]);
-                    }
-
-                    if (Craft::$app->user->identity->can('viewpeerprovisionaldrafts')) {
-                        // Workaround because there is no ->draftCreator('not ...)
-                        if ($hasOwnProvisionalDraft) {
-                            --$countProvisionalDrafts;
-                        }
-                        if ($countProvisionalDrafts) {
-                            // $event->html .= '<span class="status"></span>';
-
-                        }
-                    }
-                }
-            });
+            $this->draftsHelper->initDraftsHelper();
         }
     }
 
