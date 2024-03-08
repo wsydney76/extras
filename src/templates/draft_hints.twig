@@ -90,7 +90,7 @@
     {% if drafts %}
 
         <div class="meta warning">
-            <p>{{ '{count,plural,=1{Open edit} other{Open edits}}'|t('_extras', {count: drafts|length}) }}:</p>
+            <p>{{ '{count,plural,=1{Open provisional draft} other{Open provisional drafts}}'|t('_extras', {count: drafts|length}) }}:</p>
             <div class="flex flex-wrap">
                 {% for draft in drafts %}
                     {% set user = craft.users.id(draft.creatorId).one %}

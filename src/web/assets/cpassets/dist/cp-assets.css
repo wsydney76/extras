@@ -7,9 +7,24 @@ html, body {
 
 .titlebar {
     --gray-050: var(--gray-100);
+    --red-050: var(--red-100);
+    --orange-050: var(--orange-100);
+    --amber-050: var(--amber-100);
+    --yellow-050: var(--yellow-100);
+    --lime-050: var(--lime-100);
     --green-050: var(--green-100);
-    --teal-050: var(--teal-100);
     --emerald-050: var(--emerald-100);
+    --teal-050: var(--teal-100);
+    --cyan-050: var(--cyan-100);
+    --sky-050: var(--sky-100);
+    --blue-050: var(--blue-100);
+    --indigo-050: var(--indigo-100);
+    --violet-050: var(--violet-100);
+    --purple-050: var(--purple-100);
+    --fuchsia-050: var(--fuchsia-100);
+    --pink-050: var(--pink-100);
+    --rose-050: var(--rose-100);
+
 }
 
 /*.fields .element-index .toolbar > div, .fields .element-index .footer  {

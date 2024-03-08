@@ -9,22 +9,19 @@ use craft\base\Event;
 use craft\base\Model;
 use craft\base\Plugin;
 use craft\elements\Entry;
-use craft\events\DefineAttributeHtmlEvent;
 use craft\events\DefineBehaviorsEvent;
-use craft\events\DefineHtmlEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterConditionRulesEvent;
-use craft\events\RegisterElementTableAttributesEvent;
-use craft\events\RegisterUserPermissionsEvent;
+use craft\events\RegisterElementActionsEvent;
 use craft\services\Dashboard;
-use craft\services\UserPermissions;
 use craft\web\twig\variables\CraftVariable;
 use Illuminate\Support\Collection;
 use wsydney76\extras\behaviors\EntryBehavior;
+use wsydney76\extras\elements\actions\CopyMarkdownLink;
+use wsydney76\extras\elements\actions\CopyReferenceLinkTag;
 use wsydney76\extras\elements\conditions\AllTypesConditionRule;
 use wsydney76\extras\elements\conditions\HasDraftsConditionRule;
 use wsydney76\extras\models\Settings;
-use wsydney76\extras\services\CompareService;
 use wsydney76\extras\services\DraftsHelper;
 use wsydney76\extras\services\Elementmap;
 use wsydney76\extras\services\ElementmapRenderer;
@@ -32,8 +29,6 @@ use wsydney76\extras\variables\ExtrasVariable;
 use wsydney76\extras\web\assets\cpassets\CustomCpAsset;
 use wsydney76\extras\web\assets\sidebarvisibility\SidebarVisibilityAsset;
 use wsydney76\extras\widgets\MyProvisionsalDraftsWidget;
-use function setlocale;
-use const LC_COLLATE;
 
 /**
  * Extras plugin
@@ -73,7 +68,17 @@ class ExtrasPlugin extends Plugin
             $this->initOwnerPath();
             $this->initWidgets();
             $this->initDraftHelpers();
-            $this->enableCollectionMakros();
+            $this->initCollectionMakros();
+
+            Event::on(
+                Entry::class,
+                Element::EVENT_REGISTER_ACTIONS,
+                function(RegisterElementActionsEvent $event) {
+                    $event->actions[] = CopyMarkdownLink::class;
+                    $event->actions[] = CopyReferenceLinkTag::class;
+                }
+            );
+
         });
     }
 
@@ -220,17 +225,9 @@ class ExtrasPlugin extends Plugin
         }
     }
 
-    protected function enableCollectionMakros()
+    protected function initCollectionMakros()
     {
         if ($this->getSettings()->enableCollectionMakros) {
-            Collection::macro('sortByLocale', function(string $key, bool $descending = false): Collection {
-                $oldLocale = setlocale(LC_COLLATE, 0);
-                setlocale(LC_COLLATE, str_replace('-', '_', Craft::$app->language));
-                $sorted = $this->sortBy($key, SORT_LOCALE_STRING, $descending);
-                setlocale(LC_COLLATE, $oldLocale);
-                return $sorted;
-            });
-
             Collection::macro('addToCollection', function(string $key, mixed $value) {
                 if ($this->has($key)) {
                     /** @phpstan-ignore-next-line */

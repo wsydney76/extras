@@ -11,14 +11,14 @@
     label: 'Enable Sidebar Visibility'|t('_extras'),
     name: 'enableSidebarVisibility',
     on: settings.enableSidebarVisibility,
-    instructions: 'Make heading in element indexes collabsible'|t('_extras')
+    onLabel: 'Make heading in element indexes collabsible'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
     label: 'Enable Elementmap'|t('_extras'),
     name: 'enableElementmap',
     on: settings.enableElementmap,
-    instructions: 'Show relationships'|t('_extras')
+    onLabel: 'Show relationships'|t('_extras')
 }) }}
 
 <div style="margin-left: 48px">
@@ -33,42 +33,49 @@
 label: 'Enable Condition Rules'|t('_extras'),
 name: 'enableConditionRules',
 on: settings.enableConditionRules,
-instructions: 'Enable Has Drafts, All Types condition rules'|t('_extras')
+onLabel: 'Enable Has Drafts, All Types condition rules'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
     label: 'Enable Owner Path functionality'|t('_extras'),
     name: 'enableOwnerPath',
     on: settings.enableOwnerPath,
-    instructions: 'Enable getOwnerPath() method, Owner Path entries index column'|t('_extras')
+    onLabel: 'Enable getOwnerPath() method, Owner Path entries index column'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
     label: 'Enable Extras Variable'|t('_extras'),
     name: 'enableExtrasVariable',
     on: settings.enableExtrasVariable,
-    instructions: 'Enable craft._extras variable'|t('_extras')
+    onLabel: 'Enable craft._extras variable'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
     label: 'Enable dashboard widgets'|t('_extras'),
     name: 'enableWidgets',
     on: settings.enableWidgets,
-    instructions: 'Enable dashboard widgets.'|t('_extras')
+    onLabel: 'Enable dashboard widgets.'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
     label: 'Enable draft helpers'|t('_extras'),
     name: 'enableDraftHelpers',
     on: settings.enableDraftHelpers,
-    instructions: 'Enable draft helpers like hints about existing drafts and compare feature.'|t('_extras')
+    onLabel: 'Enable draft helpers like hints about existing drafts and compare feature.'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
     label: 'Enable Collection Makros'|t('_extras'),
     name: 'enableCollectionMakros',
     on: settings.enableCollectionMakros,
-    instructions: 'Enable Laravel collection makros like sortByLocale'|t('_extras')
+    onLabel: 'Enable Laravel collection makros like sortByLocale'|t('_extras')
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Enable Element Actions'|t('_extras'),
+    name: 'enableElementActions',
+    on: settings.enableElementActions,
+    onLabel: 'Enable element actions like Copy reference tag for entries'|t('_extras')
 }) }}
 
 <hr>
@@ -79,14 +86,14 @@ instructions: 'Enable Has Drafts, All Types condition rules'|t('_extras')
 label: 'Enable CP Assets'|t('_extras'),
 name: 'enableCpAssets',
 on: settings.enableCpAssets,
-instructions: 'Enable custom CSS for the Control Panel'|t('_extras')
+onLabel: 'Enable custom CSS for the Control Panel'|t('_extras')
 }) }}
 
 {{ forms.textField({
     label: 'Body Font Size'|t('_extras'),
     name: 'bodyFontSize',
     value: settings.bodyFontSize,
-    instructions: 'CSS value for general font size'|t('_extras'),
+    onLabel: 'CSS value for general font size'|t('_extras'),
     tip: 'User specific setting can be enabled by creating a custom plaintext user field with the handle extrasBodyFontSize'|t('_extras')
 }) }}
 
@@ -105,7 +112,7 @@ instructions: 'Enable custom CSS for the Control Panel'|t('_extras')
 
 {{ codeEditor.textareaField({
     label: "Additional CSS"|t,
-    instructions: "Enter any additional CSS here."|t,
+    onLabel: "Enter any additional CSS here."|t,
     id: 'customCss',
     name: 'customCss',
     value: settings.customCss,
@@ -126,7 +133,7 @@ instructions: 'Enable custom CSS for the Control Panel'|t('_extras')
         {label: 'JsonHtml', value: 'JsonHtml'},
         {label: 'SideBySide', value: 'SideBySide'}
     ],
-    instructions: 'HTML Renderer Class Name'|t('_extras')
+    onLabel: 'HTML Renderer Class Name'|t('_extras')
 }) }}
 
 {{ forms.textField({
@@ -135,21 +142,21 @@ instructions: 'Enable custom CSS for the Control Panel'|t('_extras')
     name: 'diffContext',
     value: settings.diffContext,
     min: 1,
-    instructions: 'Show how many neighbor lines'|t('_extras')
+    onLabel: 'Show how many neighbor lines'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
     label: 'Ignore Case'|t('_extras'),
     name: 'diffIgnoreCase',
     on: settings.diffIgnoreCase,
-    instructions: 'Ignore case difference'|t('_extras')
+    onLabel: 'Ignore case difference'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
     label: 'Ignore White space'|t('_extras'),
     name: 'diffIgnoreWhitespace',
     on: settings.diffIgnoreWhitespace,
-    instructions: 'Ignore whitespace difference'|t('_extras')
+    onLabel: 'Ignore whitespace difference'|t('_extras')
 }) }}
 
 {{ forms.selectField({
@@ -162,28 +169,28 @@ instructions: 'Enable custom CSS for the Control Panel'|t('_extras')
         {label: 'Line'|t('_extras'), value: 'line'},
         {label: 'Character'|t('_extras'), value: 'char'}
     ],
-    instructions: 'How detailed the rendered HTML in-line diff is'|t('_extras')
+    onLabel: 'How detailed the rendered HTML in-line diff is'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
     label: 'Show Line Numbers'|t('_extras'),
     name: 'diffLineNumbers',
     on: settings.diffLineNumbers,
-    instructions: 'Show line numbers in HTML renderers'|t('_extras')
+    onLabel: 'Show line numbers in HTML renderers'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
     label: 'Separate Blocks'|t('_extras'),
     name: 'diffSeparateBlock',
     on: settings.diffSeparateBlock,
-    instructions: 'Show a separator between different diff hunks in HTML renderers'|t('_extras')
+    onLabel: 'Show a separator between different diff hunks in HTML renderers'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
     label: 'Show Header'|t('_extras'),
     name: 'diffShowHeader',
     on: settings.diffShowHeader,
-    instructions: 'Show the (table) header'|t('_extras')
+    onLabel: 'Show the (table) header'|t('_extras')
 }) }}
 
 {{ forms.textField({
@@ -194,5 +201,5 @@ instructions: 'Enable custom CSS for the Control Panel'|t('_extras')
     min: 0,
     max: 1,
     step: 0.1,
-    instructions: 'this option is currently only for the Combined renderer. It determines whether a replace-type block should be merged or not depending on the content changed ratio, which values between 0 and 1'|t('_extras')
+    onLabel: 'This option is currently only for the Combined renderer. It determines whether a replace-type block should be merged or not depending on the content changed ratio, which values between 0 and 1'|t('_extras')
 }) }}

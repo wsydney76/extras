@@ -5,6 +5,8 @@ namespace wsydney76\extras\behaviors;
 use Craft;
 use craft\base\ElementInterface;
 use craft\base\Field;
+use craft\db\Query;
+use craft\db\Table;
 use craft\elements\Entry;
 use craft\fields\Matrix;
 use Illuminate\Support\Collection;
@@ -149,5 +151,16 @@ class EntryBehavior extends Behavior
         }
 
         return $baseKey . ':' . $this->getOwnerPath()->first()->section->uid;
+    }
+
+    public function getRawContent()
+    {
+        /** @var Entry $entry */
+        $entry = $this->owner;
+        return (new Query())
+            ->from(Table::ELEMENTS_SITES)
+            ->select('content')
+            ->where(['elementId' => $entry->id, 'siteId' => $entry->siteId])
+            ->scalar();
     }
 }
