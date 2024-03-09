@@ -24,6 +24,8 @@ class Settings extends Model
     public bool $enableCollectionMakros = false;
     public bool $enableElementActions = false;
 
+    public bool $enableTwigExtension = false;
+
     public string $diffRendererName = 'Combined';
     public int $diffContext = 1;
     public bool $diffIgnoreCase = false;

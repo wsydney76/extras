@@ -4,7 +4,6 @@ namespace wsydney76\extras;
 
 use Craft;
 use craft\base\conditions\BaseCondition;
-use craft\base\Element;
 use craft\base\Event;
 use craft\base\Model;
 use craft\base\Plugin;
@@ -22,12 +21,14 @@ use wsydney76\extras\elements\actions\CopyReferenceLinkTag;
 use wsydney76\extras\elements\conditions\AllTypesConditionRule;
 use wsydney76\extras\elements\conditions\HasDraftsConditionRule;
 use wsydney76\extras\models\Settings;
+use wsydney76\extras\services\ContentService;
 use wsydney76\extras\services\DraftsHelper;
 use wsydney76\extras\services\Elementmap;
 use wsydney76\extras\services\ElementmapRenderer;
 use wsydney76\extras\variables\ExtrasVariable;
 use wsydney76\extras\web\assets\cpassets\CustomCpAsset;
 use wsydney76\extras\web\assets\sidebarvisibility\SidebarVisibilityAsset;
+use wsydney76\extras\web\twig\ExtrasExtension;
 use wsydney76\extras\widgets\MyProvisionsalDraftsWidget;
 
 /**
@@ -69,17 +70,12 @@ class ExtrasPlugin extends Plugin
             $this->initWidgets();
             $this->initDraftHelpers();
             $this->initCollectionMakros();
-
-            Event::on(
-                Entry::class,
-                Element::EVENT_REGISTER_ACTIONS,
-                function(RegisterElementActionsEvent $event) {
-                    $event->actions[] = CopyMarkdownLink::class;
-                    $event->actions[] = CopyReferenceLinkTag::class;
-                }
-            );
-
+            $this->initElementActions();
+            $this->initTwigExtension();
         });
+
+
+
     }
 
     protected function createSettingsModel(): ?Model
@@ -106,7 +102,7 @@ class ExtrasPlugin extends Plugin
         }
     }
 
-    protected function initConditionRules()
+    protected function initConditionRules(): void
     {
         if (Craft::$app->request->isCpRequest && $this->getSettings()->enableConditionRules) {
             Event::on(BaseCondition::class,
@@ -117,14 +113,14 @@ class ExtrasPlugin extends Plugin
         }
     }
 
-    protected function initElementmap()
+    protected function initElementmap(): void
     {
         if (Craft::$app->request->isCpRequest && $this->getSettings()->enableElementmap) {
             $this->elementmap->initElementMap();
         }
     }
 
-    protected function initCpAssets()
+    protected function initCpAssets(): void
     {
         if (Craft::$app->request->isCpRequest) {
 
@@ -150,7 +146,7 @@ class ExtrasPlugin extends Plugin
         }
     }
 
-    protected function initOwnerPath()
+    protected function initOwnerPath(): void
     {
         $this->initEntryBehavior();
         Event::on(
@@ -173,7 +169,7 @@ class ExtrasPlugin extends Plugin
         );
     }
 
-    private function initEntryBehavior()
+    private function initEntryBehavior(): void
     {
         Event::on(
             Entry::class,
@@ -185,7 +181,7 @@ class ExtrasPlugin extends Plugin
             });
     }
 
-    protected function initExtrasVariable()
+    protected function initExtrasVariable(): void
     {
         if ($this->getSettings()->enableExtrasVariable) {
             Event::on(
@@ -202,7 +198,7 @@ class ExtrasPlugin extends Plugin
         }
     }
 
-    protected function initWidgets()
+    protected function initWidgets(): void
     {
         if (Craft::$app->request->isCpRequest && $this->getSettings()->enableWidgets) {
 
@@ -216,7 +212,7 @@ class ExtrasPlugin extends Plugin
         }
     }
 
-    private function initDraftHelpers()
+    private function initDraftHelpers(): void
     {
         $this->draftsHelper->createPermissions();
         if (Craft::$app->request->isCpRequest && $this->getSettings()->enableDraftHelpers) {
@@ -225,7 +221,7 @@ class ExtrasPlugin extends Plugin
         }
     }
 
-    protected function initCollectionMakros()
+    protected function initCollectionMakros(): void
     {
         if ($this->getSettings()->enableCollectionMakros) {
             Collection::macro('addToCollection', function(string $key, mixed $value) {
@@ -238,6 +234,28 @@ class ExtrasPlugin extends Plugin
                 }
                 return $this;
             });
+        }
+    }
+
+    protected function initElementActions(): void
+    {
+        if (Craft::$app->request->isCpRequest && $this->getSettings()->enableElementActions) {
+            Event::on(
+                Entry::class,
+                Entry::EVENT_REGISTER_ACTIONS,
+                function(RegisterElementActionsEvent $event) {
+                    $event->actions[] = CopyMarkdownLink::class;
+                    $event->actions[] = CopyReferenceLinkTag::class;
+                }
+            );
+        }
+
+    }
+
+    private function initTwigExtension()
+    {
+        if ($this->getSettings()->enableTwigExtension) {
+            Craft::$app->view->registerTwigExtension(new ExtrasExtension());
         }
     }
 

@@ -51,6 +51,13 @@ onLabel: 'Enable Has Drafts, All Types condition rules'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
+    label: 'Enable Twig Extension'|t('_extras'),
+    name: 'enableTwigExtension',
+    on: settings.enableTwigExtension,
+    onLabel: 'Enable additional filters and functions for Twig'|t('_extras')
+}) }}
+
+{{ forms.lightswitchField({
     label: 'Enable dashboard widgets'|t('_extras'),
     name: 'enableWidgets',
     on: settings.enableWidgets,
@@ -93,7 +100,7 @@ onLabel: 'Enable custom CSS for the Control Panel'|t('_extras')
     label: 'Body Font Size'|t('_extras'),
     name: 'bodyFontSize',
     value: settings.bodyFontSize,
-    onLabel: 'CSS value for general font size'|t('_extras'),
+    instructions: 'CSS value for general font size'|t('_extras'),
     tip: 'User specific setting can be enabled by creating a custom plaintext user field with the handle extrasBodyFontSize'|t('_extras')
 }) }}
 
@@ -112,7 +119,7 @@ onLabel: 'Enable custom CSS for the Control Panel'|t('_extras')
 
 {{ codeEditor.textareaField({
     label: "Additional CSS"|t,
-    onLabel: "Enter any additional CSS here."|t,
+    instructions: "Enter any additional CSS here."|t,
     id: 'customCss',
     name: 'customCss',
     value: settings.customCss,
@@ -133,7 +140,7 @@ onLabel: 'Enable custom CSS for the Control Panel'|t('_extras')
         {label: 'JsonHtml', value: 'JsonHtml'},
         {label: 'SideBySide', value: 'SideBySide'}
     ],
-    onLabel: 'HTML Renderer Class Name'|t('_extras')
+    instructions: 'HTML Renderer Class Name'|t('_extras')
 }) }}
 
 {{ forms.textField({
@@ -142,7 +149,7 @@ onLabel: 'Enable custom CSS for the Control Panel'|t('_extras')
     name: 'diffContext',
     value: settings.diffContext,
     min: 1,
-    onLabel: 'Show how many neighbor lines'|t('_extras')
+    instructions: 'Show how many neighbor lines'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
@@ -169,7 +176,7 @@ onLabel: 'Enable custom CSS for the Control Panel'|t('_extras')
         {label: 'Line'|t('_extras'), value: 'line'},
         {label: 'Character'|t('_extras'), value: 'char'}
     ],
-    onLabel: 'How detailed the rendered HTML in-line diff is'|t('_extras')
+    instructions: 'How detailed the rendered HTML in-line diff is'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
@@ -201,5 +208,5 @@ onLabel: 'Enable custom CSS for the Control Panel'|t('_extras')
     min: 0,
     max: 1,
     step: 0.1,
-    onLabel: 'This option is currently only for the Combined renderer. It determines whether a replace-type block should be merged or not depending on the content changed ratio, which values between 0 and 1'|t('_extras')
+    instructions: 'This option is currently only for the Combined renderer. It determines whether a replace-type block should be merged or not depending on the content changed ratio, which values between 0 and 1'|t('_extras')
 }) }}
