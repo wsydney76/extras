@@ -1,6 +1,6 @@
 <?php
 
-namespace wsydney76\extras;
+namespace wsydney76\extras\helpers;
 
 use Craft;
 use craft\base\Component;

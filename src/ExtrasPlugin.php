@@ -72,10 +72,8 @@ class ExtrasPlugin extends Plugin
             $this->initCollectionMakros();
             $this->initElementActions();
             $this->initTwigExtension();
+            $this->initRestoreDismissedTips();
         });
-
-
-
     }
 
     protected function createSettingsModel(): ?Model
@@ -95,14 +93,14 @@ class ExtrasPlugin extends Plugin
     /**
      * @return void
      */
-    protected function initSidebarVisibility(): void
+    private function initSidebarVisibility(): void
     {
         if (Craft::$app->request->isCpRequest && $this->getSettings()->enableSidebarVisibility) {
             $this->view->registerAssetBundle(SidebarVisibilityAsset::class);
         }
     }
 
-    protected function initConditionRules(): void
+    private function initConditionRules(): void
     {
         if (Craft::$app->request->isCpRequest && $this->getSettings()->enableConditionRules) {
             Event::on(BaseCondition::class,
@@ -113,14 +111,14 @@ class ExtrasPlugin extends Plugin
         }
     }
 
-    protected function initElementmap(): void
+    private function initElementmap(): void
     {
         if (Craft::$app->request->isCpRequest && $this->getSettings()->enableElementmap) {
             $this->elementmap->initElementMap();
         }
     }
 
-    protected function initCpAssets(): void
+    private function initCpAssets(): void
     {
         if (Craft::$app->request->isCpRequest) {
 
@@ -146,7 +144,7 @@ class ExtrasPlugin extends Plugin
         }
     }
 
-    protected function initOwnerPath(): void
+    private function initOwnerPath(): void
     {
         $this->initEntryBehavior();
         Event::on(
@@ -181,7 +179,7 @@ class ExtrasPlugin extends Plugin
             });
     }
 
-    protected function initExtrasVariable(): void
+    private function initExtrasVariable(): void
     {
         if ($this->getSettings()->enableExtrasVariable) {
             Event::on(
@@ -198,7 +196,7 @@ class ExtrasPlugin extends Plugin
         }
     }
 
-    protected function initWidgets(): void
+    private function initWidgets(): void
     {
         if (Craft::$app->request->isCpRequest && $this->getSettings()->enableWidgets) {
 
@@ -221,7 +219,7 @@ class ExtrasPlugin extends Plugin
         }
     }
 
-    protected function initCollectionMakros(): void
+    private function initCollectionMakros(): void
     {
         if ($this->getSettings()->enableCollectionMakros) {
             Collection::macro('addToCollection', function(string $key, mixed $value) {
@@ -237,7 +235,7 @@ class ExtrasPlugin extends Plugin
         }
     }
 
-    protected function initElementActions(): void
+    private function initElementActions(): void
     {
         if (Craft::$app->request->isCpRequest && $this->getSettings()->enableElementActions) {
             Event::on(
@@ -249,13 +247,21 @@ class ExtrasPlugin extends Plugin
                 }
             );
         }
-
     }
 
     private function initTwigExtension()
     {
         if ($this->getSettings()->enableTwigExtension) {
             Craft::$app->view->registerTwigExtension(new ExtrasExtension());
+        }
+    }
+
+    private function initRestoreDismissedTips()
+    {
+        if (Craft::$app->request->isCpRequest && $this->getSettings()->enableRestoreDismissedTips) {
+            Craft::$app->view->hook('cp.users.edit.prefs', function(array &$context) {
+                return Craft::$app->view->renderTemplate('_extras/cp-dismissed-tips.twig');
+            });
         }
     }
 

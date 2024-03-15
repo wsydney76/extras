@@ -144,5 +144,9 @@ body.ltr #notifications {
     background-color: #fbfbff;
 }*/
 
-
-
+.icons a[href$="settings/globals"],
+.icons a[href$="settings/categories"],
+.icons a[href$="settings/tags"]
+{
+    display: none;
+}

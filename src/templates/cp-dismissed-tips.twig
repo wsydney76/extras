@@ -1,0 +1,36 @@
+{# Translations used in JavaScript function #}
+{% do view.registerTranslations('_extras', [
+    'There are currently no dismissed tips/warnings.',
+    'All tips/warnings are visible again.',
+    'Restore dismissed tips/warnings?'
+]) %}
+
+<hr>
+<h2>{{ 'Tips/Warnings'|t('_extras') }}</h2>
+
+<div class="field">
+    <button type="button" class="btn submit" onclick="extras_restoreDismissedTips()">
+        {{ 'Restore dismissed tips/warnings'|t('_extras') }}
+    </button>
+</div>
+
+{% js %}
+
+function extras_restoreDismissedTips() {
+
+    const dismissedTips = Craft.getLocalStorage('dismissedTips');
+
+    if (dismissedTips === undefined || dismissedTips.length === 0) {
+        Craft.cp.displayError(Craft.t('_extras', 'There are currently no dismissed tips/warnings.'))
+        return
+    }
+
+    if (!confirm(Craft.t('_extras', 'Restore dismissed tips/warnings?'))) {
+        return
+    }
+
+    Craft.removeLocalStorage('dismissedTips')
+
+    Craft.cp.displayNotice(Craft.t('_extras', 'All tips/warnings are visible again.'))
+}
+{% endjs %}

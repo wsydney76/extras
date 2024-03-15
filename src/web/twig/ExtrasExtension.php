@@ -2,13 +2,9 @@
 
 namespace wsydney76\extras\web\twig;
 
-use Craft;
 use Twig\Extension\AbstractExtension;
-use Twig\TwigFilter;
 use Twig\TwigFunction;
-use Twig\TwigTest;
-use wsydney76\extras\ExtrasHelper;
-use wsydney76\extras\ExtrasPlugin;
+use wsydney76\extras\helpers\ExtrasHelper;
 
 /**
  * Twig extension

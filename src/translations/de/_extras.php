@@ -112,5 +112,18 @@ return [
     'Enable Owner Path functionality' => 'Enable Owner Path functionality',
     'last updated' => 'last updated',
     'How detailed the rendered HTML in-line diff is' => 'How detailed the rendered HTML in-line diff is',
-    'Enable getOwnerPath() method, Owner Path entries index column' => 'Enable getOwnerPath() method, Owner Path entries index column'
+    'Enable getOwnerPath() method, Owner Path entries index column' => 'Enable getOwnerPath() method, Owner Path entries index column',
+    'this option is currently only for the Combined renderer.
+            it determines whether a replace-type block should be merged or not
+            depending on the content changed ratio, which values between 0 and 1' => 'this option is currently only for the Combined renderer.
+            it determines whether a replace-type block should be merged or not
+            depending on the content changed ratio, which values between 0 and 1',
+    'this option is currently only for the Combined renderer. It determines whether a replace-type block should be merged or not depending on the content changed ratio, which values between 0 and 1' => 'this option is currently only for the Combined renderer. It determines whether a replace-type block should be merged or not depending on the content changed ratio, which values between 0 and 1',
+    'Enable Twig Extension' => 'Enable Twig Extension',
+    'Enable additional filters and functions for Twig' => 'Enable additional filters and functions for Twig',
+    'Restore dismissed tips/warnings?' => 'Ausgeblendete Tipps/Warnungen wiederherstellen?',
+    'All tips/warnings are visible again.' => 'Alle Tipps/Warnungen sind wieder sichtbar.',
+    'Restore dismissed tips/warnings' => 'Ausgeblendete Tipps/Warnungen wiederherstellen',
+    'There are currently no dismissed tips/warnings.' => 'Derzeit gibt es keine ausgeblendeten Tipps/Warnungen.',
+    'Tips/Warnings' => 'Tipps/Warnungen',
 ];

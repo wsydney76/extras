@@ -15,7 +15,7 @@ class Settings extends Model
     public bool $enableConditionRules= false;
     public bool $showAllSites = true;
     public bool $enableCpAssets = false;
-    public string $bodyFontSize = '15px';
+    public string $bodyFontSize = '';
     public string $customCss = '';
     public bool $enableOwnerPath = false;
     public bool $enableExtrasVariable = false;
@@ -25,6 +25,7 @@ class Settings extends Model
     public bool $enableElementActions = false;
 
     public bool $enableTwigExtension = false;
+    public bool $enableRestoreDismissedTips = false;
 
     public string $diffRendererName = 'Combined';
     public int $diffContext = 1;
