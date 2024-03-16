@@ -42,7 +42,7 @@ class MyProvisionsalDraftsWidget extends Widget
             ->all();
 
         if (empty($drafts)) {
-            return Html::tag('div', Craft::t('app', 'You don’t have any open edits.'), [
+            return Html::tag('div', Craft::t('_extras', 'You don’t have any open edits.'), [
                 'class' => ['zilch', 'small'],
             ]);
         }

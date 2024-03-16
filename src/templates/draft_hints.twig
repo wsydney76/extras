@@ -47,7 +47,7 @@
         <p>{{ '{count,plural,=1{Open draft} other{Open drafts}}'|t('_extras', {count: drafts|length}) }}:</p>
         <div class="flex flex-wrap">
             {% for draft in drafts %}
-                {#{% set canEdit = (draft.creatorId == currentUser.id or currentUser.can(draftPermission)) %}#}
+                {# {% set canEdit = (draft.creatorId == currentUser.id or currentUser.can(draftPermission)) %} #}
                 {% set canEdit = true %}
                 {% if canEdit %}
                     {{ tag('a', {
@@ -90,7 +90,8 @@
     {% if drafts %}
 
         <div class="meta warning">
-            <p>{{ '{count,plural,=1{Open provisional draft} other{Open provisional drafts}}'|t('_extras', {count: drafts|length}) }}:</p>
+            <p>{{ '{count,plural,=1{Open provisional draft} other{Open provisional drafts}}'|t('_extras', {count: drafts|length}) }}
+                :</p>
             <div class="flex flex-wrap">
                 {% for draft in drafts %}
                     {% set user = craft.users.id(draft.creatorId).one %}
@@ -103,6 +104,38 @@
                             onclick:"compare(#{ draft.draftId }, #{ draft.siteId }, #{ draft.isProvisionalDraft})"
                         }) }}
                     {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+    {% endif %}
+{% endif %}
+
+{# Show provisional drafts of nested entries --------------------------------------------------------------------- #}
+{% if currentUser.can('viewpeerprovisionaldrafts') %}
+    {% set query = craft.entries
+        .ownerId(entry.canonicalId)
+        .provisionalDrafts(true)
+        .anyStatus()
+        .site('*')
+        .unique()
+        .preferSites([entry.site.handle])
+        .orderBy('dateUpdated desc') %}
+
+    {% set drafts = query.all %}
+    {% if drafts %}
+
+        <div class="meta warning">
+            <p>{{ '{count,plural,=1{Open provisional draft of nested entry} other{Open provisional drafts of nested entries}}'|t('_extras', {count: drafts|length}) }}
+                :</p>
+            <div class="flex flex-wrap">
+                {% for draft in drafts %}
+                    {{ tag('a', {
+                        class: ['btn', 'drafts-warning'],
+                        title: draft.draftName,
+                        href: "#{ draft.cpEditUrl }",
+                        text: "#{draft.type.name}: #{draft.title}"
+                    }) }}
                 {% endfor %}
             </div>
         </div>

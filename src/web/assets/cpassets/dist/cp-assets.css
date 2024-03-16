@@ -1,4 +1,3 @@
-
 /* Increase font size */
 
 html, body {
@@ -40,8 +39,6 @@ html, body {
     --max-width: 1700px;
 }
 */
-
-
 
 
 input.text, textarea.text, .text > input, .text > textarea, table.editable textarea, .selectize-text > .selectize-control > .selectize-input {
@@ -123,6 +120,7 @@ h2 {
 #notifications .notification .notification-icon {
     color: white;
 }
+
 body.ltr #notifications {
     bottom: initial;
     top: 8px;
@@ -144,9 +142,8 @@ body.ltr #notifications {
     background-color: #fbfbff;
 }*/
 
-.icons a[href$="settings/globals"],
-.icons a[href$="settings/categories"],
-.icons a[href$="settings/tags"]
-{
+.icons a[href*="/admin/settings/globals"],
+.icons a[href*="/admin/settings/categories"],
+.icons a[href*="/admin/settings/tags"] {
     display: none;
 }
