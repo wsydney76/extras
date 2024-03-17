@@ -22,18 +22,18 @@
 }) }}
 
 <div style="margin-left: 48px">
-{{ forms.lightswitchField({
-    label: 'Show relationships to all sites'|t('_extras'),
-    name: 'showAllSites',
-    on: settings.showAllSites,
-}) }}
+    {{ forms.lightswitchField({
+        label: 'Show relationships to all sites'|t('_extras'),
+        name: 'showAllSites',
+        on: settings.showAllSites,
+    }) }}
 </div>
 
 {{ forms.lightswitchField({
-label: 'Enable Condition Rules'|t('_extras'),
-name: 'enableConditionRules',
-on: settings.enableConditionRules,
-onLabel: 'Enable Has Drafts, All Types condition rules'|t('_extras')
+    label: 'Enable Condition Rules'|t('_extras'),
+    name: 'enableConditionRules',
+    on: settings.enableConditionRules,
+    onLabel: 'Enable Has Drafts, All Types condition rules'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
@@ -86,6 +86,13 @@ onLabel: 'Enable Has Drafts, All Types condition rules'|t('_extras')
 }) }}
 
 {{ forms.lightswitchField({
+    label: 'Enable Field Layout Elements'|t('_extras'),
+    name: 'enableFieldLayoutElements',
+    on: settings.enableFieldLayoutElements,
+    onLabel: 'Enable element field layout elements like Instructions'|t('_extras')
+}) }}
+
+{{ forms.lightswitchField({
     label: 'Enable Restore dismissed tips'|t('_extras'),
     name: 'enableRestoreDismissedTips',
     on: settings.enableRestoreDismissedTips,
@@ -96,10 +103,10 @@ onLabel: 'Enable Has Drafts, All Types condition rules'|t('_extras')
 <h2 class="heading">{{ 'Assets'|t }}</h2>
 
 {{ forms.lightswitchField({
-label: 'Enable CP Assets'|t('_extras'),
-name: 'enableCpAssets',
-on: settings.enableCpAssets,
-onLabel: 'Enable custom CSS for the Control Panel'|t('_extras')
+    label: 'Enable CP Assets'|t('_extras'),
+    name: 'enableCpAssets',
+    on: settings.enableCpAssets,
+    onLabel: 'Enable custom CSS for the Control Panel'|t('_extras')
 }) }}
 
 {{ forms.textField({

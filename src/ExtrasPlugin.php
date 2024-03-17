@@ -9,9 +9,11 @@ use craft\base\Model;
 use craft\base\Plugin;
 use craft\elements\Entry;
 use craft\events\DefineBehaviorsEvent;
+use craft\events\DefineFieldLayoutElementsEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterConditionRulesEvent;
 use craft\events\RegisterElementActionsEvent;
+use craft\models\FieldLayout;
 use craft\services\Dashboard;
 use craft\web\twig\variables\CraftVariable;
 use Illuminate\Support\Collection;
@@ -20,6 +22,7 @@ use wsydney76\extras\elements\actions\CopyMarkdownLink;
 use wsydney76\extras\elements\actions\CopyReferenceLinkTag;
 use wsydney76\extras\elements\conditions\AllTypesConditionRule;
 use wsydney76\extras\elements\conditions\HasDraftsConditionRule;
+use wsydney76\extras\fieldlayoutelements\Instruction;
 use wsydney76\extras\models\Settings;
 use wsydney76\extras\services\ContentService;
 use wsydney76\extras\services\DraftsHelper;
@@ -62,17 +65,22 @@ class ExtrasPlugin extends Plugin
         // Defer most setup tasks until Craft is fully initialized
         Craft::$app->onInit(function() {
             $this->initExtrasVariable();
-            $this->initSidebarVisibility();
-            $this->initConditionRules();
-            $this->initElementMap();
             $this->initCpAssets();
             $this->initOwnerPath();
-            $this->initWidgets();
-            $this->initDraftHelpers();
+            $this->draftsHelper->createPermissions();
             $this->initCollectionMakros();
-            $this->initElementActions();
             $this->initTwigExtension();
-            $this->initRestoreDismissedTips();
+
+            if (Craft::$app->request->isCpRequest) {
+                $this->initSidebarVisibility();
+                $this->initConditionRules();
+                $this->initElementMap();
+                $this->initWidgets();
+                $this->initDraftHelpers();
+                $this->initElementActions();
+                $this->initRestoreDismissedTips();
+                $this->initFieldLayoutElements();
+            }
         });
     }
 
@@ -95,14 +103,14 @@ class ExtrasPlugin extends Plugin
      */
     private function initSidebarVisibility(): void
     {
-        if (Craft::$app->request->isCpRequest && $this->getSettings()->enableSidebarVisibility) {
+        if ($this->getSettings()->enableSidebarVisibility) {
             $this->view->registerAssetBundle(SidebarVisibilityAsset::class);
         }
     }
 
     private function initConditionRules(): void
     {
-        if (Craft::$app->request->isCpRequest && $this->getSettings()->enableConditionRules) {
+        if ($this->getSettings()->enableConditionRules) {
             Event::on(BaseCondition::class,
                 BaseCondition::EVENT_REGISTER_CONDITION_RULES, function(RegisterConditionRulesEvent $event) {
                     $event->conditionRules[] = AllTypesConditionRule::class;
@@ -113,7 +121,7 @@ class ExtrasPlugin extends Plugin
 
     private function initElementmap(): void
     {
-        if (Craft::$app->request->isCpRequest && $this->getSettings()->enableElementmap) {
+        if ($this->getSettings()->enableElementmap) {
             $this->elementmap->initElementMap();
         }
     }
@@ -198,7 +206,7 @@ class ExtrasPlugin extends Plugin
 
     private function initWidgets(): void
     {
-        if (Craft::$app->request->isCpRequest && $this->getSettings()->enableWidgets) {
+        if ($this->getSettings()->enableWidgets) {
 
             $this->initEntryBehavior();
 
@@ -212,8 +220,7 @@ class ExtrasPlugin extends Plugin
 
     private function initDraftHelpers(): void
     {
-        $this->draftsHelper->createPermissions();
-        if (Craft::$app->request->isCpRequest && $this->getSettings()->enableDraftHelpers) {
+        if ($this->getSettings()->enableDraftHelpers) {
             $this->initEntryBehavior();
             $this->draftsHelper->initDraftsHelper();
         }
@@ -237,7 +244,7 @@ class ExtrasPlugin extends Plugin
 
     private function initElementActions(): void
     {
-        if (Craft::$app->request->isCpRequest && $this->getSettings()->enableElementActions) {
+        if ($this->getSettings()->enableElementActions) {
             Event::on(
                 Entry::class,
                 Entry::EVENT_REGISTER_ACTIONS,
@@ -258,12 +265,24 @@ class ExtrasPlugin extends Plugin
 
     private function initRestoreDismissedTips()
     {
-        if (Craft::$app->request->isCpRequest && $this->getSettings()->enableRestoreDismissedTips) {
+        if ($this->getSettings()->enableRestoreDismissedTips) {
             Craft::$app->view->hook('cp.users.edit.prefs', function(array &$context) {
                 return Craft::$app->view->renderTemplate('_extras/cp-dismissed-tips.twig');
             });
         }
     }
 
-
+    private function initFieldLayoutElements()
+    {
+        if ($this->getSettings()->enableFieldLayoutElements) {
+            Event::on(
+                FieldLayout::class,
+                FieldLayout::EVENT_DEFINE_UI_ELEMENTS,
+                function(DefineFieldLayoutElementsEvent $event) {
+                    $event->elements[] = new Instruction();
+                }
+            );
+        }
+    }
+    
 }

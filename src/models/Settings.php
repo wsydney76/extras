@@ -2,7 +2,6 @@
 
 namespace wsydney76\extras\models;
 
-use Craft;
 use craft\base\Model;
 
 /**
@@ -12,7 +11,7 @@ class Settings extends Model
 {
     public bool $enableSidebarVisibility = false;
     public bool $enableElementmap = false;
-    public bool $enableConditionRules= false;
+    public bool $enableConditionRules = false;
     public bool $showAllSites = true;
     public bool $enableCpAssets = false;
     public string $bodyFontSize = '';
@@ -23,6 +22,7 @@ class Settings extends Model
     public bool $enableDraftHelpers = false;
     public bool $enableCollectionMakros = false;
     public bool $enableElementActions = false;
+    public bool $enableFieldLayoutElements = false;
 
     public bool $enableTwigExtension = false;
     public bool $enableRestoreDismissedTips = false;

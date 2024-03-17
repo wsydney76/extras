@@ -129,5 +129,8 @@ return [
     'Enable Restore dismissed tips' => 'Enable Restore dismissed tips',
     'Enable the possibility to restore dismissed tips/warnings on users edit preferences page.' => 'Enable the possibility to restore dismissed tips/warnings on users edit preferences page.',
     '{count,plural,=1{Open provisional draft of nested entry} other{Open provisional drafts of nested entries}}' => '{count,plural,=1{Open provisional draft of nested entry} other{Open provisional drafts of nested entries}}',
-    'You don’t have any open edits.' => 'Sie haben keine offenen Bearbeitungen.'
+    'You don’t have any open edits.' => 'Sie haben keine offenen Bearbeitungen.',
+    'Enable Field Layout Elements' => 'Enable Field Layout Elements',
+    'Enable element field layout elements like Instructions' => 'Enable element field layout elements like Instructions',
+    'Instruction' => 'Instruction'
 ];
