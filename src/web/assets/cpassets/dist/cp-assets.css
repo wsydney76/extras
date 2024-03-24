@@ -4,6 +4,11 @@ html, body {
     font-size: 15px;
 }
 
+/* Fix flickering when spinner shows and title is empty */
+#page-title {
+    height: 34px;
+}
+
 .titlebar {
     --gray-050: var(--gray-100);
     --red-050: var(--red-100);
@@ -134,7 +139,7 @@ body.ltr #notifications {
 }
 
 #notifications [data-type="success"] .notification-details {
-    background-color: #f0fdf4;
+    background-color: #16A34A;
     padding: 4px;
 }
 
