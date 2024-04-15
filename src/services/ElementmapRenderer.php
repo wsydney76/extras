@@ -516,6 +516,7 @@ class ElementmapRenderer extends Component
         $criteria->provisionalDrafts(null);
         $criteria->drafts(null);
         $criteria->status(null);
+        $criteria->revisions(false);
         $elements = $criteria->all();
 
         $results = [];
@@ -552,6 +553,8 @@ class ElementmapRenderer extends Component
                 }
             } elseif ($element->getIsDraft()) {
                 $text .= ", " . Craft::t('_extras', 'Draft');
+            } elseif ($element->getIsRevision()) {
+                $text .= ", " . Craft::t('_extras', 'Revision');
             }
 
             $results[] = [
@@ -578,6 +581,10 @@ class ElementmapRenderer extends Component
             return null;
         }
 
+        if ($entry->getIsRevision()) {
+            return null;
+        }
+
         $owner = $entry->owner;
         if (!$owner) {
             return null;
@@ -585,6 +592,7 @@ class ElementmapRenderer extends Component
         if ($owner && $owner->section) {
             return $owner;
         }
+
         if ($owner->owner) {
             return $this->getTopLevelEntry($owner, ++$level);
         }
