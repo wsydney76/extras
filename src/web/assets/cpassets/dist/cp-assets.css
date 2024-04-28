@@ -152,3 +152,8 @@ body.ltr #notifications {
 .icons a[href*="/admin/settings/tags"] {
     display: none;
 }
+
+/* Fix error in Craft 5.0.5 */
+ul.elements.chips.inline-chips .thumb img {
+    object-fit: contain;
+}
