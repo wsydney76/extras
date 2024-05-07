@@ -698,9 +698,11 @@ class ElementmapRenderer extends Component
             $volumeName = $element->volume->name;
             $results[] = [
                 'id' => $element->id,
-                'image' => $element->getUrl(['width' => 32, 'height' => 32]),
+                'kind' => $element->kind,
+                'image' => $element->kind === 'image' ? $element->getUrl(['width' => 32, 'height' => 32]) : '',
                 'title' => $element->title . ' (' . $volumeName . ')',
                 'url' => $element->cpEditUrl,
+                'fileUrl' => $element->url,
                 'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)] . $volumeName
             ];
         }
