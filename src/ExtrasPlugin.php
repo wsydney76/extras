@@ -22,6 +22,7 @@ use wsydney76\extras\elements\actions\CopyMarkdownLink;
 use wsydney76\extras\elements\actions\CopyReferenceLinkTag;
 use wsydney76\extras\elements\conditions\AllTypesConditionRule;
 use wsydney76\extras\elements\conditions\HasDraftsConditionRule;
+use wsydney76\extras\elements\conditions\IsEditedConditionRule;
 use wsydney76\extras\fieldlayoutelements\Instruction;
 use wsydney76\extras\models\Settings;
 use wsydney76\extras\services\ContentService;
@@ -115,6 +116,7 @@ class ExtrasPlugin extends Plugin
                 BaseCondition::EVENT_REGISTER_CONDITION_RULES, function(RegisterConditionRulesEvent $event) {
                     $event->conditionRules[] = AllTypesConditionRule::class;
                     $event->conditionRules[] = HasDraftsConditionRule::class;
+                    $event->conditionRules[] = IsEditedConditionRule::class;
                 });
         }
     }
