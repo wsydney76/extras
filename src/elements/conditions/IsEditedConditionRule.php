@@ -34,11 +34,11 @@ class IsEditedConditionRule extends BaseLightswitchConditionRule implements Elem
     public function modifyQuery(ElementQueryInterface $query): void
     {
         if ($this->value) {
-            // $userId = Craft::$app->user->identity->id;
+            $userId = Craft::$app->user->identity->id;
             $draftsTable = Table::DRAFTS;
             /* @phpstan-ignore-next-line */
-            // $query->andWhere("EXISTS (SELECT * from $draftsTable WHERE elements.id = $draftsTable.canonicalId AND $draftsTable.creatorId = $userId and $draftsTable.provisional = 1)");
-            $query->andWhere("EXISTS (SELECT * from $draftsTable WHERE elements.id = $draftsTable.canonicalId AND $draftsTable.provisional = 1)");
+            $query->andWhere("EXISTS (SELECT * from $draftsTable WHERE elements.id = $draftsTable.canonicalId AND $draftsTable.creatorId = $userId and $draftsTable.provisional = 1)");
+            // $query->andWhere("EXISTS (SELECT * from $draftsTable WHERE elements.id = $draftsTable.canonicalId AND $draftsTable.provisional = 1)");
         }
     }
 
@@ -47,9 +47,9 @@ class IsEditedConditionRule extends BaseLightswitchConditionRule implements Elem
      */
     public function matchElement(ElementInterface $element): bool
     {
-        // $user = Craft::$app->user->identity;
+        $user = Craft::$app->user->identity;
         /* @phpstan-ignore-next-line */
-        // return $this->value === false ? true : Entry::find()->provisionalDrafts()->draftOf($element->canonicalId)->draftCreator($user)->exists();
-        return $this->value === false ? true : Entry::find()->provisionalDrafts()->draftOf($element->canonicalId)->exists();
+        return $this->value === false ? true : Entry::find()->provisionalDrafts()->draftOf($element->canonicalId)->draftCreator($user)->exists();
+        // return $this->value === false ? true : Entry::find()->provisionalDrafts()->draftOf($element->canonicalId)->exists();
     }
 }
