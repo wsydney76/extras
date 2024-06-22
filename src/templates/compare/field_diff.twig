@@ -9,8 +9,12 @@
 
             {% set template = className(field)|replace({'\\':'_'}) %}
 
+            {# TODO: Avoid hard coding extra paths for compagnion plugins/modules
+                    Allow plugins to register their own path via event
+            #}
             {% include [
-                "customwork/compare/fields/#{template}",
+                "_fields/compare/fields/#{template}",
+                "customcompare/compare/fields/#{template}",
                 "_extras/compare/fields/#{template}.twig",
                 "_extras/compare/fields/default"] with {
                 field, value, canonicalValue

@@ -1,7 +1,12 @@
 {% set template = className(field)|replace({'\\':'_'}) %}
 
+{# TODO: Avoid hard coding extra paths for compagnion plugins/modules
+        Allow plugins to register their own path via event
+#}
+
 {% include [
-    "customwork/compare/fieldvalue/#{template}",
+    "_fields/compare/fieldvalue/#{template}",
+    "customcompare/compare/fieldvalue/#{template}",
     "_extras/compare/fieldvalue/#{template}",
     "_extras/compare/fieldvalue/default"] with {
     field, value
