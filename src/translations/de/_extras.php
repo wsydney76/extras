@@ -39,14 +39,14 @@ return [
     'Open Edit' => 'Open Edit',
     'Line' => 'Line',
     '{count,plural,=1{Open edit} other{Open edits}}' => '{count,plural,=1{Open edit} other{Open edits}}',
-    'Owner Path' => 'Owner Path',
+    'Owner Path' => 'Owner Pfad',
     'This option is currently only for the Combined renderer. It determines whether a replace-type block should be merged or not depending on the content changed ratio, which values between 0 and 1' => 'this option is currently only for the Combined renderer. It determines whether a replace-type block should be merged or not depending on the content changed ratio, which values between 0 and 1',
     'Enable custom CSS for the Control Panel' => 'Enable custom CSS for the Control Panel',
     'Edited' => 'Bearbeitet',
     'Author' => 'Autor',
     'Expiry Date' => 'Verfallsdatum',
     'This entry has open drafts' => 'Dieser Eintrag hat offene Entwürfe',
-    'Current' => 'Current',
+    'Current' => 'Live',
     'Show the (table) header' => 'Show the (table) header',
     '{count,plural,=1{Open draft} other{Open drafts}}' => '{count,plural,=1{Open draft} other{Open drafts}}',
     'Enable Widgets' => 'Enable Widgets',
@@ -132,5 +132,7 @@ return [
     'You don’t have any open edits.' => 'Sie haben keine offenen Bearbeitungen.',
     'Enable Field Layout Elements' => 'Enable Field Layout Elements',
     'Enable element field layout elements like Instructions' => 'Enable element field layout elements like Instructions',
-    'Instruction' => 'Instruction'
+    'Instruction' => 'Anleitung',
+    'Revision' => 'Revision',
+    'All Entry Types (incl. nested)' => 'Alle Eintragstypen (incl. eingebettete)'
 ];

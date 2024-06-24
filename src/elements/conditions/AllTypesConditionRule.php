@@ -12,7 +12,7 @@ class AllTypesConditionRule extends TypeConditionRule
 {
     function getLabel(): string
     {
-        return 'All Types Condition Rule';
+        return Craft::t('_extras', 'All Entry Types (incl. nested)');
     }
 
     protected function options(): array
