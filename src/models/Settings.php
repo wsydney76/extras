@@ -27,6 +27,8 @@ class Settings extends Model
     public bool $enableTwigExtension = false;
     public bool $enableRestoreDismissedTips = false;
 
+    public bool $enableVolumeInventory = false;
+
     public string $diffRendererName = 'Combined';
     public int $diffContext = 1;
     public bool $diffIgnoreCase = false;

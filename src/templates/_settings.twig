@@ -98,6 +98,14 @@
     on: settings.enableRestoreDismissedTips,
     onLabel: 'Enable the possibility to restore dismissed tips/warnings on users edit preferences page.'|t('_extras')
 }) }}
+
+{{ forms.lightswitchField({
+    label: 'Enable Volume Inventory Utility'|t('_extras'),
+    name: 'enableVolumeInventory',
+    on: settings.enableVolumeInventory,
+    onLabel: 'Enable a utility that shows volumes and file system with their configuration.'|t('_extras')
+}) }}
+
 <hr>
 
 <h2 class="heading">{{ 'Assets'|t }}</h2>

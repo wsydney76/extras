@@ -3,10 +3,11 @@
 namespace wsydney76\extras;
 
 use Craft;
-use craft\base\conditions\BaseCondition;
+use Illuminate\Support\Collection;
 use craft\base\Event;
 use craft\base\Model;
 use craft\base\Plugin;
+use craft\base\conditions\BaseCondition;
 use craft\elements\Entry;
 use craft\events\DefineBehaviorsEvent;
 use craft\events\DefineFieldLayoutElementsEvent;
@@ -15,8 +16,8 @@ use craft\events\RegisterConditionRulesEvent;
 use craft\events\RegisterElementActionsEvent;
 use craft\models\FieldLayout;
 use craft\services\Dashboard;
+use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
-use Illuminate\Support\Collection;
 use wsydney76\extras\behaviors\EntryBehavior;
 use wsydney76\extras\elements\actions\CopyMarkdownLink;
 use wsydney76\extras\elements\actions\CopyReferenceLinkTag;
@@ -29,11 +30,13 @@ use wsydney76\extras\services\ContentService;
 use wsydney76\extras\services\DraftsHelper;
 use wsydney76\extras\services\Elementmap;
 use wsydney76\extras\services\ElementmapRenderer;
+use wsydney76\extras\utilities\VolumesInventory;
 use wsydney76\extras\variables\ExtrasVariable;
 use wsydney76\extras\web\assets\cpassets\CustomCpAsset;
 use wsydney76\extras\web\assets\sidebarvisibility\SidebarVisibilityAsset;
 use wsydney76\extras\web\twig\ExtrasExtension;
 use wsydney76\extras\widgets\MyProvisionsalDraftsWidget;
+use yii\base\Event as EventAlias;
 
 /**
  * Extras plugin
@@ -81,8 +84,10 @@ class ExtrasPlugin extends Plugin
                 $this->initElementActions();
                 $this->initRestoreDismissedTips();
                 $this->initFieldLayoutElements();
+                $this->initUtilities();
             }
         });
+
     }
 
     protected function createSettingsModel(): ?Model
@@ -286,5 +291,20 @@ class ExtrasPlugin extends Plugin
             );
         }
     }
-    
+
+    /**
+     * @return void
+     */
+    protected function initUtilities(): void
+    {
+        if ($this->getSettings()->enableVolumeInventory) {
+            Event::on(
+                Utilities::class,
+                Utilities::EVENT_REGISTER_UTILITIES,
+                function(RegisterComponentTypesEvent $event) {
+                    $event->types[] = VolumesInventory::class;
+                });
+        }
+    }
+
 }

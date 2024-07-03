@@ -1,0 +1,83 @@
+{# @var volume \craft\models\Volume #}
+{# @var fs \craft\fs\Local #}
+{# @var layout \craft\models\FieldLayout #}
+
+<h1>Volumes</h1>
+
+{% set volumes = craft.app.volumes.allVolumes %}
+
+<table class="data fullwidth">
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>FS</th>
+        <th>{{ 'Base'|t('_extras') }}</th>
+        <th>{{ 'Subpath'|t('_extras')  }}</th>
+        <th>Transform FS</th>
+        <th>Transform {{ 'Base'|t('_extras') }}</th>
+        <th>Transform {{ 'Subpath'|t('_extras')  }}</th>
+        <th>{{ 'Custom Fields'|t('_extras')  }}</th>
+    </tr>
+    </thead>
+    {% for volume in volumes %}
+        {% set fs = volume.fs %}
+        {% set transformFs = volume.transformFs %}
+        {% set layout = volume.fieldLayout %}
+        <tr>
+            <td><a href="{{ cpUrl("settings/assets/volumes/#{volume.id}") }}">
+                    {{ volume.name }}
+                </a>
+                <br>{{ volume.handle }}
+            </td>
+
+
+            <td>
+                {% if fs %}
+                    <a href="{{ cpUrl("settings/filesystems/#{fs.handle}") }}">
+                        {{ fs.name }}
+                    </a>
+                {% endif %}
+                <br>
+                {{ fs.handle ?? '' }}
+            </td>
+
+            <td>
+                {{ fs.url }}
+                <br>
+                {{ fs.path }}
+            </td>
+
+            <td>
+                {{ volume.subpath ?? 'n/a' }}
+            </td>
+
+            <td>
+                {% if transformFs %}
+                    <a href="{{ cpUrl("settings/filesystems/#{transformFs.handle}") }}">
+                        {{ transformFs.name }}
+                    </a>
+                {% endif %}
+
+                <br>
+                {{ transformFs.handle ?? '' }}
+            </td>
+
+            <td>
+                {{ transformFs.url }}
+                <br>
+                {{ transformFs.path }}
+            </td>
+
+            <td>
+                {{ volume.transformSubpath ?? 'n/a' }}
+            </td>
+
+            <td>
+                {% for field in layout.customFields %}
+                    {{ field.name }}{{ not loop.last ? ', ' }}
+                {% endfor %}
+            </td>
+
+        </tr>
+    {% endfor %}
+</table>

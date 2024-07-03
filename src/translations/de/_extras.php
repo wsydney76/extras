@@ -134,5 +134,11 @@ return [
     'Enable element field layout elements like Instructions' => 'Enable element field layout elements like Instructions',
     'Instruction' => 'Anleitung',
     'Revision' => 'Revision',
-    'All Entry Types (incl. nested)' => 'Alle Eintragstypen (incl. eingebettete)'
+    'All Entry Types (incl. nested)' => 'Alle Eintragstypen (incl. eingebettete)',
+    'Enable a utility that shows volumes and file system with their configuration.' => 'Aktivieren Sie ein Werkzeug, das die Volumen und Dateisysteme mit ihrer Konfiguration anzeigt.',
+    'Enable Volume Inventory Utility' => 'Volumen-Übersicht Utility aktivieren',
+    'Volumes Inventory' => 'Volumen-Übersicht',
+    'Subpath' => 'Unterpfad',
+    'Custom Fields' => 'Benutzerdefinierte Felder',
+    'Base' => 'Basis'
 ];
