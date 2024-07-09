@@ -11,7 +11,7 @@
                 {{ 'Compare Edited with Current'|t('_extras') }}
             </button>
         </span>
-    {% else %}
+    {% elseif entry.isDraft %}
         <button type="button" class="btn"
                 onclick="compare({{ entry.draftId }}, {{ entry.siteId }}, {{ entry.isProvisionalDraft ?: 0 }})">
             {% if entry.isProvisionalDraft %}
