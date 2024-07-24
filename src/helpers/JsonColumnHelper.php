@@ -7,6 +7,7 @@ use craft\base\FieldInterface;
 use craft\elements\User;
 use craft\models\FieldLayout;
 use yii\base\InvalidArgumentException;
+use function in_array;
 
 /**
  * Class JsonColumnHelper
@@ -96,8 +97,9 @@ class JsonColumnHelper
             throw new InvalidArgumentException("Field not found: $fieldHandle");
         }
 
-        if ($field::dbType() !== 'text') {
-            throw new InvalidArgumentException("Field is not a text field: $fieldHandle");
+
+        if (!in_array($field::dbType(), ['text', 'json'])) {
+            throw new InvalidArgumentException("'{$field::dbType()}' is not a valid field type: $fieldHandle");
         }
 
         return $field;

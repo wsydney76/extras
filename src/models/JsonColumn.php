@@ -144,6 +144,22 @@ class JsonColumn extends Model
         );
     }
 
+    public function relatedTo(int|array $ids): string|array
+    {
+
+        if (!is_array($ids)) {
+            return $this->getContainsCondition($ids);
+        }
+
+        $conditions = ['or'];
+
+        foreach ($ids as $id) {
+            $conditions[] = $this->getContainsCondition($id);
+        }
+
+        return $conditions;
+    }
+
 
     /**
      * Parses the field identifier and sets the provider type, provider handle, field handle, and key.
@@ -174,6 +190,19 @@ class JsonColumn extends Model
             $this->fieldHandle = $fieldIdent;
             $this->providerHandle = JsonColumnHelper::getProviderHandles($this->providerType, $this->fieldHandle);
         }
+    }
+
+    /**
+     * @param int $id
+     * @return string
+     */
+    protected function getContainsCondition(int $id): string
+    {
+        return sprintf(
+            "JSON_CONTAINS(%s, '%s')",
+            $this->valueSql,
+            $id
+        );
     }
 
 
