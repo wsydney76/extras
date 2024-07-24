@@ -2,63 +2,38 @@
 
 namespace wsydney76\extras\models;
 
+use Craft;
 use craft\base\Model;
-use wsydney76\extras\helpers\JsonColumnHelper;
+use craft\db\Table;
+use wsydney76\extras\helpers\JsonCustomFieldHelper;
 
 /**
- * Json Column model
+ * JsonCustomField class provides functionality to handle JSON custom fields within a Craft CMS environment.
  *
- * This model generates SQL statements for JSON text fields in Crafts elements_site.content column.
- * Use this model to generate SQL statements for equality and ORDER BY clauses that have to take non-default collations into account.
+ * This class offers methods for generating SQL fragments, such as equality and order by statements,
+ * based on JSON custom fields, and provides support for MySQL databases. It is particularly useful
+ * for scenarios where JSON data is stored within a field and needs to be queried efficiently.
  *
- * @property string $providerType The type of the provider (defaults to 'entryType', can be 'entryType/volume/user')
- * @property string $providerHandle The handle of the field layout provider (ignored for User fields)
- * @property string $fieldHandle The handle of the field
- * @property ?string $key The key within the JSON data (unused for built-in Craft text fields but could be used for nested keys)
- * @property string $valueSql The generated SQL string for the field
- * @property string $collation The collation setting for the SQL
+ * The class also handles the parsing of a field identifier to extract relevant parts, such as provider type,
+ * provider handle, field handle, and key.
  *
- * @example
- *  ```
- *  use wsydney76\extras\models\JsonColumn;
+ * Example usage:
  *
- *  // Example field identifier in the format 'providerType:providerHandle.fieldHandle>key'
+ * ```php
+ * $jsonCustomField = new JsonCustomField('entryType:providerHandle.fieldHandle>key', 'ci');
+ * $sqlEquality = $jsonCustomField->equals('searchTerm');
+ * $sqlOrderBy = $jsonCustomField->orderBy();
+ * ```
  *
- * // type = entryType, all entryTypes, field = person,
- * $fieldIdent = 'firstName';
+ * @package wsydney76\extras\models
  *
- *  // type = entryType, entryTypeHandle = person or photoPerson, field = firstName
- *  $fieldIdent = 'person,photoPerson.firstName';
- *
- * // type = volume, volumeHandle = all volumes, field = volume:copyright
- *  $fieldIdent = 'volume:copyright';
- *  $collation = 'ci';
- *
- *  // Create an instance of JsonColumn
- *  $jsonColumn = new JsonColumn($fieldIdent, $collation);
- *
- *  // Generate SQL equality statement
- *  $sqlEquals = $jsonColumn->equals('John Doe');
- *  echo $sqlEquals; // Outputs the SQL equality statement
- *
- *  // Generate SQL ORDER BY statement
- *  $sqlOrderBy = $jsonColumn->orderBy();
- *  echo $sqlOrderBy; // Outputs the SQL ORDER BY statement
- *  ```
- *
- * In Twig via 'jsonColum' custom twig function:
- *
- * .andWhere(jsonColumn('lastName', 'cs').equals(term))
- *
- * .orderBy({
- *     (jsonColumn('person.lastName', 'pb').orderBy()): SORT_ASC,
- *     (jsonColumn('person.firstName', 'pb').orderBy()): SORT_ASC,
- *     namePrefix: SORT_ASC
- * })
- *
+ * @property-read string $indexName
+ * @property-read mixed $functionalIndexSql
  */
-class JsonColumn extends Model
+class JsonCustomField extends Model
 {
+    public string $fieldIdent;
+
     /**
      * @var string The type of the provider (defaults to 'entryType', can be 'entryType/volume/user')
      */
@@ -99,14 +74,20 @@ class JsonColumn extends Model
      */
     public function __construct(string $fieldIdent, string $collation = 'ci', array $config = [])
     {
+        if (Craft::$app->getDb()->getIsMysql() === false) {
+            throw new \Exception('This feature is only available for MySQL databases.');
+        }
+
+        $this->fieldIdent = $fieldIdent;
+
         // Parse the field identifier to set provider type, provider handle, field handle, and key
         $this->parseFieldIdent($fieldIdent);
 
         // Set the collation based on the provided type
-        $this->collation = JsonColumnHelper::getCollation($collation);
+        $this->collation = JsonCustomFieldHelper::getCollation($collation);
 
         // Generate the SQL string for the field
-        $this->valueSql = JsonColumnHelper::getValueSql($this->providerType, $this->providerHandle, $this->fieldHandle, $this->key);
+        $this->valueSql = JsonCustomFieldHelper::getValueSql($this->providerType, $this->providerHandle, $this->fieldHandle, $this->key);
 
         parent::__construct($config);
     }
@@ -120,9 +101,12 @@ class JsonColumn extends Model
     public function equals(string $term): string
     {
         // Return an SQL equality statement with collation
+
+        $sql = $this->valueSql;
+
         return sprintf(
             "(%s) COLLATE %s = '%s' COLLATE %s",
-            $this->valueSql,
+            $sql,
             $this->collation,
             str_replace("'", "''", $term),
             $this->collation
@@ -188,7 +172,7 @@ class JsonColumn extends Model
         } else {
             // If no '.' is found, use the field identifier as the field handle and retrieve provider handles
             $this->fieldHandle = $fieldIdent;
-            $this->providerHandle = JsonColumnHelper::getProviderHandles($this->providerType, $this->fieldHandle);
+            $this->providerHandle = JsonCustomFieldHelper::getProviderHandles($this->providerType, $this->fieldHandle);
         }
     }
 
@@ -203,6 +187,24 @@ class JsonColumn extends Model
             $this->valueSql,
             $id
         );
+    }
+
+    public function getFunctionalIndexSql()
+    {
+        // alter table elements_sites add index idx_lastname ((  cast((`elements_sites`.`content`->>'$.\"0f4660e2-5304-4c08-a85d-a82cc9f7c47d\"') as char(255)) collate utf8mb4_0900_ai_ci));
+
+        return sprintf(
+            "alter table %s add index %s (( %s collate %s )) USING BTREE;",
+            Table::ELEMENTS_SITES,
+            $this->getIndexName(),
+            $this->valueSql,
+            $this->collation
+        );
+    }
+
+    private function getIndexName()
+    {
+        return 'idx_field_' . str_replace(['.', ':', ',', '>'], '_', $this->fieldIdent . '_' . $this->collation) ;
     }
 
 

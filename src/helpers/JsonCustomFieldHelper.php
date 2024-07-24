@@ -15,7 +15,7 @@ use function in_array;
  *
  * @package wsydney76\extras\helpers
  */
-class JsonColumnHelper
+class JsonCustomFieldHelper
 {
     /**
      * Get the collation string based on the provided collation type.
@@ -76,7 +76,13 @@ class JsonColumnHelper
      */
     public static function getFieldSql(string $providerType, string $providerHandle, string $fieldHandle, ?string $key): ?string
     {
-        return static::getField($providerType, $providerHandle, $fieldHandle)->getValueSql($key);
+        $field = static::getField($providerType, $providerHandle, $fieldHandle);
+
+        $sql = $field->getValueSql($key);
+        if ( !str_starts_with($sql, 'CAST') && $field::dbType() === 'text') {
+            $sql = "CAST($sql AS CHAR(255))";
+        }
+        return $sql;
     }
 
     /**

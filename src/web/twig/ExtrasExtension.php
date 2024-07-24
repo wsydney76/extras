@@ -4,8 +4,8 @@ namespace wsydney76\extras\web\twig;
 
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
-use wsydney76\extras\helpers\JsonColumnHelper;
-use wsydney76\extras\models\JsonColumn;
+use wsydney76\extras\helpers\JsonCustomFieldHelper;
+use wsydney76\extras\models\JsonCustomField;
 
 /**
  * Twig extension
@@ -17,19 +17,19 @@ class ExtrasExtension extends AbstractExtension
         // Define custom Twig functions
         // (see https://twig.symfony.com/doc/3.x/advanced.html#functions)
         return [
-            new TwigFunction('jsonColumn', [$this, 'jsonColumn']),
-            new TwigFunction('jsonColumnHelper', [$this, 'jsonColumnHelper']),
+            new TwigFunction('field', $this->jsonCustomField(...)),
+            new TwigFunction('jsonColumnHelper', $this->jsonCustomFieldHelper(...)),
         ];
     }
 
-    public function jsonColumn(string $fieldIdent, string $collation = 'ci'): JsonColumn
+    public function jsonCustomField(string $fieldIdent, string $collation = 'ci'): JsonCustomField
     {
-        return new JsonColumn($fieldIdent, $collation);
+        return new JsonCustomField($fieldIdent, $collation);
     }
 
-    public function jsonColumnHelper(): JsonColumnHelper
+    public function jsonCustomFieldHelper(): JsonCustomFieldHelper
     {
-        return new JsonColumnHelper();
+        return new JsonCustomFieldHelper();
     }
 
 }
