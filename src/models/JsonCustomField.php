@@ -3,16 +3,14 @@
 namespace wsydney76\extras\models;
 
 use Craft;
-use craft\base\Model;
+use craft\base\Component;
+use craft\base\FieldInterface;
 use craft\db\Table;
+use craft\elements\Address;
+use craft\elements\User;
+use craft\models\FieldLayout;
 use Exception;
-use wsydney76\extras\events\RegisterProviderTypeHandlerEvent;
-use wsydney76\extras\helpers\JsonCustomFieldHelper;
-use wsydney76\extras\models\providerTypes\AddressProviderType;
-use wsydney76\extras\models\providerTypes\AssetProviderType;
-use wsydney76\extras\models\providerTypes\BaseProviderType;
-use wsydney76\extras\models\providerTypes\EntryProviderType;
-use wsydney76\extras\models\providerTypes\UserProviderType;
+use wsydney76\extras\events\GetFieldsEvent;
 use yii\base\InvalidArgumentException;
 
 /**
@@ -36,11 +34,16 @@ use yii\base\InvalidArgumentException;
  * @package wsydney76\extras\models
  *
  * @property-read string $indexName
+ * @property-read null[]|\craft\base\FieldInterface[] $addressFields
+ * @property-read array $assetFields
+ * @property-read null[]|array|\craft\base\FieldInterface[] $fields
+ * @property-read array $entryFields
+ * @property-read null[]|\craft\base\FieldInterface[] $userFields
  * @property-read mixed $functionalIndexSql
  */
-class JsonCustomField extends Model
+class JsonCustomField extends Component
 {
-    public const EVENT_REGISTER_PROVIDER_TYPE_HANDLER = 'registerProviderTypeHandler';
+    public const EVENT_GET_FIELDS = 'getFieldsEvent';
 
     public string $fieldIdent;
 
@@ -49,12 +52,10 @@ class JsonCustomField extends Model
      */
     public string $providerType = 'entry';
 
-    public $providerTypeHandler;
-
     /**
      * @var string The handle of the field layout provider (ignored for User fields)
      */
-    public string $providerHandle = '';
+    public string $providerHandles = '';
 
     /**
      * @var string The handle of the field as used/overwritten in the field layout.
@@ -97,23 +98,65 @@ class JsonCustomField extends Model
         $this->parseFieldIdent($fieldIdent);
 
 
-        $this->providerTypeHandler = $this->getProviderTypeHandler();
-
-        //  \Craft::dd($this->providerTypeHandler->getFields());
-
-
         // Set the collation based on the provided type
-        $this->collation = JsonCustomFieldHelper::getCollation($collation);
+        $this->collation = $this->getCollation($collation);
 
         // Generate the SQL string for the field(s)
-        $this->valueSql = $this->getFieldValueSql(
-            $this->providerTypeHandler->getFields(
-                $this->providerHandle,
-                $this->fieldHandle
-            ));
+        $this->valueSql = $this->getFieldValueSql($this->getFields());
 
         parent::__construct($config);
     }
+
+
+    private function parseFieldIdent(string $fieldIdent): void
+    {
+        // Split the field identifier by ':' to separate provider type
+        $parts = explode(':', $fieldIdent);
+        if (count($parts) > 2) {
+            throw new InvalidArgumentException('Invalid field identifier format: ' . $fieldIdent);
+        }
+
+        if (count($parts) === 2) {
+            [$this->providerType, $fieldIdent] = $parts;
+        }
+
+        // Split the remaining identifier by '>' to separate the key
+        $parts = explode('>', $fieldIdent);
+        if (count($parts) > 2) {
+            throw new InvalidArgumentException('Invalid field identifier format: ' . $fieldIdent);
+        }
+        if (count($parts) === 2) {
+            [$fieldIdent, $this->key] = $parts;
+        }
+
+        // Split the remaining identifier by '.' to separate the provider handle and field handle
+        $parts = explode('.', $fieldIdent);
+        if (count($parts) > 2) {
+            throw new InvalidArgumentException('Invalid field identifier format: ' . $fieldIdent);
+        }
+
+        if (count($parts) === 2) {
+            [$this->providerHandles, $this->fieldHandle] = $parts;
+        } else {
+            // If no '.' is found, use the field identifier as the field handle
+            $this->fieldHandle = $fieldIdent;
+        }
+    }
+
+    public function getCollation(string $collation): string
+    {
+        return match ($collation) {
+            'pb' => 'utf8mb4_de_pb_0900_ai_ci',
+            'ci' => 'utf8mb4_0900_ai_ci',
+            'cs' => 'utf8mb4_0900_as_cs',
+            'bin' => 'utf8mb4_bin',
+            default => $collation,
+        };
+    }
+
+    /* =============================================================== */
+    /* SQL Fragment Functions                                          */
+    /* =============================================================== */
 
     /**
      * Generates an SQL equality statement.
@@ -167,6 +210,21 @@ class JsonCustomField extends Model
         return $conditions;
     }
 
+
+    /**
+     * @param int $id
+     * @return string
+     */
+    private function getContainsCondition(int $id): string
+    {
+        return sprintf(
+            "JSON_CONTAINS(%s, '%s')",
+            $this->valueSql,
+            $id
+        );
+    }
+
+
     public function getFunctionalIndexSql(): string
     {
         // alter table elements_sites add index idx_lastname ((  cast((`elements_sites`.`content`->>'$.\"0f4660e2-5304-4c08-a85d-a82cc9f7c47d\"') as char(255)) collate utf8mb4_0900_ai_ci));
@@ -186,58 +244,45 @@ class JsonCustomField extends Model
      * @param string $fieldIdent The field identifier in the format providerType:providerHandle.fieldHandle>key
      * @return void
      */
-    private function parseFieldIdent(string $fieldIdent): void
-    {
-        // Split the field identifier by ':' to separate provider type
-        $parts = explode(':', $fieldIdent);
-        if (count($parts) > 2) {
-            throw new InvalidArgumentException('Invalid field identifier format: ' . $fieldIdent);
-        }
-
-        if (count($parts) === 2) {
-            [$this->providerType, $fieldIdent] = $parts;
-        }
-
-        // Split the remaining identifier by '>' to separate the key
-        $parts = explode('>', $fieldIdent);
-        if (count($parts) > 2) {
-            throw new InvalidArgumentException('Invalid field identifier format: ' . $fieldIdent);
-        }
-        if (count($parts) === 2) {
-            [$fieldIdent, $this->key] = $parts;
-        }
-
-        // Split the remaining identifier by '.' to separate the provider handle and field handle
-        $parts = explode('.', $fieldIdent);
-        if (count($parts) > 2) {
-            throw new InvalidArgumentException('Invalid field identifier format: ' . $fieldIdent);
-        }
-
-        if (count($parts) === 2) {
-            [$this->providerHandle, $this->fieldHandle] = $parts;
-        } else {
-            // If no '.' is found, use the field identifier as the field handle
-            $this->fieldHandle = $fieldIdent;
-        }
-    }
-
-    /**
-     * @param int $id
-     * @return string
-     */
-    private function getContainsCondition(int $id): string
-    {
-        return sprintf(
-            "JSON_CONTAINS(%s, '%s')",
-            $this->valueSql,
-            $id
-        );
-    }
 
 
-    private function getIndexName()
+    private function getIndexName(): string
     {
         return 'idx_field_' . str_replace(['.', ':', ',', '>'], '_', $this->fieldIdent . '_' . $this->collation);
+    }
+
+    /* =============================================================== */
+    /* Field Value Functions                                           */
+    /* =============================================================== */
+
+    public function getFields(): array
+    {
+        $fields = match ($this->providerType) {
+            'entry' => $this->getEntryFields(),
+            'asset' => $this->getAssetFields(),
+            'user' => $this->getFieldsFromSingleLayout(User::class),
+            'address' => $this->getFieldsFromSingleLayout(Address::class),
+            default => null,
+        };
+
+        if (!$fields) {
+            if ($this->hasEventHandlers(self::EVENT_GET_FIELDS)) {
+                $event = new GetFieldsEvent([
+                    'providerType' => $this->providerType,
+                    'providerHandles' => $this->providerHandles,
+                    'fieldHandle' => $this->fieldHandle,
+                ]);
+
+                $this->trigger(self::EVENT_GET_FIELDS, $event);
+
+                $fields = $event->fields;
+            }
+
+            if (!$fields) {
+                throw new InvalidArgumentException("No field found: $this->fieldIdent");
+            }
+        }
+        return $fields;
     }
 
     private function getFieldValueSql(array $fields): string
@@ -256,9 +301,9 @@ class JsonCustomField extends Model
 
     /**
      * @param mixed $field
-     * @return mixed|string
+     * @return string
      */
-    private function getSingleValueFieldSql(mixed $field): mixed
+    private function getSingleValueFieldSql(mixed $field): string
     {
         $sql = $field->getValueSql($this->key);
         if (!str_starts_with($sql, 'CAST') && $field::dbType() === 'text') {
@@ -267,32 +312,94 @@ class JsonCustomField extends Model
         return $sql;
     }
 
+    /* =============================================================== */
+    /* Provider type specific Functions                                */
+    /* =============================================================== */
 
-    private function getProviderTypeHandler(): ?BaseProviderType
+
+    public function getEntryFields(): array
     {
+        if ($this->providerHandles === '*' || !$this->providerHandles) {
+            $entryTypeCandidates = Craft::$app->getEntries()->getAllEntryTypes();
+        } else {
+            $entryTypeCandidates = [];
 
-        $handler = match ($this->providerType) {
-            'entry' => new EntryProviderType(),
-            'asset' => new AssetProviderType(),
-            'user' => new UserProviderType(),
-            'address' => new AddressProviderType(),
-            default => null,
-        };
-
-        if ($handler) {
-            return $handler;
-        }
-
-        if ($this->hasEventHandlers(self::EVENT_REGISTER_PROVIDER_TYPE_HANDLER)) {
-            $event = new RegisterProviderTypeHandlerEvent(['providerType' => $this->providerType]);
-            $this->trigger(self::EVENT_REGISTER_PROVIDER_TYPE_HANDLER, $event);
-            if ($event->providerTypeHandler) {
-                return $event->providerTypeHandler;
+            foreach (explode(',', $this->providerHandles) as $entryTypeHandle) {
+                $entryType = Craft::$app->getEntries()->getEntryTypeByHandle($entryTypeHandle);
+                if (!$entryType) {
+                    throw new \InvalidArgumentException("Entry type not found: $entryTypeHandle");
+                }
+                $entryTypeCandidates[] = $entryType;
             }
         }
 
-        throw new InvalidArgumentException('No provider type handler found for: ' . $this->providerType);
+
+        return static::getFieldsFromCandidates($entryTypeCandidates, $this->fieldHandle);
+    }
+
+    public function getAssetFields(): array
+    {
+        $volumeCandidates = [];
+        if ($this->providerHandles === '*' || !$this->providerHandles) {
+            $volumeCandidates = Craft::$app->getVolumes()->getAllVolumes();
+        } else {
+            foreach (explode(',', $this->providerHandles) as $volumeHandle) {
+                $volume = Craft::$app->getVolumes()->getVolumeByHandle($volumeHandle);
+                if (!$volume) {
+                    throw new \InvalidArgumentException("Volume not found: $volumeHandle");
+                }
+                $volumeCandidates[] = $volume;
+            }
+        }
+
+        return static::getFieldsFromCandidates($volumeCandidates, $this->fieldHandle);
+    }
+
+    public function getFieldsFromSingleLayout($class): array
+    {
+        $layout = Craft::$app->getFields()->getLayoutByType($class);
+
+        return [static::getFieldFromLayout($layout, $this->fieldHandle)];
     }
 
 
+    /* =============================================================== */
+    /* Static Functions                                                */
+    /* =============================================================== */
+
+
+    public static function getFieldsFromCandidates(array $candidates, string $fieldHandle): array
+    {
+        $fields = [];
+
+        foreach ($candidates as $candidate) {
+            $field = static::getFieldFromLayout($candidate->getFieldLayout(), $fieldHandle);
+            if ($field) {
+                $fields[] = $field;
+            }
+        }
+
+        if (empty($fields)) {
+            throw new \InvalidArgumentException("Field not found: $fieldHandle");
+        }
+
+        return $fields;
+    }
+
+    /**
+     * @param mixed $fieldLayout
+     * @param string $fieldHandle
+     * @return FieldInterface|null
+     */
+    private static function getFieldFromLayout(FieldLayout $fieldLayout, string $fieldHandle): ?FieldInterface
+    {
+        $field = $fieldLayout->getFieldByHandle($fieldHandle);
+
+        if ($field) {
+            if (!in_array($field::dbType(), ['json', 'text'])) {
+                throw new \InvalidArgumentException("Field is not a JSON or TEXT field: $fieldHandle");
+            }
+        }
+        return $field;
+    }
 }
