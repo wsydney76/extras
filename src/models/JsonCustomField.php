@@ -5,7 +5,15 @@ namespace wsydney76\extras\models;
 use Craft;
 use craft\base\Model;
 use craft\db\Table;
+use Exception;
+use wsydney76\extras\events\RegisterProviderTypeHandlerEvent;
 use wsydney76\extras\helpers\JsonCustomFieldHelper;
+use wsydney76\extras\models\providerTypes\AddressProviderType;
+use wsydney76\extras\models\providerTypes\AssetProviderType;
+use wsydney76\extras\models\providerTypes\BaseProviderType;
+use wsydney76\extras\models\providerTypes\EntryProviderType;
+use wsydney76\extras\models\providerTypes\UserProviderType;
+use yii\base\InvalidArgumentException;
 
 /**
  * JsonCustomField class provides functionality to handle JSON custom fields within a Craft CMS environment.
@@ -32,17 +40,21 @@ use wsydney76\extras\helpers\JsonCustomFieldHelper;
  */
 class JsonCustomField extends Model
 {
+    public const EVENT_REGISTER_PROVIDER_TYPE_HANDLER = 'registerProviderTypeHandler';
+
     public string $fieldIdent;
 
     /**
      * @var string The type of the provider (defaults to 'entryType', can be 'entryType/volume/user')
      */
-    public string $providerType = 'entryType';
+    public string $providerType = 'entry';
+
+    public $providerTypeHandler;
 
     /**
      * @var string The handle of the field layout provider (ignored for User fields)
      */
-    public string $providerHandle;
+    public string $providerHandle = '';
 
     /**
      * @var string The handle of the field as used/overwritten in the field layout.
@@ -71,11 +83,12 @@ class JsonCustomField extends Model
      * @param string $fieldIdent The field identifier in the format providerType:providerHandle.fieldHandle>key
      * @param string $collation The collation type (default is 'ci'). Either a full collation string or one of the following: 'pb', 'ci', 'cs'
      * @param array $config Additional configuration options
+     * @throws Exception
      */
     public function __construct(string $fieldIdent, string $collation = 'ci', array $config = [])
     {
         if (Craft::$app->getDb()->getIsMysql() === false) {
-            throw new \Exception('This feature is only available for MySQL databases.');
+            throw new \Exception('This feature is currently only implemented for MySQL databases.');
         }
 
         $this->fieldIdent = $fieldIdent;
@@ -83,11 +96,21 @@ class JsonCustomField extends Model
         // Parse the field identifier to set provider type, provider handle, field handle, and key
         $this->parseFieldIdent($fieldIdent);
 
+
+        $this->providerTypeHandler = $this->getProviderTypeHandler();
+
+        //  \Craft::dd($this->providerTypeHandler->getFields());
+
+
         // Set the collation based on the provided type
         $this->collation = JsonCustomFieldHelper::getCollation($collation);
 
-        // Generate the SQL string for the field
-        $this->valueSql = JsonCustomFieldHelper::getValueSql($this->providerType, $this->providerHandle, $this->fieldHandle, $this->key);
+        // Generate the SQL string for the field(s)
+        $this->valueSql = $this->getFieldValueSql(
+            $this->providerTypeHandler->getFields(
+                $this->providerHandle,
+                $this->fieldHandle
+            ));
 
         parent::__construct($config);
     }
@@ -144,6 +167,18 @@ class JsonCustomField extends Model
         return $conditions;
     }
 
+    public function getFunctionalIndexSql(): string
+    {
+        // alter table elements_sites add index idx_lastname ((  cast((`elements_sites`.`content`->>'$.\"0f4660e2-5304-4c08-a85d-a82cc9f7c47d\"') as char(255)) collate utf8mb4_0900_ai_ci));
+
+        return sprintf(
+            "alter table %s add index %s (( %s collate %s )) USING BTREE;",
+            Table::ELEMENTS_SITES,
+            $this->getIndexName(),
+            $this->valueSql,
+            $this->collation
+        );
+    }
 
     /**
      * Parses the field identifier and sets the provider type, provider handle, field handle, and key.
@@ -172,7 +207,6 @@ class JsonCustomField extends Model
         } else {
             // If no '.' is found, use the field identifier as the field handle and retrieve provider handles
             $this->fieldHandle = $fieldIdent;
-            $this->providerHandle = JsonCustomFieldHelper::getProviderHandles($this->providerType, $this->fieldHandle);
         }
     }
 
@@ -180,7 +214,7 @@ class JsonCustomField extends Model
      * @param int $id
      * @return string
      */
-    protected function getContainsCondition(int $id): string
+    private function getContainsCondition(int $id): string
     {
         return sprintf(
             "JSON_CONTAINS(%s, '%s')",
@@ -189,22 +223,64 @@ class JsonCustomField extends Model
         );
     }
 
-    public function getFunctionalIndexSql()
-    {
-        // alter table elements_sites add index idx_lastname ((  cast((`elements_sites`.`content`->>'$.\"0f4660e2-5304-4c08-a85d-a82cc9f7c47d\"') as char(255)) collate utf8mb4_0900_ai_ci));
-
-        return sprintf(
-            "alter table %s add index %s (( %s collate %s )) USING BTREE;",
-            Table::ELEMENTS_SITES,
-            $this->getIndexName(),
-            $this->valueSql,
-            $this->collation
-        );
-    }
 
     private function getIndexName()
     {
-        return 'idx_field_' . str_replace(['.', ':', ',', '>'], '_', $this->fieldIdent . '_' . $this->collation) ;
+        return 'idx_field_' . str_replace(['.', ':', ',', '>'], '_', $this->fieldIdent . '_' . $this->collation);
+    }
+
+    private function getFieldValueSql(array $fields): string
+    {
+        if (count($fields) === 1) {
+            return $this->getSingleFieldSql($fields[0]);
+        }
+
+        $singleFieldSQL = [];
+        foreach ($fields as $field) {
+            $singleFieldSQL[] = $this->getSingleFieldSql($field);
+        }
+
+        return sprintf('COALESCE(%s)', implode(', ', $singleFieldSQL));
+    }
+
+    /**
+     * @param mixed $field
+     * @return mixed|string
+     */
+    private function getSingleFieldSql(mixed $field): mixed
+    {
+        $sql = $field->getValueSql($this->key);
+        if (!str_starts_with($sql, 'CAST') && $field::dbType() === 'text') {
+            $sql = "CAST($sql AS CHAR(255))";
+        }
+        return $sql;
+    }
+
+
+    private function getProviderTypeHandler(): ?BaseProviderType
+    {
+
+        $handler = match ($this->providerType) {
+            'entry' => new EntryProviderType(),
+            'asset' => new AssetProviderType(),
+            'user' => new UserProviderType(),
+            'address' => new AddressProviderType(),
+            default => null,
+        };
+
+        if ($handler) {
+            return $handler;
+        }
+
+        if ($this->hasEventHandlers(self::EVENT_REGISTER_PROVIDER_TYPE_HANDLER)) {
+            $event = new RegisterProviderTypeHandlerEvent(['providerType' => $this->providerType]);
+            $this->trigger(self::EVENT_REGISTER_PROVIDER_TYPE_HANDLER, $event);
+            if ($event->providerTypeHandler) {
+                return $event->providerTypeHandler;
+            }
+        }
+
+        throw new InvalidArgumentException('No provider type handler found for: ' . $this->providerType);
     }
 
 
