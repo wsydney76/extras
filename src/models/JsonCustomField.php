@@ -190,22 +190,33 @@ class JsonCustomField extends Model
     {
         // Split the field identifier by ':' to separate provider type
         $parts = explode(':', $fieldIdent);
+        if (count($parts) > 2) {
+            throw new InvalidArgumentException('Invalid field identifier format: ' . $fieldIdent);
+        }
+
         if (count($parts) === 2) {
             [$this->providerType, $fieldIdent] = $parts;
         }
 
         // Split the remaining identifier by '>' to separate the key
         $parts = explode('>', $fieldIdent);
+        if (count($parts) > 2) {
+            throw new InvalidArgumentException('Invalid field identifier format: ' . $fieldIdent);
+        }
         if (count($parts) === 2) {
             [$fieldIdent, $this->key] = $parts;
         }
 
         // Split the remaining identifier by '.' to separate the provider handle and field handle
         $parts = explode('.', $fieldIdent);
+        if (count($parts) > 2) {
+            throw new InvalidArgumentException('Invalid field identifier format: ' . $fieldIdent);
+        }
+
         if (count($parts) === 2) {
             [$this->providerHandle, $this->fieldHandle] = $parts;
         } else {
-            // If no '.' is found, use the field identifier as the field handle and retrieve provider handles
+            // If no '.' is found, use the field identifier as the field handle
             $this->fieldHandle = $fieldIdent;
         }
     }
@@ -232,12 +243,12 @@ class JsonCustomField extends Model
     private function getFieldValueSql(array $fields): string
     {
         if (count($fields) === 1) {
-            return $this->getSingleFieldSql($fields[0]);
+            return $this->getSingleValueFieldSql($fields[0]);
         }
 
         $singleFieldSQL = [];
         foreach ($fields as $field) {
-            $singleFieldSQL[] = $this->getSingleFieldSql($field);
+            $singleFieldSQL[] = $this->getSingleValueFieldSql($field);
         }
 
         return sprintf('COALESCE(%s)', implode(', ', $singleFieldSQL));
@@ -247,7 +258,7 @@ class JsonCustomField extends Model
      * @param mixed $field
      * @return mixed|string
      */
-    private function getSingleFieldSql(mixed $field): mixed
+    private function getSingleValueFieldSql(mixed $field): mixed
     {
         $sql = $field->getValueSql($this->key);
         if (!str_starts_with($sql, 'CAST') && $field::dbType() === 'text') {
