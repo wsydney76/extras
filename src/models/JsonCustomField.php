@@ -171,11 +171,11 @@ class JsonCustomField extends Component
         $sql = $this->valueSql;
 
         return sprintf(
-            "(%s) COLLATE %s = '%s' COLLATE %s",
+            "(%s COLLATE %s) = '%s'",
             $sql,
             $this->collation,
             str_replace("'", "''", $term),
-            $this->collation
+
         );
     }
 
@@ -395,10 +395,8 @@ class JsonCustomField extends Component
     {
         $field = $fieldLayout->getFieldByHandle($fieldHandle);
 
-        if ($field) {
-            if (!in_array($field::dbType(), ['json', 'text'])) {
-                throw new \InvalidArgumentException("Field is not a JSON or TEXT field: $fieldHandle");
-            }
+        if ($field && !in_array($field::dbType(), ['json', 'text', 'decimal(65,16)'])) {
+            throw new \InvalidArgumentException("Field is not a JSON,TEXT or DECIMAL field: $fieldHandle");
         }
         return $field;
     }
