@@ -1,0 +1,93 @@
+{# @var type \craft\models\EntryType #}
+{# @var layout \craft\models\FieldLayout #}
+{# @var fieldElement \craft\fieldlayoutelements\CustomField #}
+{% set types = collect(craft.app.entries.allEntryTypes) %}
+{% set settingsUrl = "/#{craft.app.config.general.cpTrigger}/settings/" %}
+
+{% set handles = craft.app.request.getQueryParam('handles') %}
+{% if handles %}
+    {% set handles = handles|split(',') %}
+    {% set types = types|filter(t => (t.handle in handles)) %}
+    {% set types = collect(types) %}
+{% endif %}
+
+<table>
+
+    <thead>
+    <tr>
+        <th>Nr.</th>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Usages</th>
+        <th>Fields</th>
+        <th>Custom Fields</th>
+        <th>UID</th>
+    </tr>
+    </thead>
+
+    {% for type in types.sortBy('name') %}
+        {% set layout = type.fieldLayout %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ type.id }}</td>
+            <td>
+                <a href="{{ settingsUrl }}entry-types/{{ type.id }}" target="_blank">{{ type.name }}</a><br>
+                {{ type.handle }}
+            </td>
+            <td>
+                {% for usage in type.findUsages %}
+                    <div>
+                        {% if className(usage) == 'craft\\models\\Section' %}
+                            {% set section = craft.app.entries.sectionById(usage.id) %}
+                            <a href="{{ settingsUrl }}sections/{{ usage.id }}"
+                               target="_blank">Section: {{ usage.handle }}</a>
+                        {% endif %}
+                        {% if className(usage) == 'craft\\fields\\Matrix' %}
+                            {% set matrixField = craft.app.fields.fieldById(usage.id) %}
+                            <a href="{{ settingsUrl }}fields/edit/{{ usage.id }}"
+                               target="_blank">Matrix: {{ usage.handle }}</a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </td>
+            <td>
+                {{ type.hasTitleField ? 'Title' }}<br>
+                {{ type.showSlugField ? 'Slug field' }}<br>
+                {{ type.showStatusField ? 'Status field' }}
+            </td>
+            <td>
+                {% for fieldElement in layout.customFieldElements %}
+                    <div>
+                        {% set field = fieldElement.field %}
+                        {{ field.handle }}
+                        {{ fieldElement.required ? '<b>*</b>' }}
+                        {{ fieldElement.conditions ? '<b>c</b>' }}
+                        {% if fieldElement.originalHandle != field.handle %}
+                            = <span style="color: red">{{ fieldElement.originalHandle }}</span>
+                        {% endif %}
+                        ({{ className(field)|replace('craft\\fields\\','') }})
+                        <a href="{{ settingsUrl }}fields/edit/{{ field.id }}" target="_blank">[Edit]</a>
+                    </div>
+                {% endfor %}
+            </td>
+            <td>
+                {% for fieldElement in layout.customFieldElements %}
+                    <div>
+                        {{ fieldElement.uid }}
+                    </div>
+                {% endfor %}
+            </td>
+            {# <td>
+                {% for fieldElement in layout.customFieldElements %}
+                    <div>
+                        {{ fieldValueSql(type, fieldElement.field.handle) }}&nbsp;
+                    </div>
+                {% endfor %}
+            </td> #}
+        </tr>
+    {% endfor %}
+</table>
+
+<style>
+    {% include '_extras/upgrade/styles.css' %}
+</style>

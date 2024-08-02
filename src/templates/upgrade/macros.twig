@@ -1,0 +1,77 @@
+{% macro sources(sources) %}
+    {% if sources is string %}
+        {{ _self.source(sources) }}
+    {% else %}
+        {% for source in sources %}
+            {{ _self.source(source) }}
+            <br>
+        {% endfor %}
+    {% endif %}
+{% endmacro %}
+
+{% macro source(source) %}
+    {% if source starts with 'section:' %}
+        {% set uid = source|split(':')[1] %}
+        {% set section = craft.app.entries.sectionByUid(uid) %}
+        {% if section %}
+            {{ section.handle }}
+        {% else %}
+            {{ source }}
+        {% endif %}
+    {% elseif source starts with 'volume' %}
+        {% set uid = source|split(':')[1] %}
+        {% set volume = craft.app.volumes.volumeByUid(uid) %}
+        {% if volume %}
+            {{ volume.handle }}
+        {% else %}
+            {{ source }}
+        {% endif %}
+    {% else %}
+        {{ source }}
+    {% endif %}
+{% endmacro %}
+
+{% macro entryTypes(entryTypes) %}
+    {% for type in entryTypes %}
+        {{ craft.app.entries.entryTypeByUid(type).handle ?? type }}<br>
+    {% endfor %}
+{% endmacro %}
+
+{% macro options(options) %}
+    {% for option in options %}
+        {{ option.label }} ({{ option.value }}) {{ option.default ? 'default' }}<br>
+    {% endfor %}
+{% endmacro %}
+
+{% macro conditions(conditions) %}
+
+    {% for condition in conditions.conditionRules %}
+        {% for key,value in condition %}
+            {% switch key %}
+
+            {% case "class" %}
+
+                Class: {{ value|replace('craft\\elements\\conditions\\', '') }}<br>
+
+            {% case "uid" %}
+                {# nope #}
+            {% default %}
+
+                &nbsp;&nbsp;{{ key }}: {{ _self.value(value) }}
+                <br>
+
+            {% endswitch %}
+
+        {% endfor %}
+    {% endfor %}
+{% endmacro %}
+
+{% macro value(value) %}
+    {% if value is string or value is numeric %}
+        {{ value }}
+    {% else %}
+        {{ dump(value) }}
+    {% endif %}
+{% endmacro %}
+
+

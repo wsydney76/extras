@@ -1,0 +1,135 @@
+{% requireAdmin %}
+
+{# @var field \craft\base\Field #}
+
+{% import '_extras/upgrade/macros.twig' as lib %}
+
+{% set fields = craft.app.fields.allFields %}
+{% set type = craft.app.request.queryParam('type') %}
+{% set handles = craft.app.request.queryParam('handles')|replace(' ', '') %}
+{% set handle = craft.app.request.queryParam('handle') %}
+{% set dumpSettings = craft.app.request.queryParam('dumpSettings') %}
+
+{% if handles or handle or type %}
+    {% set dumpSettings = true %}
+{% endif %}
+
+{% set settingsUrl = "/#{craft.app.config.general.cpTrigger}/settings/" %}
+
+{# Settings that are always unique in your content model. Case sensitive #}
+{% set defaultIgnoreSettings = 'uiMode,placeholder,code,allowSelfRelations,localizeRelations,showSiteMenu,targetSiteId,maintainHierarchy,branchLimit,showUnpermittedVolumes,showUnpermittedFiles' %}
+
+{# override if needed. &ignoreSettings= to show all settings #}
+{% set ignoreSettings = craft.app.request.queryParam('ignoreSettings', defaultIgnoreSettings) %}
+
+{% set ignoreSettings = ignoreSettings|split(',') %}
+
+{% if type %}
+    {% set fields = fields|filter (f => className(f) == type) %}
+{% endif %}
+
+{% if handles %}
+    {% set handles = handles|split(',') %}
+    {% set fields = fields|filter(f => f.handle in handles) %}
+{% endif %}
+
+{% if handle %}
+    {% set fields = fields|filter(f => f.handle starts with handle) %}
+{% endif %}
+
+{% set fields = fields|multisort(f => f.handle) %}
+
+{% if not fields %}
+    {% exit 404 "No fields found" %}
+{% endif %}
+
+{% set showTranslatable = not (type and (type ends with 'Entries' or type ends with 'Assets')) %}
+
+<table>
+
+    <tr>
+        <th>Nr.</th>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Handle</th>
+        <th>Type</th>
+        <th>Used?</th>
+        <th>UID</th>
+        {% if showTranslatable %}
+            <th>Translation</th>
+        {% endif %}
+        <th>Searchable</th>
+
+        {% if type or handles %}
+            {% for key, value in fields|first.settings %}
+                {% if key not in ignoreSettings %}
+                    <th>{{ key }}</th>
+                {% endif %}
+            {% endfor %}
+        {% elseif dumpSettings %}
+            <th>Settings</th>
+        {% endif %}
+
+        <th>Instructions</th>
+
+    </tr>
+
+    {% for field in fields %}
+
+        <tr>
+
+            <td>{{ loop.index }}</td>
+            <td>{{ field.id }}</td>
+            <td><a href="{{ settingsUrl }}fields/edit/{{ field.id }}" target="_blank">{{ field.name }}</a></td>
+            <td>{{ field.handle }}</td>
+            <td><a href="?type={{ className(field) }}">{{ className(field) }}</a></td>
+            <td>
+                {% if not (craft.app.fields.findFieldUsages(field)) %}
+                    <span style="color:red;">No usages</span>
+                {% endif %}
+            </td>
+
+            <td>{{ field.uid }}</td>
+
+            {% if showTranslatable %}
+                <td>{{ field.translationMethod }}</td>
+            {% endif %}
+
+            <td>{{ dump(field.searchable) }}</td>
+
+            {% if type or handles %}
+                {% for key, setting in field.settings %}
+                    {% if key not in ignoreSettings %}
+                        <td>
+                            {% if key in ['sources', 'restrictedLocationSource', 'defaultUploadLocationSource'] %}
+                                {{ lib.sources(setting) }}
+                                {# TODO: Handle selectionConditions #}
+                            {% elseif key == 'entryTypes' %}
+                                {{ lib.entryTypes(setting) }}
+                            {% elseif key == 'options' %}
+                                {{ lib.options(setting) }}
+                            {% elseif key == 'selectionCondition' %}
+                                {{ lib.conditions(setting) }}
+                            {% else %}
+                                {{ lib.value(setting) }}
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                {% endfor %}
+            {% elseif dumpSettings %}
+                <td>
+                    {{ dump(field.settings) }}
+                </td>
+            {% endif %}
+
+            <td>
+                {{ field.instructions }}
+            </td>
+
+        </tr>
+    {% endfor %}
+</table>
+
+<style>
+    {% include '/_extras/upgrade/styles.css' %}
+</style>

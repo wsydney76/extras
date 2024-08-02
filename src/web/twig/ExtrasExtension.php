@@ -2,22 +2,20 @@
 
 namespace wsydney76\extras\web\twig;
 
+use CommerceGuys\Addressing\Country\Country;
+use CommerceGuys\Addressing\Exception\UnknownCountryException;
 use Craft;
 use craft\errors\SiteNotFoundException;
 use craft\web\twig\Environment;
 use Exception;
+use InvalidArgumentException;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
 use wsydney76\extras\models\JsonCustomField;
 use yii\web\BadRequestHttpException;
-use function array_filter;
-use function array_keys;
 use function in_array;
-use function is_bool;
-use function is_float;
-use function is_scalar;
-use function is_string;
+use function mb_strtoupper;
 use function str_starts_with;
 
 /**
@@ -40,7 +38,8 @@ class ExtrasExtension extends AbstractExtension
             new TwigFunction('param', $this->param(...), ['needs_context' => true]),
             new TwigFunction('params', $this->params(...), ['needs_context' => true]),
             new TwigFunction('extraParams', $this->extraParams(...), ['needs_environment' => true, 'needs_context' => true]),
-            new TwigFunction('countryName', $this->countryName(...)),
+            new TwigFunction('country', $this->country(...)),
+            new TwigFunction('postalCountryName', $this->postalCountryName(...)),
         ];
     }
 
@@ -49,19 +48,15 @@ class ExtrasExtension extends AbstractExtension
         return [
             new TwigFilter('upperWithSz', $this->upperWithSz(...)),
             new TwigFilter('swissText', $this->swissText(...)),
-            new TwigFilter('countryName', $this->countryName(...)),
+            new TwigFilter('germanNumber', $this->germanNumber(...), ['is_safe' => ['html']]),
         ];
     }
 
-    public function upperWithSz(string $text): string
-    {
-        return mb_strtoupper(str_replace('ß', 'ẞ', $text), 'UTF-8');
-    }
 
-    public function swissText(string $text): string
-    {
-        return str_replace('ß', 'ss', $text);
-    }
+
+    /* ========================================================================== */
+    /* = Twig functions                                                         = */
+    /* ========================================================================== */
 
     /**
      * @throws Exception
@@ -268,21 +263,84 @@ class ExtrasExtension extends AbstractExtension
         return implode(',', $extraParams);
     }
 
-    /**
-     * @throws SiteNotFoundException
-     */
-    public function countryName(string $countryCode): string
-    {
 
-        try {
-            $country = Craft::$app->getAddresses()->countryRepository->get(
-                $countryCode,
-                Craft::$app->getSites()->getCurrentSite()->language
-            );
-        } catch (Exception) {
-            return $countryCode;
+    /* ========================================================================== */
+    /* = Twig filters                                                           = */
+    /* ========================================================================== */
+
+    public function upperWithSz(string $text): string
+    {
+        return mb_strtoupper(str_replace('ß', 'ẞ', $text), 'UTF-8');
+    }
+
+    public function swissText(string $text): string
+    {
+        return str_replace('ß', 'ss', $text);
+    }
+
+    /**
+     * @param string $countryCode
+     * @return Country
+     * @throws SiteNotFoundException
+     * @throws UnknownCountryException
+     */
+    public function country(string $countryCode): Country
+    {
+        return Craft::$app->getAddresses()->countryRepository->get(
+            $countryCode,
+            Craft::$app->getSites()->getCurrentSite()->language
+        );
+
+    }
+
+
+    /**
+     * Retrieve country name for postal address according to
+     * https://www.deutschepost.de/de/b/briefe-ins-ausland/laenderkuerzel-laendercode.html
+     *
+     * @param string $countryCode
+     * @return string
+     * @throws SiteNotFoundException
+     * @throws UnknownCountryException
+     */
+    public function postalCountryName(string $countryCode, ?string $locale = null): string
+    {
+        if (!$locale) {
+            $locale = Craft::$app->getSites()->getCurrentSite()->language;
         }
 
-        return $country->getName();
+        $localeCountry = explode('-', $locale)[0];
+
+        // Country name is allowed in German, French and English
+        if (!in_array($localeCountry, ['de','fr','en']) ) {
+            $locale = 'en-US';
+        }
+
+        $country = Craft::$app->getAddresses()->countryRepository->get($countryCode, $locale);
+
+        return mb_strtoupper($country->getName(), 'UTF-8');
+    }
+
+    public function germanNumber(mixed $value, ?int $decimals = null, array $options = [], array $textOptions = []): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        try {
+            $formattedValue = Craft::$app->getFormatter()->asDecimal($value, $decimals, $options, $textOptions);
+            if (Craft::$app->locale->id === 'de-DE') {
+               if ($value >= 10000) {
+                   // &#x202F; would be correct, using &nbsp; for better compatibility
+                   $formattedValue = str_replace('.', '&nbsp;', $formattedValue);
+               } else {
+                   $formattedValue = str_replace('.', '', $formattedValue);
+               }
+            }
+        } catch (InvalidArgumentException) {
+            throw new InvalidArgumentException('Invalid number format');
+        }
+
+        return $formattedValue;
     }
 }

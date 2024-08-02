@@ -1,0 +1,23 @@
+
+table {
+    border-collapse: collapse;
+    font-family: sans-serif;
+    font-size: 14px;
+    position: relative;
+}
+
+table, th, td {
+    border: 1px solid;
+}
+
+td, th {
+    padding: 6px;
+    white-space: nowrap;
+}
+
+th {
+    position: sticky;
+    top: 0px;
+    background-color: white;
+    z-index: 999999;
+}

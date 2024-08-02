@@ -1,0 +1,27 @@
+{% set entries = craft.entries.site('*')
+    .field('buttons')
+    .type('buttonsBlock')
+    .all() %}
+
+{% for entry in entries %}
+    <div>
+        {% set top = entry.owner.owner %}
+        {{ entry.id }} <a href="{{ top.cpEditUrl }}" target="_blank">{{ top.title }}</a>
+        {{ entry.targetType.label }}
+        {% if entry.targetEntry.one %}
+            Entry
+        {% endif %}
+        {% if entry.targetAsset.one %}
+            Asset
+        {% endif %}
+        {% if entry.targetUrl %}
+            URL
+        {% endif %}
+        {% if entry.anchor %}
+            Anchor
+        {% endif %}
+
+        <a href="{{ top.url }}">Frontend</a>
+
+    </div>
+{% endfor %}

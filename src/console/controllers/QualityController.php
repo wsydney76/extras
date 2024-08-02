@@ -3,9 +3,12 @@
 namespace wsydney76\extras\console\controllers;
 
 use Craft;
+use craft\base\MergeableFieldInterface;
+use craft\ckeditor\Field;
 use craft\console\Controller;
 use craft\elements\Asset;
 use craft\elements\Entry;
+use craft\fields\Matrix;
 use craft\fs\Local;
 use craft\helpers\Console;
 use GuzzleHttp\Exception\GuzzleException;
@@ -219,16 +222,27 @@ class QualityController extends Controller
         return ExitCode::OK;
     }
 
-    public function actionConsolidateFieldsCandidates()
+    public function actionConsolidateFieldsCandidates($mergeablesOnly = 0)
     {
         $signatures = [];
 
         foreach (Craft::$app->getFields()->getAllFields() as $field) {
+
+            if ($mergeablesOnly && !$field instanceof MergeableFieldInterface) {
+                continue;
+            }
+
+            // Skip Matrix and CKEditor fields
+            if ($field instanceof Matrix || $field instanceof Field) {
+                continue;
+            }
+
             $signature = [
                 'type' => get_class($field),
                 'translationMethod' => $field->translationMethod,
                 'translationKeyFormat' => $field->translationKeyFormat,
                 'searchable' => $field->searchable,
+                // 'instructions' => $field->instructions,
                 'settings' => $field->settings,
             ];
 
