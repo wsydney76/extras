@@ -17,7 +17,7 @@
 {% set settingsUrl = "/#{craft.app.config.general.cpTrigger}/settings/" %}
 
 {# Settings that are always unique in your content model. Case sensitive #}
-{% set defaultIgnoreSettings = 'uiMode,placeholder,code,allowSelfRelations,localizeRelations,showSiteMenu,targetSiteId,maintainHierarchy,branchLimit,showUnpermittedVolumes,showUnpermittedFiles' %}
+{% set defaultIgnoreSettings = 'uiMode,code,allowSelfRelations,localizeRelations,showSiteMenu,targetSiteId,maintainHierarchy,branchLimit,showUnpermittedVolumes,showUnpermittedFiles' %}
 
 {# override if needed. &ignoreSettings= to show all settings #}
 {% set ignoreSettings = craft.app.request.queryParam('ignoreSettings', defaultIgnoreSettings) %}
@@ -43,7 +43,7 @@
     {% exit 404 "No fields found" %}
 {% endif %}
 
-{% set showTranslatable = not (type and (type ends with 'Entries' or type ends with 'Assets')) %}
+{% set showTranslatable = true %}
 
 <table>
 

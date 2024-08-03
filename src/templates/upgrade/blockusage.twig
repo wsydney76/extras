@@ -1,8 +1,20 @@
 {% set fields = craft.app.fields.allFields | filter(f => className(f) == 'craft\\fields\\Matrix') %}
-
-
+{% set limit = craft.app.request.queryParam('limit', 4) %}
+<p>
+    ?limit=[number]
+</p>
 {# @var field \craft\fields\Matrix #}
 <table>
+
+    <thead>
+    <tr>
+        <th>Matrix Field</th>
+        <th>Entry Type</th>
+        <th>Usages</th>
+        <th>Entries Usage < {{ limit }}</th>
+    </tr>
+    </thead>
+
     {% for field in fields %}
 
         {% set types = field.entryTypes %}
@@ -26,12 +38,12 @@
 
                 </td>
                 <td>
-                    {% if entries|length < 3 %}
+                    {% if entries|length < limit %}
                         {% for entry in entries %}
                             <div>
                                 {% set owner = craft.entries.id(entry.ownerId).site('*').status(null).unique().one %}
                                 {% if owner %}
-                                    <a href="{{ entry.cpEditUrl }}">{{ owner.title ?: entry.type.name }}</a>
+                                    <a href="{{ entry.cpEditUrl }}">{{ owner.title ?: entry.type.name }}</a> {{ entry.site.name }}
                                 {% else %}
                                     <a href="{{ entry.cpEditUrl }}">{{ entry.title ?: entry.type.name }} INVALID
                                         OWNER {{ entry.ownerId }}</a>
@@ -45,3 +57,7 @@
 
     {% endfor %}
 </table>
+
+<style>
+    {% include '/_extras/upgrade/styles.css' %}
+</style>
