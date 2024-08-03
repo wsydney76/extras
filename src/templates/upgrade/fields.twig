@@ -43,7 +43,7 @@
     {% exit 404 "No fields found" %}
 {% endif %}
 
-{% set showTranslatable = true %}
+{% set showTranslatable = craft.app.isMultiSite %}
 
 <table>
 
