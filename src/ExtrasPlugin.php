@@ -30,6 +30,8 @@ use wsydney76\extras\services\ContentService;
 use wsydney76\extras\services\DraftsHelper;
 use wsydney76\extras\services\Elementmap;
 use wsydney76\extras\services\ElementmapRenderer;
+use wsydney76\extras\services\UpgradeService;
+use wsydney76\extras\utilities\UpgradeInventory;
 use wsydney76\extras\utilities\VolumesInventory;
 use wsydney76\extras\variables\ExtrasVariable;
 use wsydney76\extras\web\assets\cpassets\CustomCpAsset;
@@ -43,6 +45,7 @@ use yii\base\Event as EventAlias;
  *
  * @method static ExtrasPlugin getInstance()
  * @method Settings getSettings()
+ * @property-read UpgradeService $upgradeService
  */
 class ExtrasPlugin extends Plugin
 {
@@ -55,7 +58,8 @@ class ExtrasPlugin extends Plugin
             'components' => [
                 'elementmap' => Elementmap::class,
                 'renderer' => ElementmapRenderer::class,
-                'draftsHelper' => DraftsHelper::class
+                'draftsHelper' => DraftsHelper::class,
+                'upgradeService' => UpgradeService::class
             ],
         ];
     }
@@ -303,6 +307,15 @@ class ExtrasPlugin extends Plugin
                 Utilities::EVENT_REGISTER_UTILITIES,
                 function(RegisterComponentTypesEvent $event) {
                     $event->types[] = VolumesInventory::class;
+                });
+        }
+
+        if ($this->getSettings()->enableUpgradeInventory) {
+            Event::on(
+                Utilities::class,
+                Utilities::EVENT_REGISTER_UTILITIES,
+                function(RegisterComponentTypesEvent $event) {
+                    $event->types[] = UpgradeInventory::class;
                 });
         }
     }

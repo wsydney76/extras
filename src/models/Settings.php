@@ -28,6 +28,7 @@ class Settings extends Model
     public bool $enableRestoreDismissedTips = false;
 
     public bool $enableVolumeInventory = false;
+    public bool $enableUpgradeInventory = false;
 
     public string $diffRendererName = 'Combined';
     public int $diffContext = 1;

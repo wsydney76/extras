@@ -140,5 +140,6 @@ return [
     'Volumes Inventory' => 'Volumen-Übersicht',
     'Subpath' => 'Unterpfad',
     'Custom Fields' => 'Benutzerdefinierte Felder',
-    'Base' => 'Basis'
+    'Base' => 'Basis',
+    'Enable a utility that show helpful data for consolidating entry types and fields when migrating from Craft 4 to Craft 5' => 'Aktivieren Sie ein Werkzeug, das hilfreiche Daten zur Konsolidierung von Eintragstypen und Feldern anzeigt, wenn Sie von Craft 4 auf Craft 5 migrieren.',
 ];

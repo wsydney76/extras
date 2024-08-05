@@ -1,63 +1,66 @@
-{% set fields = craft.app.fields.allFields | filter(f => className(f) == 'craft\\fields\\Matrix') %}
-{% set limit = craft.app.request.queryParam('limit', 4) %}
-<p>
-    ?limit=[number]
-</p>
-{# @var field \craft\fields\Matrix #}
-<table>
+{% extends "_extras/upgrade/_layout.twig" %}
 
-    <thead>
-    <tr>
-        <th>Matrix Field</th>
-        <th>Entry Type</th>
-        <th>Usages</th>
-        <th>Entries Usage < {{ limit }}</th>
-    </tr>
-    </thead>
 
-    {% for field in fields %}
+{% block content %}
+    {% set fields = craft.app.fields.allFields | filter(f => className(f) == 'craft\\fields\\Matrix') %}
+    {% set limit = craft.app.request.queryParam('limit', 10) %}
+    <p>
+        ?limit=[number]
+    </p>
+    {# @var field \craft\fields\Matrix #}
+    <table>
 
-        {% set types = field.entryTypes %}
+        <thead>
+        <tr>
+            <th>Matrix Field</th>
+            <th>Entry Type</th>
+            <th>Usages</th>
+            <th>Entries Usage < {{ limit }}</th>
+        </tr>
+        </thead>
 
-        {# {% set types = types|filter(t => t.handle == 'markdown') %} #}
+        {% for field in fields %}
 
-        {% for type in types %}
-            <tr>
-                <td>{{ field.name }}</td>
+            {% set types = field.entryTypes %}
 
-                <td>{{ type.name }}</td>
+            {# {% set types = types|filter(t => t.handle == 'markdown') %} #}
 
-                <td>
-                    {% set entries = craft.entries.site('*').status(null).fieldId(field.id).unique().type(type).all %}
+            {% for type in types %}
+                <tr style="vertical-align: top">
+                    <td>{{ field.name }}</td>
 
-                    {{ entries|length }}
+                    <td>{{ type.name }}</td>
 
-                    {% if entries|length == 0 %}
-                        <span style="color: red;">Unused</span>
-                    {% endif %}
+                    <td style="text-align: right">
+                        {% set entries = craft.entries.site('*').status(null).fieldId(field.id).unique().type(type).all %}
 
-                </td>
-                <td>
-                    {% if entries|length < limit %}
-                        {% for entry in entries %}
-                            <div>
-                                {% set owner = craft.entries.id(entry.ownerId).site('*').status(null).unique().one %}
-                                {% if owner %}
-                                    <a href="{{ entry.cpEditUrl }}">{{ owner.title ?: entry.type.name }}</a> {{ entry.site.name }}
-                                {% else %}
-                                    <a href="{{ entry.cpEditUrl }}">{{ entry.title ?: entry.type.name }} INVALID
-                                        OWNER {{ entry.ownerId }}</a>
-                                {% endif %}
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                </td>
-            </tr>
+                        {{ entries|length }}
+
+                        {% if entries|length == 0 %}
+                            <span style="color: red;">Unused</span>
+                        {% endif %}
+
+                    </td>
+                    <td>
+                        {% if entries|length < limit %}
+                            {% for entry in entries %}
+                                <div>
+                                    {% set owner = craft.entries.id(entry.ownerId).site('*').status(null).unique().one %}
+                                    {% if owner %}
+                                        <a href="{{ entry.cpEditUrl }}">{{ owner.title ?: entry.type.name }}</a> {{ entry.site.name }}
+                                    {% else %}
+                                        <a href="{{ entry.cpEditUrl }}">{{ entry.title ?: entry.type.name }} INVALID
+                                            OWNER {{ entry.ownerId }}</a>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+
         {% endfor %}
+    </table>
 
-    {% endfor %}
-</table>
 
-<style>
-    {% include '/_extras/upgrade/styles.css' %}
-</style>
+{% endblock %}

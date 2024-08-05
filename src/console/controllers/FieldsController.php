@@ -9,78 +9,34 @@ use craft\console\Controller;
 use craft\fieldlayoutelements\CustomField;
 use craft\fields\Matrix;
 use craft\helpers\Console;
+use wsydney76\extras\ExtrasPlugin;
 use yii\console\ExitCode;
 
 class FieldsController extends Controller
 {
     public function actionMergeCandidates($mergeablesOnly = 0): int
     {
-        $signatures = [];
+        $mergeCandidatesLists = ExtrasPlugin::getInstance()->upgradeService->getMergeCandidates($mergeablesOnly);
 
-        foreach (Craft::$app->getFields()->getAllFields() as $field) {
-
-            if ($mergeablesOnly && !$field instanceof MergeableFieldInterface) {
-                continue;
-            }
-
-            // Skip Matrix and CKEditor fields
-            if ($field instanceof Matrix || $field instanceof Field) {
-                continue;
-            }
-
-            $signature = [
-                'type' => $field::class,
-                'translationMethod' => $field->translationMethod,
-                'translationKeyFormat' => $field->translationKeyFormat,
-                'searchable' => $field->searchable,
-                // 'instructions' => $field->instructions,
-                'settings' => $field->settings,
-            ];
-
-            $hash = md5(json_encode($signature));
-
-            $signatures[$hash][] = $field->handle;
-        }
-
-        $found = false;
-        foreach ($signatures as $hash => $handles) {
-            if (count($handles) > 1) {
-                $found = true;
-                sort($handles);
-                Console::output(implode(', ', $handles));
-            }
-        }
-
-        if (!$found) {
+        if (!$mergeCandidatesLists) {
             Console::output("No merge candidates found");
+            return ExitCode::OK;
+        }
+
+        foreach ($mergeCandidatesLists as $candidatesList) {
+            Console::output($candidatesList);
         }
 
         return ExitCode::OK;
     }
 
-    public function actionReplaceField($entryTypeHandle = '', $fromHandle = '', $toHandle = ''): int
+    public function actionReplaceField($entryTypeHandle = null, $fromHandle = null, $toHandle = null): int
     {
-        if (!$entryTypeHandle) {
-            $entryTypeHandle = Console::prompt("Entry type handle:");
-        }
-
-        if (!$fromHandle) {
-            $fromHandle = Console::prompt("From field instance handle:");
-        }
-
-        if (!$toHandle) {
-            $toHandle = Console::prompt("To field handle:");
-        }
 
         if (!$entryTypeHandle || !$fromHandle || !$toHandle) {
-            $this->stdout("Missing parameters\n");
+            Console::output("Usage: craft _extras/fields/replace-field <entryTypeHandle> <fromFieldInstanceHandle> <toFieldHandle>");
             return ExitCode::UNSPECIFIED_ERROR;
         }
-
-        /*if ($fromHandle === $toHandle) {
-            $this->stdout("From and to fields are the same\n");
-            return ExitCode::UNSPECIFIED_ERROR;
-        }*/
 
         $entryType = Craft::$app->entries->getEntryTypeByHandle($entryTypeHandle);
         if (!$entryType) {
@@ -94,18 +50,11 @@ class FieldsController extends Controller
             return ExitCode::UNSPECIFIED_ERROR;
         }
 
-        if (!Console::confirm("Replace $fromHandle with $toHandle in entry type $entryTypeHandle?")) {
-            return ExitCode::UNSPECIFIED_ERROR;
-        }
-
         $found = false;
         foreach ($entryType->getFieldLayout()->getAllElements() as $fieldInstance) {
             if ($fieldInstance instanceof CustomField) {
 
-                if ($fieldInstance->handle && $fieldInstance->handle !== $fromHandle) {
-                    continue;
-                }
-
+                // This is the original handle, or the overwritten one ???
                 if ($fieldInstance->getField()->handle !== $fromHandle) {
                     continue;
                 }
@@ -120,12 +69,18 @@ class FieldsController extends Controller
                      return ExitCode::UNSPECIFIED_ERROR;
                  }
 
-                return ExitCode::OK;
-
                 $found = true;
-                $fieldInstance->label = (Console::prompt("Label for $toHandle:", ['default' => $fieldInstance->label])) ?? null;
-                $fieldInstance->handle = (Console::prompt("Handle for $toHandle:", ['default' => $fieldInstance->handle])) ?? null;
-                $fieldInstance->instructions = (Console::prompt("Instructions for $toHandle:", ['default' => $fieldInstance->instructions])) ?? null;
+
+                 // $fieldInstance->setField($to);
+
+                $label = Console::prompt("Label for $toHandle:", ['default' => $fieldInstance->label]);
+                $handle = Console::prompt("Handle for $toHandle:", ['default' => $fieldInstance->handle]);
+                $instructions = Console::prompt("Instructions for $toHandle:", ['default' => $fieldInstance->instructions]);
+
+
+                $fieldInstance->label = (empty($label) || $label === $to->label) ? null : $label;
+                $fieldInstance->handle = (empty($handle) || $handle === $to->handle) ? null : $handle;
+                $fieldInstance->instructions = (empty($instructions) || $instructions === $to->instructions) ? null : $instructions;
 
                 $fieldInstance->setFieldUid($to->uid);
             }
@@ -136,12 +91,16 @@ class FieldsController extends Controller
             return ExitCode::UNSPECIFIED_ERROR;
         }
 
+        if (!Console::confirm("Replace $fromHandle with $toHandle in entry type $entryTypeHandle?")) {
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+
         if (!Craft::$app->entries->saveEntryType($entryType)) {
             $this->stdout("Could not save entry type $entryTypeHandle\n");
         }
 
         Console::output("Field $fromHandle replaced with $toHandle in entry type $entryTypeHandle");
-        Console::output("Check entry type file, run project-config/apply and clear caches");
+        Console::output("Check entry type file, run craft project-config/apply.");
 
         return ExitCode::OK;
     }
