@@ -4,7 +4,8 @@
     <a class="go" href="{{ cpUrl('_extras/upgrade/fields') }}">Fields</a>
     {% for fieldType in fieldTypes %}
         <div style="margin-left: 24px;">
-            <a class="go" href="{{ cpUrl('_extras/upgrade/fields', {type: fieldType}) }}">{{ fieldType|replace('craft\\fields\\','') }}</a>
+            <a class="go"
+               href="{{ cpUrl('_extras/upgrade/fields', {type: fieldType}) }}">{{ fieldType|replace('craft\\fields\\','') }}</a>
         </div>
     {% endfor %}
 
@@ -20,10 +21,13 @@
 {% if mergeCandidatesLists %}
     <h2>Merge Candidates</h2>
     {% for mergeCandidatesList in mergeCandidatesLists %}
-    	<p>
-            <a class="go" href="{{ cpUrl('_extras/upgrade/fields', {handles: mergeCandidatesList|replace(' ','')}) }}">{{ mergeCandidatesList }}</a>
+        <p>
+            <a class="go"
+               href="{{ cpUrl('_extras/upgrade/fields', {handles: mergeCandidatesList|replace(' ','')}) }}">{{ mergeCandidatesList }}</a>
         </p>
     {% endfor %}
-    {% else %}
-    No merge candidates found
+{% else %}
+    <p>
+        No merge candidates found
+    </p>
 {% endif %}

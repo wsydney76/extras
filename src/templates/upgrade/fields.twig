@@ -58,7 +58,7 @@
             <th>Name</th>
             <th>Handle</th>
             <th>Type</th>
-            <th>Used?</th>
+            <th>Usages</th>
             <th>UID</th>
             {% if showTranslatable %}
                 <th>Translation</th>
@@ -89,8 +89,11 @@
                 <td>{{ field.handle }}</td>
                 <td><a href="?type={{ className(field) }}">{{ className(field) }}</a></td>
                 <td>
-                    {% if not (craft.app.fields.findFieldUsages(field)) %}
+                    {% set usages = craft.app.fields.findFieldUsages(field)|length %}
+                    {% if not (usages) %}
                         <span style="color:red;">No usages</span>
+                        {% else %}
+                            {{ usages }}
                     {% endif %}
                 </td>
 
