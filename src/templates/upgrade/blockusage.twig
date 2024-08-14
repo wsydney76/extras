@@ -43,6 +43,7 @@
                     </td>
                     <td>
                         {% if entries|length < limit %}
+                            {% set entries = entries|multisort(e => craft.entries.id(e.ownerId).site('*').status(null).unique().one.title) %}
                             {% for entry in entries %}
                                 <div>
                                     {% set owner = craft.entries.id(entry.ownerId).site('*').status(null).unique().one %}
