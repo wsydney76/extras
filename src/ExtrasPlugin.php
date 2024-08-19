@@ -3,21 +3,23 @@
 namespace wsydney76\extras;
 
 use Craft;
-use Illuminate\Support\Collection;
+use craft\base\conditions\BaseCondition;
+use craft\base\Element;
 use craft\base\Event;
 use craft\base\Model;
 use craft\base\Plugin;
-use craft\base\conditions\BaseCondition;
 use craft\elements\Entry;
 use craft\events\DefineBehaviorsEvent;
 use craft\events\DefineFieldLayoutElementsEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterConditionRulesEvent;
 use craft\events\RegisterElementActionsEvent;
+use craft\events\SetElementRouteEvent;
 use craft\models\FieldLayout;
 use craft\services\Dashboard;
 use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
+use Illuminate\Support\Collection;
 use wsydney76\extras\behaviors\EntryBehavior;
 use wsydney76\extras\elements\actions\CopyMarkdownLink;
 use wsydney76\extras\elements\actions\CopyReferenceLinkTag;
@@ -38,7 +40,6 @@ use wsydney76\extras\web\assets\cpassets\CustomCpAsset;
 use wsydney76\extras\web\assets\sidebarvisibility\SidebarVisibilityAsset;
 use wsydney76\extras\web\twig\ExtrasExtension;
 use wsydney76\extras\widgets\MyProvisionsalDraftsWidget;
-use yii\base\Event as EventAlias;
 
 /**
  * Extras plugin
@@ -78,6 +79,7 @@ class ExtrasPlugin extends Plugin
             $this->draftsHelper->createPermissions();
             $this->initCollectionMakros();
             $this->initTwigExtension();
+            $this->setEntryRoute();
 
             if (Craft::$app->request->isCpRequest) {
                 $this->initSidebarVisibility();
@@ -91,7 +93,6 @@ class ExtrasPlugin extends Plugin
                 $this->initUtilities();
             }
         });
-
     }
 
     protected function createSettingsModel(): ?Model
@@ -316,6 +317,41 @@ class ExtrasPlugin extends Plugin
                 Utilities::EVENT_REGISTER_UTILITIES,
                 function(RegisterComponentTypesEvent $event) {
                     $event->types[] = UpgradeInventory::class;
+                });
+        }
+    }
+
+
+    /**
+     * @return void
+     */
+    private function setEntryRoute(): void
+    {
+        if ($this->getSettings()->enableActionRoutes) {
+
+            Event::on(
+                Entry::class,
+                Element::EVENT_SET_ROUTE,
+                function(SetElementRouteEvent $event) {
+                    /** @var Entry $entry */
+                    $entry = $event->sender;
+
+                    $template = $entry->section ?
+                        // craft\elements\Entry::route()
+                        $entry->section->getSiteSettings()[$entry->siteId]->template ?? null :
+                        // craft\fields\Matrix::getRouteForElement()
+                        $entry->field->siteSettings[$entry->site->uid]['template'] ?? '';
+
+                    if (!$template) {
+                        return;
+                    }
+
+                    if (str_starts_with($template, 'action:')) {
+                        // Assume the setting is correct, will throw an error anyway if not
+                        $action = explode(':', $template)[1];
+                        $event->route = $action;
+                        $event->handled = true;
+                    }
                 });
         }
     }

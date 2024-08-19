@@ -145,5 +145,8 @@ return [
     'Upgrade Inventory' => 'Upgrade Inventory',
     'Fields' => 'Felder',
     'Enable Upgrad Inventory Utility' => 'Enable Upgrad Inventory Utility',
-    'Enable Upgrade Inventory Utility' => 'Upgrade Inventory Utility aktivieren'
+    'Enable Upgrade Inventory Utility' => 'Upgrade Inventory Utility aktivieren',
+    'Enable section template' => 'Enable section template',
+    'Enable Action Routes' => 'Enable Action Routes',
+    'Enable section template settings to point to custom controller, in the form of "action:module/controller/action"' => 'Enable section template settings to point to custom controller, in the form of "action:module/controller/action"'
 ];
