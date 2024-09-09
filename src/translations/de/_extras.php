@@ -148,5 +148,8 @@ return [
     'Enable Upgrade Inventory Utility' => 'Upgrade Inventory Utility aktivieren',
     'Enable section template' => 'Enable section template',
     'Enable Action Routes' => 'Enable Action Routes',
-    'Enable section template settings to point to custom controller, in the form of "action:module/controller/action"' => 'Enable section template settings to point to custom controller, in the form of "action:module/controller/action"'
+    'Enable section template settings to point to custom controller, in the form of "action:module/controller/action"' => 'Enable section template settings to point to custom controller, in the form of "action:module/controller/action"',
+    'Add a link to view an element on the frontend to cards.' => 'Fügen Sie einen Link zur Ansicht eines Elements auf dem Frontend zu Karten hinzu.',
+    'View' => 'Ansehen',
+    'Enable View Links In Cards' => 'Aktivieren Sie Anzeige-Links in Karten',
 ];

@@ -204,7 +204,7 @@ class ExtrasExtension extends AbstractExtension
         }
 
 
-        if ($options['type'] && (!in_array($options['type'], ['int', 'float', 'array', 'bool', 'class', 'list']))) {
+        if ($options['type'] && (!in_array($options['type'], ['string', 'int', 'float', 'array', 'bool', 'class', 'list']))) {
             throw new \InvalidArgumentException('Invalid type: ' . $options['type']);
         }
 
@@ -225,6 +225,7 @@ class ExtrasExtension extends AbstractExtension
 
 
         $isValid = match ($options['type']) {
+            'string' => is_string($value),
             'int' => is_scalar($value) && preg_match('/^\d+$/', $value), // is_int($value) does not work for request parameters
             'float' => is_float($value),
             'array' => is_array($value),

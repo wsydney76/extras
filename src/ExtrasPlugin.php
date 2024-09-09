@@ -10,15 +10,19 @@ use craft\base\Model;
 use craft\base\Plugin;
 use craft\elements\Entry;
 use craft\events\DefineBehaviorsEvent;
+use craft\events\DefineElementHtmlEvent;
 use craft\events\DefineFieldLayoutElementsEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterConditionRulesEvent;
 use craft\events\RegisterElementActionsEvent;
 use craft\events\SetElementRouteEvent;
+use craft\helpers\Cp;
 use craft\models\FieldLayout;
 use craft\services\Dashboard;
 use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
+use DOMDocument;
+use DOMXPath;
 use Illuminate\Support\Collection;
 use wsydney76\extras\behaviors\EntryBehavior;
 use wsydney76\extras\elements\actions\CopyMarkdownLink;
@@ -40,6 +44,7 @@ use wsydney76\extras\web\assets\cpassets\CustomCpAsset;
 use wsydney76\extras\web\assets\sidebarvisibility\SidebarVisibilityAsset;
 use wsydney76\extras\web\twig\ExtrasExtension;
 use wsydney76\extras\widgets\MyProvisionsalDraftsWidget;
+use function sprintf;
 
 /**
  * Extras plugin
@@ -266,6 +271,24 @@ class ExtrasPlugin extends Plugin
                 }
             );
         }
+
+        if ($this->getSettings()->enableViewLinkInCards) {
+            Event::on(
+                Cp::class,
+                Cp::EVENT_DEFINE_ELEMENT_CARD_HTML,
+                function (DefineElementHtmlEvent $event) {
+                    if ($event->element instanceof Entry && $event->element->section && $event->element->url) {
+
+                        $viewLinkHtml = sprintf('<a href="%s" class="go" title="%s" target="_blank"></a>',
+                            $event->element->url,
+                           Craft::t('_extras', 'View')
+                        );
+
+                        $event->html = $this->insertViewLink($event->html, $viewLinkHtml);
+                    }
+                }
+            );
+        }
     }
 
     private function initTwigExtension()
@@ -356,4 +379,32 @@ class ExtrasPlugin extends Plugin
         }
     }
 
+    private function insertViewLink($givenHtml, $htmlContent): false|string
+    {
+        // Load the given HTML content into a DOMDocument object
+        $dom = new DOMDocument();
+        // Load HTML with proper encoding handling
+        @$dom->loadHTML ('<?xml encoding="utf-8" ?>' . $givenHtml);
+
+        // Find the target div to append the new content
+        // TODO: This does not work for singles
+        $xpath = new DOMXPath($dom);
+        $cardTargetDiv = $xpath->query("//ul[contains(@class, 'flex') and contains(@class, 'gap-xs')]")->item(0);
+
+        if ($cardTargetDiv) {
+            // Create a new div element for custom content
+            // $newDiv = $dom->createElement('div', $htmlContent);
+            $fragment = $dom->createDocumentFragment();
+            $fragment->appendXML($htmlContent);
+
+            // Append the new content after the card-actions div inner content
+            $cardTargetDiv->appendChild($fragment);
+            // $cardTargetDiv->setAttribute('style', 'align-items: center;');
+
+            // Save and return the modified HTML
+            return $dom->saveHTML();
+        }
+
+        return $givenHtml; // Return original HTML if card-actions not found
+    }
 }

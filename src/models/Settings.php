@@ -32,6 +32,8 @@ class Settings extends Model
 
     public bool $enableActionRoutes = false;
 
+    public bool $enableViewLinkInCards = false;
+
     public string $diffRendererName = 'Combined';
     public int $diffContext = 1;
     public bool $diffIgnoreCase = false;
