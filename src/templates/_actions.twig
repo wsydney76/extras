@@ -1,0 +1,256 @@
+{#
+    Call Craft web controller actions from JavaScript and display success/error notices
+
+    Usage:
+
+    Template:
+    {% include '@extras/_actions.twig' with {} only %}
+
+    JavaScript:
+
+    window.postAction(action, data, callback, handleErrors = true)
+
+    window.postAction(`module/controller/do-something`,
+        {'id': 1234, ...},
+        data => {
+            ...
+            notice({type: 'success', text: data.message});
+        }
+    );
+
+    window.postAction(`module/controller/do-something`,
+        {'id': 1234, ...},
+
+        (data, status, ok) => {
+            if (status === 200) {
+                 ...
+                notice({type: 'success', text: data.message);
+            } else {
+                ...
+                notice({type: 'error', text: data.message});
+            }
+        }, false)
+
+    Note:
+    For simplicity and keeping everything in one file, all JS/HTML/CSS is written into every single page source code.
+
+    In case you want to put parts into your own asset bundle, or modify them, just disable the corresponding part.
+
+    Also think of including this template conditionally only on pages that need it.
+
+    {% do _globals.set('requireActions', true) %}
+
+    ...
+
+    {% if _globals.get('requireActions') %}
+        {% include '@extras/_actions.twig' with {} only %}
+    {% endif %}
+
+#}
+
+{% set baseUrl = baseUrl ?? parseEnv('$PRIMARY_SITE_URL') %}
+{% set enableNotices = enableNotices is defined ? enableNotices : true %}
+{% set enableClasses = enableClasses is defined ? enableClasses : true %}
+{% set enableFetchJs = enableFetchJs is defined ? enableFetchJs : true %}
+{% set enableNoticesJs = enableNoticesJs is defined ? enableNoticesJs : true %}
+{% set enableNoticesHtml = enableNoticesHtml is defined ? enableNoticesHtml : true %}
+
+{# ======================================================================= #}
+{# Set params required for sending ajax (post) requests to web controllers #}
+{# ======================================================================= #}
+
+{% js %}
+window.baseUrl = "{{ baseUrl }}"
+window.actionTrigger = "{{ craft.app.config.general.actionTrigger }}";
+window.csrfTokenName = "{{ craft.app.config.general.csrfTokenName }}";
+window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
+{% endjs %}
+
+{# ======================================================================= #}
+{# Fetch response Craft web controller actions                             #}
+{# ======================================================================= #}
+
+{% if enableFetchJs %}
+    {% js %}
+
+    window.postAction = function(action, data, callback, handleErrors = true, timeout = 10000) {
+
+    const controller = new AbortController();
+    let timeoutId;
+    if (timeout > 0) {
+        timeoutId = setTimeout(() => controller.abort(), timeout);
+    }
+
+    fetch(window.baseUrl + '/' + window.actionTrigger + '/' + action, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-Csrf-Token': window.csrfTokenValue
+        },
+        body: JSON.stringify(data),
+        signal: controller.signal
+    })
+        .then((response) => {
+            if (timeout > 0) {
+                clearTimeout(timeoutId);
+            }
+            return new Promise((resolve) => response.json()
+                .then((json) => resolve({
+                    status: response.status,
+                    ok: response.ok,
+                    json
+                })));
+        }).then(({status, json, ok}) => {
+            const message = json.message;
+            switch (status) {
+                case 400:
+                    console.log(status, json);
+                    if (handleErrors) {
+                        notice({type: 'error', text: message});
+                    } else {
+                        callback(json, status, ok);
+                    }
+                    break;
+                case 201:
+                case 200:
+                    callback(json, status, ok);
+                    break;
+                case 500:
+                default:
+                    console.log(status, json);
+                    throw new Error(status + ' - ' + message);
+            }
+        })
+        .catch(function(error) {
+            console.log('Error caught:', error);
+            if (error.name === 'AbortError') {
+                notice({type: 'error', text: 'Request timed out.'});
+            } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                notice({type: 'error', text: 'Could not connect to server.'});
+            } else {
+                notice({type: 'error', text: error.message});
+            }
+        });
+}
+
+    {% endjs %}
+{% endif %}
+
+{# ======================================================================= #}
+{# Show notices via Alpine component                                       #}
+{# ======================================================================= #}
+
+{% if enableNoticesJs %}
+    {% js %}
+
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('noticesHandler', () => (
+            {
+                notices: [],
+                visible: [],
+                add(notice) {
+                    notice.id = Date.now()
+                    this.notices.push(notice)
+                    this.fire(notice.id)
+                },
+                fire(id) {
+                    this.visible.push(this.notices.find(notice => notice.id === id))
+                    const timeShown = 4000 * this.visible.length
+                    setTimeout(() => {
+                        this.remove(id)
+                    }, timeShown)
+                },
+                remove(id) {
+                    const notice = this.visible.find(notice => notice.id === id)
+                    const index = this.visible.indexOf(notice)
+                    this.visible.splice(index, 1)
+                }
+            })
+        )
+    })
+
+    // notice({type:'success', text: 'It worked')
+    // Type: one of success|info|warning|error
+    function notice(data) {
+        window.dispatchEvent(new CustomEvent('notice', {detail: data}));
+    }
+
+    {% endjs %}
+{% endif %}
+
+{% if enableNoticesHtml %}
+    <div class="notices-wrapper"
+         x-data="noticesHandler"
+         x-on:notice.window="add($event.detail)">
+
+        <template x-for="notice in notices" :key="notice.id">
+            <div class="notices-item"
+                 :class="{
+                'notice-success': notice.type === 'success',
+                'notice-primary': notice.type === 'info',
+                'notice-warning': notice.type === 'warning',
+                'notice-error': notice.type === 'error'
+                }"
+                 x-show="visible.includes(notice)"
+                 x-transition
+                 x-on:click="remove(notice.id)"
+                 x-text="notice.text">
+            </div>
+        </template>
+    </div>
+{% endif %}
+
+{# ======================================================================= #}
+{# Classes for notices                                                     #}
+{# ======================================================================= #}
+
+{% if enableClasses %}
+    {% css %}
+    .notices-wrapper {
+        pointer-events: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        height: 100vw;
+        width: 100vw;
+        flex-direction: column-reverse;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .notices-item {
+        pointer-events: auto;
+        cursor: pointer;
+        z-index: 9999;
+        margin-top: 0.5rem;
+        display: flex;
+        width: 24rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.5rem;
+        padding: 0.5rem 2rem;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        color: white;
+        box-shadow: 4px 4px 16px -6px rgba(0,0,0,0.5);
+    }
+
+    .notice-success {
+        background-color: #16a34a; /* green-600 */
+    }
+    .notice-error {
+        background-color: #dc2626; /* red-600 */
+    }
+    .notice-info {
+        background-color: #2563eb; /* blue-600 */
+    }
+    .notice-warning {
+        background-color: #ea580c; /* orange-600 */
+    }
+    {% endcss %}
+{% endif %}
+
+{# For fetch logic see: https://stackoverflow.com/questions/40248231/how-to-handle-http-code-4xx-responses-in-fetch-api #}
+{# For notice component see: https://codepen.io/KevinBatdorf/pen/JjGKbMa?css-preprocessor=none #}

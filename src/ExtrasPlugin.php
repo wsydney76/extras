@@ -15,12 +15,14 @@ use craft\events\DefineFieldLayoutElementsEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterConditionRulesEvent;
 use craft\events\RegisterElementActionsEvent;
+use craft\events\RegisterTemplateRootsEvent;
 use craft\events\SetElementRouteEvent;
 use craft\helpers\Cp;
 use craft\models\FieldLayout;
 use craft\services\Dashboard;
 use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
+use craft\web\View;
 use DOMDocument;
 use DOMXPath;
 use Illuminate\Support\Collection;
@@ -96,6 +98,8 @@ class ExtrasPlugin extends Plugin
                 $this->initRestoreDismissedTips();
                 $this->initFieldLayoutElements();
                 $this->initUtilities();
+            } else {
+                $this->registerSiteTemplateRoot();
             }
         });
     }
@@ -406,5 +410,16 @@ class ExtrasPlugin extends Plugin
         }
 
         return $givenHtml; // Return original HTML if card-actions not found
+    }
+
+    private function registerSiteTemplateRoot()
+    {
+        Event::on(
+            View::class,
+            View::EVENT_REGISTER_SITE_TEMPLATE_ROOTS,
+            function(RegisterTemplateRootsEvent $event) {
+                $event->roots['@extras'] = __DIR__ . '/templates';
+            }
+        );
     }
 }
