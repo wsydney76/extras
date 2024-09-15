@@ -1,118 +1,117 @@
 {#
-    Call Craft web controller actions from JavaScript and display success/error notices
+Call Craft web controller actions from JavaScript and display success/error notices
 
-    Usage:
+Usage:
 
-    Template:
-    {% include '@extras/_actions.twig' with {...} only %}
+Template:
+{% include '@extras/_actions.twig' with {...} only %}
 
-    JavaScript:
+JavaScript:
 
-    Signature
-    window.postAction(action, data, callback, handleFailures = true, timeout = 10000), where
-    - action is the route to the Craft web controller, e.g. mymodule/mycontroller/myaction,
-    - data is an object with the parameters passed to the server as body params, e.g. {'id': 1234, 'newTitle': 'My New Title'}
-    - callback is a closure that will handle the response, unused arguments can be omitted.
-      - () => {...}
-      - data => {...}
-      - (data, status, ok) => {...}
-    - handleFailures can be set to false, if you want to handle '400' responses in the callback
-    - timeout is the number of milliseconds after which a request will be aborted. Set to '0' if the request should never timeout.
+Signature
+window.postAction(action, data, callback, handleFailures = true, timeout = 10000), where
+- action is the route to the Craft web controller, e.g. mymodule/mycontroller/myaction,
+- data is an object with the parameters passed to the server as body params, e.g. {'id': 1234, 'newTitle': 'My New Title'}
+- callback is a closure that will handle the response, unused arguments can be omitted.
+  - () => {...}
+  - data => {...}
+  - (data, status, ok) => {...}
+- handleFailures can be set to false, if you want to handle '400' responses in the callback
+- timeout is the number of milliseconds after which a request will be aborted. Set to '0' if the request should never timeout.
 
-    Signature of the callback: (data, status, ok), where
-    - data is the decoded json response,
-      - data.message will hold the message returned via ->asSuccess('message'), ->asFailure('message')
-      - data.<key> will hold additional data returned
-      - data.<modelName> will hold model data return via ->asModelSuccess(), ->asModelFailure()
-      - data.errors will hold validation errors for a model returned via ->asModelFailure()
-    - status is the http status code, (200, 400, etc),
-    - ok is a boolean, indicating whether the request was successful or not.
+Signature of the callback: (data, status, ok), where
+- data is the decoded json response,
+  - data.message will hold the message returned via ->asSuccess('message'), ->asFailure('message')
+  - data.<key> will hold additional data returned
+  - data.<modelName> will hold model data return via ->asModelSuccess(), ->asModelFailure()
+  - data.errors will hold validation errors for a model returned via ->asModelFailure()
+- status is the http status code, (200, 400, etc),
+- ok is a boolean, indicating whether the request was successful or not.
 
 
-    By default, the callback will only be called if the server responds with a status code "200",
-    so that you don't have to care about any errors in your client code.
+By default, the callback will only be called if the server responds with a status code "200",
+so that you don't have to care about any errors in your client code.
 
-    Errors will be logged to console and displayed via an error notice:
-    - Controller runtime errors
-    - Connection failure (server not running)
-    - Non-existing controller actions
-    - Uncaught exceptions thrown in controller action
-    - Failed 'require...' constraints (like $this->requireAdmin())
-    - Timed out requests
-    - Non-JSON responses (that should never happen...)
-    - Responses with status code 400, like failed controller actions (return $this->asFailure(...)), if handleFailures = true (default)
+Errors will be logged to console and displayed via an error notice:
+- Controller runtime errors
+- Connection failure (server not running)
+- Non-existing controller actions
+- Uncaught exceptions thrown in controller action
+- Failed 'require...' constraints (like $this->requireAdmin())
+- Timed out requests
+- Non-JSON responses (that should never happen...)
+- Responses with status code 400, like failed controller actions (return $this->asFailure(...)), if handleFailures = true (default)
 
-    Example:
+Example:
 
-        Controller:
-        actionMyaction: return $this->asSuccess('Done');
+    Controller:
+    actionMyaction: return $this->asSuccess('Done');
 
-        window.postAction("mymodule/mycontroller/myaction",
-            {'id': 1234, ...},
-            data => {
-                // do something
-                notice({type: 'success', text: data.message});
+    window.postAction("mymodule/mycontroller/myaction",
+        {'id': 1234, ...},
+        data => {
+            // do something
+            notice({type: 'success', text: data.message});
+        }
+    );
+
+
+Example: Handling failures in callback
+
+    Controller:
+
+    if(...failed...) {
+        return $this->asFailure('Something went wrong.');
+    }
+    ...
+    return $this->asSuccess('Done');
+
+
+    window.postAction("mymodule/mycontroller/myaction",
+        {'id': 1234, ...},
+
+        (data, status, ok) => {
+            if (status === 200) {
+                 ...
+                notice({type: 'success', text: data.message);
+            } else {
+                ...
+                notice({type: 'error', text: data.message});
             }
+        }, false)
+
+
+Example with additional data:
+
+    Controller:
+    return $this->asSuccess(
+            'This is a success with data.',
+            [
+                'foo' => 'bar',
+                'baz' => 'qux',
+            ]
         );
 
+    postAction("mymodule/mycontroller/myaction",
+        {'id': 1234},
+        data => {
+            alert(data.message + ': Foo=' + data.foo);
+        });
 
-    Example: Handling failures in callback
+Note:
+For simplicity and having just one file, all JS/HTML/CSS is included directly in each page's source code.
 
-        Controller:
+If you want to include parts in your own asset bundle or modify them, disable the corresponding part.
 
-        if(...failed...) {
-            return $this->asFailure('Something went wrong.');
-        }
-        ...
-        return $this->asSuccess('Done');
+Consider including this template only on pages where it is needed.
 
+{% do _globals.set('requireActions', true) %}
 
-        window.postAction("mymodule/mycontroller/myaction",
-            {'id': 1234, ...},
+...
 
-            (data, status, ok) => {
-                if (status === 200) {
-                     ...
-                    notice({type: 'success', text: data.message);
-                } else {
-                    ...
-                    notice({type: 'error', text: data.message});
-                }
-            }, false)
-
-
-    Example with additional data:
-
-        Controller:
-        return $this->asSuccess(
-                'This is a success with data.',
-                [
-                    'foo' => 'bar',
-                    'baz' => 'qux',
-                ]
-            );
-
-        postAction("mymodule/mycontroller/myaction",
-            {'id': 1234},
-            data => {
-                alert(data.message + ': Foo=' + data.foo);
-            });
-
-    Note:
-    For simplicity and having just one file, all JS/HTML/CSS is included directly in each page's source code.
-
-    If you want to include parts in your own asset bundle or modify them, disable the corresponding part.
-
-    Consider including this template only on pages where it is needed.
-
-    {% do _globals.set('requireActions', true) %}
-
-    ...
-
-    {% if _globals.get('requireActions') %}
-        {% include '@extras/_actions.twig' with {} only %}
-    {% endif %}
-
+{% if _globals.get('requireActions') %}
+    {% include '@extras/_actions.twig' with {} only %}
+{% endif %}
 #}
 
 {% set baseUrl = baseUrl ?? parseEnv('$PRIMARY_SITE_URL') %}
@@ -214,11 +213,21 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
     {% js %}
 
     class NoticesHandler {
-        constructor(timeout = 4000) {
+        constructor(params = {}) {
+            const {timeout = 4000, classes = {}, wrapperId = 'notices-wrapper'} = params;
             this.notices = [];
             this.visible = [];
-            this.noticeWrapper = document.getElementById('notices-wrapper'); // Wrapper element for notices
+            this.noticeWrapper = document.getElementById(wrapperId); // Wrapper element for notices
             this.timeout = timeout;
+            this.classes = {
+                wrapper: 'notices-wrapper',
+                item: 'notices-item',
+                success: 'notice-success',
+                info: 'notice-info',
+                warning: 'notice-warning',
+                error: 'notice-error',
+                ...classes
+            };
             this.init();
         }
 
@@ -226,6 +235,7 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
         init() {
             // Add global event listener for custom "notice" events
             window.addEventListener('notice', (event) => this.add(event.detail));
+            this.noticeWrapper.classList.add(this.classes.wrapper);
         }
 
         // Add a new notice
@@ -267,29 +277,13 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
             // Iterate over visible notices and create the necessary DOM elements
             this.visible.forEach(notice => {
                 const noticeDiv = document.createElement('div');
-                noticeDiv.classList.add('notices-item');
+                noticeDiv.classList.add(this.classes.item);
 
                 noticeDiv.textContent = notice.text; // Set the text of the notice
 
                 // Add appropriate class based on the type of notice
-                switch (notice.type) {
-                    case 'success':
-                        noticeDiv.classList.add('notice-success');
-                        break;
-                    case 'info':
-                        noticeDiv.classList.add('notice-info');
-                        break;
-                    case 'warning':
-                        noticeDiv.classList.add('notice-warning');
-                        break;
-                    case 'error':
-                        noticeDiv.classList.add('notice-error');
-                        break;
-                    default:
-                        noticeDiv.classList.add('notice-error');
-                        noticeDiv.textContent = 'Invalid notice type: ' + notice.type;
-                        break;
-                }
+                const noticeClass = this.classes[notice.type] || this.classes.error;
+                noticeDiv.classList.add(noticeClass);
 
                 // Add click event to remove the notice when clicked
                 noticeDiv.addEventListener('click', () => this.remove(notice.id));
@@ -300,11 +294,9 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
         }
     }
 
-    // Initialize the notice handler
-    const noticesHandler = new NoticesHandler(4000);
-
     // notice({type:'success', text: 'It worked')
     // Type: one of success|info|warning|error
+    // In AlpineJS '$dispatch('notice', 'data')' can be used
     function notice(data) {
         window.dispatchEvent(new CustomEvent('notice', {detail: data}));
     }
@@ -313,7 +305,12 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 {% endif %}
 
 {% if enableNoticesHtml %}
-    <div class="notices-wrapper" id="notices-wrapper"></div>
+    {% js %}
+    // Initialize the notice handler
+    const noticesHandler = new NoticesHandler();
+    {% endjs %}
+
+    <div id="notices-wrapper"></div>
 {% endif %}
 
 {# ======================================================================= #}
@@ -348,21 +345,27 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
         padding: 0.5rem 2rem;
         font-size: 0.875rem;
         line-height: 1.25rem;
-        color: white;
-        box-shadow: 4px 4px 16px -6px rgba(0,0,0,0.5);
+        box-shadow: 4px 4px 16px -6px rgba(0, 0, 0, 0.5);
     }
 
     .notice-success {
         background-color: #16a34a; /* green-600 */
+        color: white;
     }
+
     .notice-error {
         background-color: #dc2626; /* red-600 */
+        color: white;
     }
+
     .notice-info {
         background-color: #2563eb; /* blue-600 */
+        color: white;
     }
+
     .notice-warning {
         background-color: #ea580c; /* orange-600 */
+        color: white;
     }
     {% endcss %}
 {% endif %}
