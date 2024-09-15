@@ -207,37 +207,101 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 {% endif %}
 
 {# ======================================================================= #}
-{# Show notices via Alpine component                                       #}
+{# Show notices via NoticesHandler class                                   #}
 {# ======================================================================= #}
 
 {% if enableNoticesJs %}
     {% js %}
 
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('noticesHandler', () => (
-            {
-                notices: [],
-                visible: [],
-                add(notice) {
-                    notice.id = Date.now()
-                    this.notices.push(notice)
-                    this.fire(notice.id)
-                },
-                fire(id) {
-                    this.visible.push(this.notices.find(notice => notice.id === id))
-                    const timeShown = 4000 * this.visible.length
-                    setTimeout(() => {
-                        this.remove(id)
-                    }, timeShown)
-                },
-                remove(id) {
-                    const notice = this.visible.find(notice => notice.id === id)
-                    const index = this.visible.indexOf(notice)
-                    this.visible.splice(index, 1)
+    class NoticesHandler {
+        constructor(timeout = 4000) {
+            this.notices = [];
+            this.visible = [];
+            this.noticeWrapper = document.getElementById('notices-wrapper'); // Wrapper element for notices
+            this.timeout = timeout;
+            this.init();
+        }
+
+        // Initialize the notice handler
+        init() {
+            // Add global event listener for custom "notice" events
+            window.addEventListener('notice', (event) => this.add(event.detail));
+        }
+
+        // Add a new notice
+        add(notice) {
+            notice.id = Date.now(); // Unique ID for each notice
+            this.notices.push(notice); // Add to notices array
+            this.fire(notice.id); // Make notice visible
+        }
+
+        // Show the notice
+        fire(id) {
+            const notice = this.notices.find(notice => notice.id === id);
+            if (notice) {
+                this.visible.push(notice); // Add to visible array
+                this.render(); // Update DOM with new notice
+
+                // Remove the notice after a delay
+                const timeShown = this.timeout * this.visible.length;
+                setTimeout(() => {
+                    this.remove(id);
+                }, timeShown);
+            }
+        }
+
+        // Remove a notice
+        remove(id) {
+            const index = this.visible.findIndex(notice => notice.id === id);
+            if (index > -1) {
+                this.visible.splice(index, 1); // Remove from visible array
+                this.render(); // Update DOM after removal
+            }
+        }
+
+        // Render notices to the DOM
+        render() {
+            // Clear existing notices in the DOM
+            this.noticeWrapper.innerHTML = '';
+
+            // Iterate over visible notices and create the necessary DOM elements
+            this.visible.forEach(notice => {
+                const noticeDiv = document.createElement('div');
+                noticeDiv.classList.add('notices-item');
+
+                noticeDiv.textContent = notice.text; // Set the text of the notice
+
+                // Add appropriate class based on the type of notice
+                switch (notice.type) {
+                    case 'success':
+                        noticeDiv.classList.add('notice-success');
+                        break;
+                    case 'info':
+                        noticeDiv.classList.add('notice-info');
+                        break;
+                    case 'warning':
+                        noticeDiv.classList.add('notice-warning');
+                        break;
+                    case 'error':
+                        noticeDiv.classList.add('notice-error');
+                        break;
+                    default:
+                        noticeDiv.classList.add('notice-error');
+                        noticeDiv.textContent = 'Invalid notice type: ' + notice.type;
+                        break;
                 }
-            })
-        )
-    })
+
+                // Add click event to remove the notice when clicked
+                noticeDiv.addEventListener('click', () => this.remove(notice.id));
+
+                // Append the notice to the wrapper
+                this.noticeWrapper.appendChild(noticeDiv);
+            });
+        }
+    }
+
+    // Initialize the notice handler
+    const noticesHandler = new NoticesHandler(4000);
 
     // notice({type:'success', text: 'It worked')
     // Type: one of success|info|warning|error
@@ -249,25 +313,7 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 {% endif %}
 
 {% if enableNoticesHtml %}
-    <div class="notices-wrapper"
-         x-data="noticesHandler"
-         x-on:notice.window="add($event.detail)">
-
-        <template x-for="notice in notices" :key="notice.id">
-            <div class="notices-item"
-                 :class="{
-                'notice-success': notice.type === 'success',
-                'notice-primary': notice.type === 'info',
-                'notice-warning': notice.type === 'warning',
-                'notice-error': notice.type === 'error'
-                }"
-                 x-show="visible.includes(notice)"
-                 x-transition
-                 x-on:click="remove(notice.id)"
-                 x-text="notice.text">
-            </div>
-        </template>
-    </div>
+    <div class="notices-wrapper" id="notices-wrapper"></div>
 {% endif %}
 
 {# ======================================================================= #}
@@ -322,4 +368,4 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 {% endif %}
 
 {# For fetch logic see: https://stackoverflow.com/questions/40248231/how-to-handle-http-code-4xx-responses-in-fetch-api #}
-{# For notice component see: https://codepen.io/KevinBatdorf/pen/JjGKbMa?css-preprocessor=none #}
+{# For notice component see: https://codepen.io/KevinBatdorf/pen/JjGKbMa?css-preprocessor=none, converted to vanilla JavaScript #}
