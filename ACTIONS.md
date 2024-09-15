@@ -20,10 +20,10 @@ This inclusion ensures that the required JavaScript and assets are loaded on the
 
 ### JavaScript Function Signature
 
-The main function used to call a Craft controller action is `window.postAction()`. Below is the signature and explanation of its parameters:
+The main function used to call a Craft controller action is `window.Actions.postAction()`. Below is the signature and explanation of its parameters:
 
 ```javascript
-window.postAction(action, data, callback, handleFailures = true, timeout = 10000)
+window.Actions.postAction(action, data, callback, handleFailures = true, timeout = 10000)
 ```
 
 #### Parameters
@@ -96,10 +96,10 @@ public function actionMyAction()
 #### JavaScript:
 
 ```javascript
-window.postAction("mymodule/mycontroller/myaction",
+window.Actions.postAction("mymodule/mycontroller/myaction",
     {'id': 1234},
     data => {
-        notice({type: 'success', text: data.message});
+        Actions.notice({type: 'success', text: data.message});
     }
 );
 ```
@@ -124,13 +124,13 @@ public function actionMyAction()
 #### JavaScript:
 
 ```javascript
-window.postAction("mymodule/mycontroller/myaction",
+window.Actions.postAction("mymodule/mycontroller/myaction",
     {'id': 1234},
     (data, status, ok) => {
         if (status === 200) {
-            notice({type: 'success', text: data.message});
+            Actions.notice({type: 'success', text: data.message});
         } else {
-            notice({type: 'error', text: data.message});
+            Actions.notice({type: 'error', text: data.message});
         }
     },
     false // handle failures in the callback
@@ -159,7 +159,7 @@ public function actionMyAction()
 #### JavaScript:
 
 ```javascript
-window.postAction("mymodule/mycontroller/myaction",
+window.Actions.postAction("mymodule/mycontroller/myaction",
     {'id': 1234},
     data => {
         alert(data.message + ': Foo=' + data.foo);

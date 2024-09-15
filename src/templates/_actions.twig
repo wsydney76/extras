@@ -139,7 +139,10 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 {% if enableFetchJs %}
     {% js %}
 
-    window.postAction = function(action, data, callback, handleFailures = true, timeout = 10000) {
+    // Namespace functions
+    window.Actions = window.Actions || {};
+
+    window.Actions.postAction = function(action, data, callback, handleFailures = true, timeout = 10000) {
 
         const abortController = new AbortController();
         let timeoutId;
@@ -178,7 +181,7 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 
                     case 400:
                         if (handleFailures) {
-                            notice({type: 'error', text: message});
+                            Actions.notice({type: 'error', text: message});
                         } else {
                             callback(json, status, ok);
                         }
@@ -193,13 +196,20 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
                 console.log('Error caught:', error);
 
                 if (error.name === 'AbortError') {
-                    notice({type: 'error', text: 'Request timed out.'});
+                    Actions.notice({type: 'error', text: 'Request timed out.'});
                 } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-                    notice({type: 'error', text: 'Could not connect to server.'});
+                    Actions.notice({type: 'error', text: 'Could not connect to server.'});
                 } else {
-                    notice({type: 'error', text: error.message});
+                    Actions.notice({type: 'error', text: error.message});
                 }
             });
+    }
+
+    // Actions.notice({type:'success', text: 'It worked')
+    // Type: one of success|info|warning|error
+    // In AlpineJS `$dispatch('actions.notice', data)` can be used
+    window.Actions.notice = function(data) {
+        window.dispatchEvent(new CustomEvent('actions.notice', {detail: data}));
     }
 
     {% endjs %}
@@ -234,7 +244,7 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
         // Initialize the notice handler
         init() {
             // Add global event listener for custom "notice" events
-            window.addEventListener('notice', (event) => this.add(event.detail));
+            window.addEventListener('actions.notice', (event) => this.add(event.detail));
             this.noticeWrapper.classList.add(this.classes.wrapper);
         }
 
@@ -292,13 +302,6 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
                 this.noticeWrapper.appendChild(noticeDiv);
             });
         }
-    }
-
-    // notice({type:'success', text: 'It worked')
-    // Type: one of success|info|warning|error
-    // In AlpineJS '$dispatch('notice', 'data')' can be used
-    function notice(data) {
-        window.dispatchEvent(new CustomEvent('notice', {detail: data}));
     }
 
     {% endjs %}
