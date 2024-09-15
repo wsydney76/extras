@@ -4,39 +4,106 @@
     Usage:
 
     Template:
-    {% include '@extras/_actions.twig' with {} only %}
+    {% include '@extras/_actions.twig' with {...} only %}
 
     JavaScript:
 
-    window.postAction(action, data, callback, handleErrors = true)
+    Signature
+    window.postAction(action, data, callback, handleFailures = true, timeout = 10000), where
+    - action is the route to the Craft web controller, e.g. mymodule/mycontroller/myaction,
+    - data is an object with the parameters passed to the server as body params, e.g. {'id': 1234, 'newTitle': 'My New Title'}
+    - callback is a closure that will handle the response, unused arguments can be omitted.
+      - () => {...}
+      - data => {...}
+      - (data, status, ok) => {...}
+    - handleFailures can be set to false, if you want to handle '400' responses in the callback
+    - timeout is the number of milliseconds after which a request will be aborted. Set to '0' if the request should never timeout.
 
-    window.postAction(`module/controller/do-something`,
-        {'id': 1234, ...},
-        data => {
-            ...
-            notice({type: 'success', text: data.message});
-        }
-    );
+    Signature of the callback: (data, status, ok), where
+    - data is the decoded json response,
+      - data.message will hold the message returned via ->asSuccess('message'), ->asFailure('message')
+      - data.<key> will hold additional data returned
+      - data.<modelName> will hold model data return via ->asModelSuccess(), ->asModelFailure()
+      - data.errors will hold validation errors for a model returned via ->asModelFailure()
+    - status is the http status code, (200, 400, etc),
+    - ok is a boolean, indicating whether the request was successful or not.
 
-    window.postAction(`module/controller/do-something`,
-        {'id': 1234, ...},
 
-        (data, status, ok) => {
-            if (status === 200) {
-                 ...
-                notice({type: 'success', text: data.message);
-            } else {
-                ...
-                notice({type: 'error', text: data.message});
+    By default, the callback will only be called if the server responds with a status code "200",
+    so that you don't have to care about any errors in your client code.
+
+    Errors will be logged to console and displayed via an error notice:
+    - Controller runtime errors
+    - Connection failure (server not running)
+    - Non-existing controller actions
+    - Uncaught exceptions thrown in controller action
+    - Failed 'require...' constraints (like $this->requireAdmin())
+    - Timed out requests
+    - Non-JSON responses (that should never happen...)
+    - Responses with status code 400, like failed controller actions (return $this->asFailure(...)), if handleFailures = true (default)
+
+    Example:
+
+        Controller:
+        actionMyaction: return $this->asSuccess('Done');
+
+        window.postAction("mymodule/mycontroller/myaction",
+            {'id': 1234, ...},
+            data => {
+                // do something
+                notice({type: 'success', text: data.message});
             }
-        }, false)
+        );
+
+
+    Example: Handling failures in callback
+
+        Controller:
+
+        if(...failed...) {
+            return $this->asFailure('Something went wrong.');
+        }
+        ...
+        return $this->asSuccess('Done');
+
+
+        window.postAction("mymodule/mycontroller/myaction",
+            {'id': 1234, ...},
+
+            (data, status, ok) => {
+                if (status === 200) {
+                     ...
+                    notice({type: 'success', text: data.message);
+                } else {
+                    ...
+                    notice({type: 'error', text: data.message});
+                }
+            }, false)
+
+
+    Example with additional data:
+
+        Controller:
+        return $this->asSuccess(
+                'This is a success with data.',
+                [
+                    'foo' => 'bar',
+                    'baz' => 'qux',
+                ]
+            );
+
+        postAction("mymodule/mycontroller/myaction",
+            {'id': 1234},
+            data => {
+                alert(data.message + ': Foo=' + data.foo);
+            });
 
     Note:
-    For simplicity and keeping everything in one file, all JS/HTML/CSS is written into every single page source code.
+    For simplicity and having just one file, all JS/HTML/CSS is included directly in each page's source code.
 
-    In case you want to put parts into your own asset bundle, or modify them, just disable the corresponding part.
+    If you want to include parts in your own asset bundle or modify them, disable the corresponding part.
 
-    Also think of including this template conditionally only on pages that need it.
+    Consider including this template only on pages where it is needed.
 
     {% do _globals.set('requireActions', true) %}
 
@@ -73,66 +140,68 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 {% if enableFetchJs %}
     {% js %}
 
-    window.postAction = function(action, data, callback, handleErrors = true, timeout = 10000) {
+    window.postAction = function(action, data, callback, handleFailures = true, timeout = 10000) {
 
-    const controller = new AbortController();
-    let timeoutId;
-    if (timeout > 0) {
-        timeoutId = setTimeout(() => controller.abort(), timeout);
-    }
+        const abortController = new AbortController();
+        let timeoutId;
+        if (timeout > 0) {
+            timeoutId = setTimeout(() => abortController.abort(), timeout);
+        }
 
-    fetch(window.baseUrl + '/' + window.actionTrigger + '/' + action, {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'X-Csrf-Token': window.csrfTokenValue
-        },
-        body: JSON.stringify(data),
-        signal: controller.signal
-    })
-        .then((response) => {
-            if (timeout > 0) {
-                clearTimeout(timeoutId);
-            }
-            return new Promise((resolve) => response.json()
-                .then((json) => resolve({
-                    status: response.status,
-                    ok: response.ok,
-                    json
-                })));
-        }).then(({status, json, ok}) => {
-            const message = json.message;
-            switch (status) {
-                case 400:
-                    console.log(status, json);
-                    if (handleErrors) {
-                        notice({type: 'error', text: message});
-                    } else {
-                        callback(json, status, ok);
-                    }
-                    break;
-                case 201:
-                case 200:
-                    callback(json, status, ok);
-                    break;
-                case 500:
-                default:
-                    console.log(status, json);
-                    throw new Error(status + ' - ' + message);
-            }
+        fetch(window.baseUrl + '/' + window.actionTrigger + '/' + action, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Csrf-Token': window.csrfTokenValue
+            },
+            body: JSON.stringify(data),
+            signal: abortController.signal
         })
-        .catch(function(error) {
-            console.log('Error caught:', error);
-            if (error.name === 'AbortError') {
-                notice({type: 'error', text: 'Request timed out.'});
-            } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-                notice({type: 'error', text: 'Could not connect to server.'});
-            } else {
-                notice({type: 'error', text: error.message});
-            }
-        });
-}
+            .then((response) => {
+                if (timeout > 0) {
+                    clearTimeout(timeoutId);
+                }
+                return response.json()
+                    .then((json) => ({
+                        status: response.status,
+                        ok: response.ok,
+                        json
+                    }));
+            })
+            .then(({status, json, ok}) => {
+                const message = json.message;
+                switch (status) {
+                    case 200:
+                    case 201:
+                        callback(json, status, ok);
+                        break;
+
+                    case 400:
+                        if (handleFailures) {
+                            notice({type: 'error', text: message});
+                        } else {
+                            callback(json, status, ok);
+                        }
+                        break;
+
+                    default:
+                        console.log(status, json);
+                        throw new Error(status + ' - ' + message);
+                }
+            })
+            .catch(function(error) {
+                console.log('Error caught:', error);
+
+                if (error.name === 'AbortError') {
+                    notice({type: 'error', text: 'Request timed out.'});
+                } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                    notice({type: 'error', text: 'Could not connect to server.'});
+                } else {
+                    notice({type: 'error', text: error.message});
+                }
+            });
+    }
 
     {% endjs %}
 {% endif %}
