@@ -32,6 +32,20 @@ To include the `Actions` component in your Craft CMS templates, use the followin
 
 Ensure that you include this component only on pages where it is necessary to avoid unnecessary JS/CSS loading.
 
+By default, the callback will only be called if the server responds with a status code "200",
+so that you don't have to care about any errors in your client code.
+
+Errors will be (optionally) logged to console and displayed via an error notice:
+- Controller runtime errors
+- Connection failure (server not running)
+- Non-existing controller actions
+- Uncaught exceptions thrown in controller action
+- Failed 'require...' constraints (like $this->requireAdmin())
+- Timed out requests
+- Non-JSON responses (that should never happen...)
+- Responses with status code 400, like failed controller actions (return $this->asFailure(...)), if handleFailuresInCallback = false (default)
+
+
 ---
 
 ### JavaScript Methods
@@ -72,6 +86,7 @@ function callback(data, status, ok) {
 - `data` (Object): Decoded JSON response from the server.
     - `data.message`: Success or error message returned from the server.
     - `data.<key>`: Additional data returned from the server.
+    - `data.<modelName>`: Model data returned from server via `->asModelSuccess()`. `->asModelFailure()`.
     - `data.errors`: Validation errors for models (if any).
 - `status` (Number): HTTP status code (e.g., `200`, `400`).
 - `ok` (Boolean): Indicates whether the request was successful (`true` for success, `false` for errors).
@@ -94,6 +109,7 @@ return $this->asSuccess('Action completed successfully');
 window.Actions.postAction("mymodule/mycontroller/myaction",
     {'id': 1234},
     (data) => {
+        // Do somthing with the data
         Actions.notice({ type: 'success', text: data.message });
     }
 );
@@ -118,8 +134,10 @@ window.Actions.postAction("mymodule/mycontroller/myaction",
     {'id': 1234},
     (data, status, ok) => {
         if (ok) {
+            // Do somthing with the data
             Actions.notice({ type: 'success', text: data.message });
         } else {
+            // cleanup...
             Actions.notice({ type: 'error', text: data.message });
         }
     },
@@ -141,6 +159,7 @@ return $this->asSuccess('Success message', ['foo' => 'bar']);
 window.Actions.postAction("mymodule/mycontroller/myaction",
     {'id': 1234},
     (data) => {
+        // Do somthing with the data
         alert(data.message + ': Foo=' + data.foo);
     }
 );

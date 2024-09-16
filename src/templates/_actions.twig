@@ -6,97 +6,7 @@ Usage:
 Template:
 {% include '@extras/_actions.twig' with {...} only %}
 
-JavaScript:
-
-Signature
-window.Actions.postAction(action, data, callback, handleFailuresInCallback = false, timeout = 10000), where
-- action is the route to the Craft web controller, e.g. mymodule/mycontroller/myaction,
-- data is an object with the parameters passed to the server as body params, e.g. {'id': 1234, 'newTitle': 'My New Title'}
-- callback is a closure that will handle the response, unused arguments can be omitted.
-  - () => {...}
-  - data => {...}
-  - (data, status, ok) => {...}
-- handleFailuresInCallback can be set to true, if you want to handle '400' responses in the callback
-- timeout is the number of milliseconds after which a request will be aborted. Set to '0' if the request should never timeout.
-
-Signature of the callback: (data, status, ok), where
-- data is the decoded json response,
-  - data.message will hold the message returned via ->asSuccess('message'), ->asFailure('message')
-  - data.<key> will hold additional data returned
-  - data.<modelName> will hold model data return via ->asModelSuccess(), ->asModelFailure()
-  - data.errors will hold validation errors for a model returned via ->asModelFailure()
-- status is the http status code, (200, 400, etc),
-- ok is a boolean, indicating whether the request was successful or not.
-
-
-By default, the callback will only be called if the server responds with a status code "200",
-so that you don't have to care about any errors in your client code.
-
-Errors will be logged to console and displayed via an error notice:
-- Controller runtime errors
-- Connection failure (server not running)
-- Non-existing controller actions
-- Uncaught exceptions thrown in controller action
-- Failed 'require...' constraints (like $this->requireAdmin())
-- Timed out requests
-- Non-JSON responses (that should never happen...)
-- Responses with status code 400, like failed controller actions (return $this->asFailure(...)), if handleFailuresInCallback = false (default)
-
-Example:
-
-    Controller:
-    actionMyaction: return $this->asSuccess('Done');
-
-    window.Actions.postAction("mymodule/mycontroller/myaction",
-        {'id': 1234, ...},
-        data => {
-            // do something
-            Actions.notice({type: 'success', text: data.message});
-        }
-    );
-
-
-Example: Handling failures in callback
-
-    Controller:
-
-    if(...failed...) {
-        return $this->asFailure('Something went wrong.');
-    }
-    ...
-    return $this->asSuccess('Done');
-
-
-    window.Actions.postAction("mymodule/mycontroller/myaction",
-        {'id': 1234, ...},
-
-        (data, status, ok) => {
-            if (status === 200) {
-                 ...
-                Actions.notice({type: 'success', text: data.message);
-            } else {
-                ...
-                Actions.notice({type: 'error', text: data.message});
-            }
-        }, {handleFailuresInCallback: true})
-
-
-Example with additional data:
-
-    Controller:
-    return $this->asSuccess(
-            'This is a success with data.',
-            [
-                'foo' => 'bar',
-                'baz' => 'qux',
-            ]
-        );
-
-    Actions.postAction("mymodule/mycontroller/myaction",
-        {'id': 1234},
-        data => {
-            alert(data.message + ': Foo=' + data.foo);
-        });
+See ACTIONS.md for details.
 
 Note:
 For simplicity and having just one file, all JS/HTML/CSS is included directly in each page's source code.
@@ -128,34 +38,34 @@ Consider including this template only on pages where it is needed.
     {% set enableNoticesJs = enableNoticesJs is defined ? enableNoticesJs : true %}
     {% set enableNoticesHtml = enableNoticesHtml is defined ? enableNoticesHtml : true %}
 {% else %}
-    {# Enable notices altogether #}
+    {# Disable notices altogether #}
     {% set enableNoticesHtml = false %}
     {% set enableNoticesJs = false %}
     {% set enableClasses = false %}
 {% endif %}
 
-{# ======================================================================= #}
-{# Set params required for sending ajax (post) requests to web controllers #}
-{# ======================================================================= #}
-
-{% js %}
-window.baseUrl = "{{ baseUrl }}"
-window.actionTrigger = "{{ craft.app.config.general.actionTrigger }}";
-window.csrfTokenName = "{{ craft.app.config.general.csrfTokenName }}";
-window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
-{% endjs %}
 
 {# ======================================================================= #}
 {# Fetch response Craft web controller actions                             #}
 {# ======================================================================= #}
 
 {% if enableFetchJs %}
+
+    {# Store params required for sending ajax (post) requests to web controllers #}
+    <template id="actions-data"
+         data-baseurl="{{ baseUrl }}"
+         data-action-trigger="{{ craft.app.config.general.actionTrigger }}"
+         data-csrf-token="{{ craft.app.request.csrfToken }}"></template>
+
     {% js %}
 
+    const actionData = document.getElementById('actions-data').dataset
+
     // Namespace functions
-    window.Actions = window.Actions || {};
+    window.Actions = {};
 
     // Function to post an action to the Craft web controller
+
     window.Actions.postAction = function(action, data, callback, params = {}) {
         const {
             timeout = 20000,
@@ -172,18 +82,22 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
         }
 
         // Make the fetch request to the specified action
-        fetch(window.baseUrl + '/' + window.actionTrigger + '/' + action, {
+        fetch(actionData.baseurl + '/' + actionData.actionTrigger + '/' + action, {
             method: 'POST',
             headers: {
+                // https://craftcms.com/docs/5.x/development/forms.html#ajax
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
-                'X-Csrf-Token': window.csrfTokenValue
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-Csrf-Token': actionData.csrfToken
             },
             body: JSON.stringify(data),
             signal: abortController.signal
         })
             .then((response) => {
-                if (logLevel === 'info') console.log('Response: ', response);
+                if (logLevel === 'info') {
+                    console.log('Response: ', response);
+                }
 
                 if (timeout > 0) {
                     // Clear the timeout if the request completes in time
@@ -217,12 +131,16 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 
                     default:
                         // Log and throw an error for other response statuses
-                        if (logLevel === 'info') console.log(status, json);
+                        if (logLevel === 'info') {
+                            console.log(status, json);
+                        }
                         throw new Error(status + ' - ' + (message || 'Unspecified Error'));
                 }
             })
             .catch(function(error) {
-                if (logLevel === 'info' || logLevel === 'error') console.log('Catch: ', error);
+                if (logLevel === 'info' || logLevel === 'error') {
+                    console.log('Catch: ', error);
+                }
 
                 let errorText = error.message;
 
@@ -240,6 +158,17 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
             });
     }
 
+    // Convert errors array to string
+    // This is equivalent to php "implode(" ", $model->getErrorSummary())"
+    window.Actions.errorsToString = function(errors, includeAttributeNames = false) {
+        let errorMessage = '';
+        for (const field in errors) {
+            const messages = errors[field];
+            errorMessage += (includeAttributeNames ? `${field.charAt(0).toUpperCase() + field.slice(1)}: ` : '') + messages.join(' ') + ' ';
+        }
+        return errorMessage;
+    }
+
     {% endjs %}
 {% endif %}
 
@@ -250,7 +179,7 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 {% if enableNoticesJs %}
     {% js %}
 
-    // Actions.notice({type:'success', text: 'It worked')
+    // Actions.notice({type:'success', text: 'It worked'})
     // Type: one of success|info|warning|error
     // In AlpineJS `$dispatch('actions.notice', data)` can be used
     window.Actions.notice = function(data) {
@@ -353,9 +282,12 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 {% endif %}
 
 {% if enableNoticesHtml %}
+    {# Hack so that PhpStorm does not report syntax error in {% js %}  #}
+    {% set jsCode %}
+        const noticesHandler = new NoticesHandler({{ noticesParams|json_encode|raw }});
+    {% endset %}
     {% js %}
-    // Initialize the notice handler
-    const noticesHandler = new NoticesHandler({{ noticesParams|json_encode|raw }});
+    {{ jsCode }}
     {% endjs %}
 
     <div id="notices-wrapper"></div>
@@ -398,7 +330,7 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
         line-height: 1.25rem;
         box-shadow: 4px 4px 16px -6px rgba(0, 0, 0, 0.5);
     }
-    
+
     {% endcss %}
 
     {# Allow custom color styling by disabling this altogether and providing own classes #}
