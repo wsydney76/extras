@@ -9,7 +9,7 @@ Template:
 JavaScript:
 
 Signature
-window.postAction(action, data, callback, handleFailures = true, timeout = 10000), where
+window.Actions.postAction(action, data, callback, handleFailures = true, timeout = 10000), where
 - action is the route to the Craft web controller, e.g. mymodule/mycontroller/myaction,
 - data is an object with the parameters passed to the server as body params, e.g. {'id': 1234, 'newTitle': 'My New Title'}
 - callback is a closure that will handle the response, unused arguments can be omitted.
@@ -47,7 +47,7 @@ Example:
     Controller:
     actionMyaction: return $this->asSuccess('Done');
 
-    window.postAction("mymodule/mycontroller/myaction",
+    window.Actions.postAction("mymodule/mycontroller/myaction",
         {'id': 1234, ...},
         data => {
             // do something
@@ -67,7 +67,7 @@ Example: Handling failures in callback
     return $this->asSuccess('Done');
 
 
-    window.postAction("mymodule/mycontroller/myaction",
+    window.Actions.postAction("mymodule/mycontroller/myaction",
         {'id': 1234, ...},
 
         (data, status, ok) => {
@@ -92,7 +92,7 @@ Example with additional data:
             ]
         );
 
-    postAction("mymodule/mycontroller/myaction",
+    Actions.postAction("mymodule/mycontroller/myaction",
         {'id': 1234},
         data => {
             alert(data.message + ': Foo=' + data.foo);
@@ -142,14 +142,18 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
     // Namespace functions
     window.Actions = window.Actions || {};
 
+    // Function to post an action to the Craft web controller
     window.Actions.postAction = function(action, data, callback, handleFailures = true, timeout = 10000) {
 
+        // Create an AbortController to handle request timeouts
         const abortController = new AbortController();
         let timeoutId;
         if (timeout > 0) {
+            // Set a timeout to abort the request if it takes too long
             timeoutId = setTimeout(() => abortController.abort(), timeout);
         }
 
+        // Make the fetch request to the specified action
         fetch(window.baseUrl + '/' + window.actionTrigger + '/' + action, {
             method: 'POST',
             headers: {
@@ -162,6 +166,7 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
         })
             .then((response) => {
                 if (timeout > 0) {
+                    // Clear the timeout if the request completes in time
                     clearTimeout(timeoutId);
                 }
                 return response.json()
@@ -176,18 +181,23 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
                 switch (status) {
                     case 200:
                     case 201:
+                        // Call the callback function for successful responses
                         callback(json, status, ok);
                         break;
 
                     case 400:
                         if (handleFailures) {
-                            Actions.notice({type: 'error', text: message});
-                        } else {
-                            callback(json, status, ok);
+                            // Throw an error for 400 responses if handleFailures is true
+                            throw new Error(message)
                         }
+
+                        // Call the callback function for 400 responses if handleFailures is false
+                        callback(json, status, ok);
+
                         break;
 
                     default:
+                        // Log and throw an error for other response statuses
                         console.log(status, json);
                         throw new Error(status + ' - ' + message);
                 }
@@ -195,13 +205,17 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
             .catch(function(error) {
                 console.log('Error caught:', error);
 
+                let errorText = error.message;
+
+                // Provide better error messages for specific error types
                 if (error.name === 'AbortError') {
-                    Actions.notice({type: 'error', text: 'Request timed out.'});
+                    errorText = 'Request timed out.';
                 } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-                    Actions.notice({type: 'error', text: 'Could not connect to server.'});
-                } else {
-                    Actions.notice({type: 'error', text: error.message});
+                    errorText = 'Could not connect to server.'
                 }
+
+                // Display the error notice or alert
+                typeof Actions.notice === 'function' ? Actions.notice({type: 'error', text: errorText}) : alert(errorText)
             });
     }
 
@@ -231,6 +245,7 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
             this.timeout = timeout;
             this.classes = {
                 wrapper: 'notices-wrapper',
+                position: 'notices-position',
                 item: 'notices-item',
                 success: 'notice-success',
                 info: 'notice-info',
@@ -245,7 +260,7 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
         init() {
             // Add global event listener for custom "notice" events
             window.addEventListener('actions.notice', (event) => this.add(event.detail));
-            this.noticeWrapper.classList.add(this.classes.wrapper);
+            this.noticeWrapper.classList.add(this.classes.wrapper, this.classes.position);
         }
 
         // Add a new notice
@@ -298,8 +313,13 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
                 // Add click event to remove the notice when clicked
                 noticeDiv.addEventListener('click', () => this.remove(notice.id));
 
-                // Append the notice to the wrapper
+
+                // stack on top
+                // this.noticeWrapper.insertBefore(noticeDiv, this.noticeWrapper.firstChild);
+
+                // Append notice
                 this.noticeWrapper.appendChild(noticeDiv);
+
             });
         }
     }
@@ -328,18 +348,21 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
         inset: 0;
         z-index: 9999;
         display: flex;
-        height: 100vw;
+        height: 100vh;
         width: 100vw;
-        flex-direction: column-reverse;
-        align-items: center;
-        justify-content: flex-end;
+        flex-direction: column;
+    }
+
+    .notices-position {
+        align-items: center; /* self-start, self-end for left/right */
+        justify-content: flex-start; /* flex-end for bottom */
     }
 
     .notices-item {
         pointer-events: auto;
         cursor: pointer;
         z-index: 9999;
-        margin-top: 0.5rem;
+        margin: 0.5rem;
         display: flex;
         width: 24rem;
         align-items: center;
