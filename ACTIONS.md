@@ -1,189 +1,202 @@
-# Documentation for Craft Web Controller Actions from JavaScript
+### How to Use the Craft CMS Actions Twig Component
 
-This documentation provides details on how to interact with Craft CMS web controller actions using JavaScript. It includes a usage example, function signature, callback structure, error handling, and relevant scenarios for practical implementation.
+This documentation explains how to use the `@extras/_actions.twig` component in Craft CMS to call web controller actions via JavaScript and display success or error notices.
 
-## Overview
+---
 
-The provided JavaScript function allows you to call Craft web controller actions from the frontend and handle responses or errors efficiently. The function can display success or error notices to the user, depending on the result of the request.
+### Component Overview
 
-## Usage
+The `Actions` component allows you to make asynchronous requests to Craft CMS web controller actions and handle responses within your JavaScript code. Additionally, the component can display success or error notifications to users based on the outcome of the requests.
 
-### Template
+#### Table of Contents
+- [Usage Overview](#usage-overview)
+- [JavaScript Methods](#javascript-methods)
+    - [window.Actions.postAction()](#windowactionspostaction)
+- [Callback Signature](#callback-signature)
+- [Example Usage](#example-usage)
+    - [Basic Success Example](#basic-success-example)
+    - [Handling Failures in the Callback](#handling-failures-in-the-callback)
+    - [Using Additional Data](#using-additional-data)
+- [Notices System](#notices-system)
+    - [Customizing Notices](#customizing-notices)
 
-To use this functionality, include the necessary template code in your Twig template. For example:
+---
+
+### Usage Overview
+
+To include the `Actions` component in your Craft CMS templates, use the following Twig code:
 
 ```twig
 {% include '@extras/_actions.twig' with {...} only %}
 ```
 
-This inclusion ensures that the required JavaScript and assets are loaded on the page.
+Ensure that you include this component only on pages where it is necessary to avoid unnecessary JS/CSS loading.
 
-### JavaScript Function Signature
+---
 
-The main function used to call a Craft controller action is `window.Actions.postAction()`. Below is the signature and explanation of its parameters:
+### JavaScript Methods
 
+#### `window.Actions.postAction()`
+
+This method allows you to send a POST request to a Craft CMS web controller action.
+
+**Syntax:**
 ```javascript
-window.Actions.postAction(action, data, callback, handleFailures = true, timeout = 10000)
+window.Actions.postAction(action, data, callback, options = {})
 ```
 
-#### Parameters
-
-- **action** (`string`): The route to the Craft web controller.  
-  Example: `"mymodule/mycontroller/myaction"`
-
-- **data** (`object`): An object containing the parameters to be passed to the server. These will be sent as body parameters.  
-  Example: `{'id': 1234, 'newTitle': 'My New Title'}`
-
-- **callback** (`function`): A function to handle the server's response. You can define the callback with different argument combinations depending on your needs:
+**Parameters:**
+- `action` (String): The route to the controller action (e.g., `mymodule/mycontroller/myaction`).
+- `data` (Object): Key-value pairs of parameters to be passed to the server.
+- `callback` (Function): Function to handle the response. It can be in the form:
     - `() => {...}`
     - `data => {...}`
     - `(data, status, ok) => {...}`
+- `options` (Object, Optional): Additional settings for the request:
+    - `handleFailuresInCallback` (Boolean, default: `false`): Set to `true` if you want to handle `400` responses directly in the callback.
+    - `timeout` (Number, default: `20000`): The number of milliseconds after which the request is aborted. Set to `0` for no timeout.
+    - `logLevel` (String, default: `'none'`): Set to `'info'` to log responses for debugging purposes.
 
-- **handleFailures** (`boolean`, optional): If set to `false`, this allows you to handle `400` responses within the callback. The default is `true`.
+---
 
-- **timeout** (`number`, optional): The number of milliseconds after which the request will be aborted. Set to `0` if the request should never timeout. The default is `10,000 ms` (10 seconds).
+### Callback Signature
 
-### Callback Function Signature
-
-The callback function is executed when the server responds. Its signature is:
+The callback provided to `postAction` is invoked with the following parameters:
 
 ```javascript
-(data, status, ok)
-```
-
-#### Arguments
-
-- **data** (`object`): The decoded JSON response from the server.
-    - `data.message`: Contains the message returned by the controller action via `->asSuccess('message')` or `->asFailure('message')`.
-    - `data.<key>`: Any additional data returned by the server.
-    - `data.<modelName>`: Model data returned via `->asModelSuccess()` or `->asModelFailure()`.
-    - `data.errors`: Validation errors returned via `->asModelFailure()`.
-
-- **status** (`number`): The HTTP status code returned by the server (e.g., `200`, `400`, etc.).
-
-- **ok** (`boolean`): A boolean indicating whether the request was successful (`true` if the status code is `200`).
-
-### Default Behavior
-
-By default, the callback function will only be called when the server responds with a status code `200`. In case of errors, they will be logged to the console and displayed as an error notice.
-
-#### Possible Errors:
-
-- Controller runtime errors
-- Connection failures (e.g., server not running)
-- Non-existing controller actions
-- Uncaught exceptions thrown in the controller
-- Failed `require...` constraints (e.g., `$this->requireAdmin()`)
-- Timed-out requests
-- Non-JSON responses (rare but possible)
-- Responses with status code `400` (if `handleFailures = true`)
-
-## Examples
-
-### Example 1: Basic Success Handling
-
-In this example, a controller action returns a success message, and the JavaScript code handles it by displaying a success notice.
-
-#### Controller Action:
-
-```php
-public function actionMyAction()
-{
-    return $this->asSuccess('Done');
+function callback(data, status, ok) {
+    // Handle response
 }
 ```
 
-#### JavaScript:
+- `data` (Object): Decoded JSON response from the server.
+    - `data.message`: Success or error message returned from the server.
+    - `data.<key>`: Additional data returned from the server.
+    - `data.errors`: Validation errors for models (if any).
+- `status` (Number): HTTP status code (e.g., `200`, `400`).
+- `ok` (Boolean): Indicates whether the request was successful (`true` for success, `false` for errors).
 
+---
+
+### Example Usage
+
+#### Basic Success Example
+
+This example demonstrates sending a POST request and handling a success response.
+
+**Controller Action:**
+```php
+return $this->asSuccess('Action completed successfully');
+```
+
+**JavaScript:**
 ```javascript
 window.Actions.postAction("mymodule/mycontroller/myaction",
     {'id': 1234},
-    data => {
-        Actions.notice({type: 'success', text: data.message});
+    (data) => {
+        Actions.notice({ type: 'success', text: data.message });
     }
 );
 ```
 
-### Example 2: Handling Failures in Callback
+#### Handling Failures in the Callback
 
-This example demonstrates handling both success and failure responses in the callback.
+If you want to handle failures (status `400`) directly in your callback, set `handleFailuresInCallback` to `true` in the options.
 
-#### Controller Action:
 
+**Controller Action:**
 ```php
-public function actionMyAction()
-{
-    if (...failed...) {
-        return $this->asFailure('Something went wrong.');
-    }
-    
-    return $this->asSuccess('Done');
+if (...someErrorCondition...) {
+    return $this->asFailure('An error occurred');
 }
+return $this->asSuccess('Action completed successfully');
 ```
 
-#### JavaScript:
-
+**JavaScript:**
 ```javascript
 window.Actions.postAction("mymodule/mycontroller/myaction",
     {'id': 1234},
     (data, status, ok) => {
-        if (status === 200) {
-            Actions.notice({type: 'success', text: data.message});
+        if (ok) {
+            Actions.notice({ type: 'success', text: data.message });
         } else {
-            Actions.notice({type: 'error', text: data.message});
+            Actions.notice({ type: 'error', text: data.message });
         }
     },
-    false // handle failures in the callback
+    { handleFailuresInCallback: true }
 );
 ```
 
-### Example 3: Handling Additional Data
+#### Using Additional Data
 
-This example shows how to handle additional data returned by the server.
+If the controller returns additional data, you can access it in the callback.
 
-#### Controller Action:
-
+**Controller Action:**
 ```php
-public function actionMyAction()
-{
-    return $this->asSuccess(
-        'This is a success with data.',
-        [
-            'foo' => 'bar',
-            'baz' => 'qux',
-        ]
-    );
-}
+return $this->asSuccess('Success message', ['foo' => 'bar']);
 ```
 
-#### JavaScript:
-
+**JavaScript:**
 ```javascript
 window.Actions.postAction("mymodule/mycontroller/myaction",
     {'id': 1234},
-    data => {
+    (data) => {
         alert(data.message + ': Foo=' + data.foo);
     }
 );
 ```
 
-## Notes
+---
 
-- All JavaScript, HTML, and CSS are included directly in each page's source code for simplicity. However, if you want to include parts of the code in your own asset bundle or modify them, you can disable the corresponding part.
-- Consider including the template only on pages where it is needed to avoid unnecessary asset loading.
+### Notices System
 
-### Example Twig Usage
+The `Actions` component includes a built-in system for displaying notifications to the user.
 
-```twig
-{% do _globals.set('requireActions', true) %}
+**Triggering Notices:**
+- Use `Actions.notice({ type: 'success', text: 'Your message here' })` to display a notification.
 
-{% if _globals.get('requireActions') %}
-    {% include '@extras/_actions.twig' with {} only %}
-{% endif %}
+**Types of notices:**
+- `success`
+- `info`
+- `warning`
+- `error`
+
+#### Customizing Notices
+
+You can customize the appearance and behavior of notices using CSS and JavaScript parameters.
+
+**Default Notice CSS Classes:**
+```css
+.notice-success {
+    background-color: #16a34a;
+    color: white;
+}
+.notice-error {
+    background-color: #dc2626;
+    color: white;
+}
+.notice-info {
+    background-color: #2563eb;
+    color: white;
+}
+.notice-warning {
+    background-color: #ea580c;
+    color: white;
+}
 ```
 
-This conditional inclusion ensures that the actions template is loaded only when needed.
+**Example Notice Initialization:**
+```javascript
+const noticesHandler = new NoticesHandler({
+    duration: 5000,  // Time in milliseconds the notice stays visible
+    classes: {
+        wrapper: 'custom-wrapper-class',
+        item: 'custom-item-class',
+        success: 'custom-success-class'
+    }
+});
+```
 
 ---
 
-This documentation covers the essential aspects of interacting with Craft controller actions via JavaScript. It provides flexibility in handling different success and error scenarios, making it adaptable to various use cases.
+By following these guidelines, you can efficiently use the `Actions` component in Craft CMS to interact with your controllers and display feedback to users via notices.

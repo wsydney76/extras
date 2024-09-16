@@ -9,14 +9,14 @@ Template:
 JavaScript:
 
 Signature
-window.Actions.postAction(action, data, callback, handleFailures = true, timeout = 10000), where
+window.Actions.postAction(action, data, callback, handleFailuresInCallback = false, timeout = 10000), where
 - action is the route to the Craft web controller, e.g. mymodule/mycontroller/myaction,
 - data is an object with the parameters passed to the server as body params, e.g. {'id': 1234, 'newTitle': 'My New Title'}
 - callback is a closure that will handle the response, unused arguments can be omitted.
   - () => {...}
   - data => {...}
   - (data, status, ok) => {...}
-- handleFailures can be set to false, if you want to handle '400' responses in the callback
+- handleFailuresInCallback can be set to true, if you want to handle '400' responses in the callback
 - timeout is the number of milliseconds after which a request will be aborted. Set to '0' if the request should never timeout.
 
 Signature of the callback: (data, status, ok), where
@@ -40,7 +40,7 @@ Errors will be logged to console and displayed via an error notice:
 - Failed 'require...' constraints (like $this->requireAdmin())
 - Timed out requests
 - Non-JSON responses (that should never happen...)
-- Responses with status code 400, like failed controller actions (return $this->asFailure(...)), if handleFailures = true (default)
+- Responses with status code 400, like failed controller actions (return $this->asFailure(...)), if handleFailuresInCallback = false (default)
 
 Example:
 
@@ -51,7 +51,7 @@ Example:
         {'id': 1234, ...},
         data => {
             // do something
-            notice({type: 'success', text: data.message});
+            Actions.notice({type: 'success', text: data.message});
         }
     );
 
@@ -73,12 +73,12 @@ Example: Handling failures in callback
         (data, status, ok) => {
             if (status === 200) {
                  ...
-                notice({type: 'success', text: data.message);
+                Actions.notice({type: 'success', text: data.message);
             } else {
                 ...
-                notice({type: 'error', text: data.message});
+                Actions.notice({type: 'error', text: data.message});
             }
-        }, {handleFailures: false})
+        }, {handleFailuresInCallback: true})
 
 
 Example with additional data:
@@ -157,7 +157,11 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 
     // Function to post an action to the Craft web controller
     window.Actions.postAction = function(action, data, callback, params = {}) {
-        const {timeout = 20000, handleFailures = true, logLevel = 'none'} = params;
+        const {
+            timeout = 20000,
+            handleFailuresInCallback = false,
+            logLevel = 'none'
+        } = params;
 
         // Create an AbortController to handle request timeouts
         const abortController = new AbortController();
@@ -202,15 +206,14 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
                         break;
 
                     case 400:
-                        if (handleFailures) {
-                            // Throw an error for 400 responses if handleFailures is true
-                            throw new Error(message, {cause: 'Failure'})
+                        if (handleFailuresInCallback) {
+                            // Call the callback function for 400 responses if handleFailuresInCallback is true
+                            callback(json, status, ok);
+                            break;
                         }
 
-                        // Call the callback function for 400 responses if handleFailures is false
-                        callback(json, status, ok);
-
-                        break;
+                        // Throw an error for 400 responses if handleFailuresInCallback is false
+                        throw new Error(message, {cause: 'Failure'})
 
                     default:
                         // Log and throw an error for other response statuses
@@ -219,7 +222,7 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
                 }
             })
             .catch(function(error) {
-                if (logLevel === 'info' || logLevel === 'error') console.log(error);
+                if (logLevel === 'info' || logLevel === 'error') console.log('Catch: ', error);
 
                 let errorText = error.message;
 
