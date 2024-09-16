@@ -78,7 +78,7 @@ Example: Handling failures in callback
                 ...
                 notice({type: 'error', text: data.message});
             }
-        }, false)
+        }, {handleFailures: false})
 
 
 Example with additional data:
@@ -115,11 +115,24 @@ Consider including this template only on pages where it is needed.
 #}
 
 {% set baseUrl = baseUrl ?? parseEnv('$PRIMARY_SITE_URL') %}
-{% set enableNotices = enableNotices is defined ? enableNotices : true %}
-{% set enableClasses = enableClasses is defined ? enableClasses : true %}
+
 {% set enableFetchJs = enableFetchJs is defined ? enableFetchJs : true %}
-{% set enableNoticesJs = enableNoticesJs is defined ? enableNoticesJs : true %}
-{% set enableNoticesHtml = enableNoticesHtml is defined ? enableNoticesHtml : true %}
+
+{% set enableNotices = enableNotices is defined ? enableNotices : true %}
+{% set noticesParams = noticesParams ?? {} %}
+
+{% if enableNotices %}
+    {# Allow using your own stuff #}
+    {% set enableClasses = enableClasses is defined ? enableClasses : true %}
+    {% set enableNoticeItemClasses = enableNoticeItemClasses is defined ? enableNoticeItemClasses : true %}
+    {% set enableNoticesJs = enableNoticesJs is defined ? enableNoticesJs : true %}
+    {% set enableNoticesHtml = enableNoticesHtml is defined ? enableNoticesHtml : true %}
+{% else %}
+    {# Enable notices altogether #}
+    {% set enableNoticesHtml = false %}
+    {% set enableNoticesJs = false %}
+    {% set enableClasses = false %}
+{% endif %}
 
 {# ======================================================================= #}
 {# Set params required for sending ajax (post) requests to web controllers #}
@@ -143,7 +156,8 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
     window.Actions = window.Actions || {};
 
     // Function to post an action to the Craft web controller
-    window.Actions.postAction = function(action, data, callback, handleFailures = true, timeout = 10000) {
+    window.Actions.postAction = function(action, data, callback, params = {}) {
+        const {timeout = 20000, handleFailures = true, logLevel = 'none'} = params;
 
         // Create an AbortController to handle request timeouts
         const abortController = new AbortController();
@@ -165,6 +179,8 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
             signal: abortController.signal
         })
             .then((response) => {
+                if (logLevel === 'info') console.log('Response: ', response);
+
                 if (timeout > 0) {
                     // Clear the timeout if the request completes in time
                     clearTimeout(timeoutId);
@@ -188,7 +204,7 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
                     case 400:
                         if (handleFailures) {
                             // Throw an error for 400 responses if handleFailures is true
-                            throw new Error(message)
+                            throw new Error(message, {cause: 'Failure'})
                         }
 
                         // Call the callback function for 400 responses if handleFailures is false
@@ -198,12 +214,12 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 
                     default:
                         // Log and throw an error for other response statuses
-                        console.log(status, json);
-                        throw new Error(status + ' - ' + message);
+                        if (logLevel === 'info') console.log(status, json);
+                        throw new Error(status + ' - ' + (message || 'Unspecified Error'));
                 }
             })
             .catch(function(error) {
-                console.log('Error caught:', error);
+                if (logLevel === 'info' || logLevel === 'error') console.log(error);
 
                 let errorText = error.message;
 
@@ -215,15 +231,10 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
                 }
 
                 // Display the error notice or alert
-                typeof Actions.notice === 'function' ? Actions.notice({type: 'error', text: errorText}) : alert(errorText)
+                typeof Actions.notice === 'function' ?
+                    Actions.notice({type: 'error', text: errorText}) :
+                    alert(errorText)
             });
-    }
-
-    // Actions.notice({type:'success', text: 'It worked')
-    // Type: one of success|info|warning|error
-    // In AlpineJS `$dispatch('actions.notice', data)` can be used
-    window.Actions.notice = function(data) {
-        window.dispatchEvent(new CustomEvent('actions.notice', {detail: data}));
     }
 
     {% endjs %}
@@ -236,13 +247,21 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 {% if enableNoticesJs %}
     {% js %}
 
+    // Actions.notice({type:'success', text: 'It worked')
+    // Type: one of success|info|warning|error
+    // In AlpineJS `$dispatch('actions.notice', data)` can be used
+    window.Actions.notice = function(data) {
+        window.dispatchEvent(new CustomEvent('actions.notice', {detail: data}));
+    }
+
     class NoticesHandler {
         constructor(params = {}) {
-            const {timeout = 4000, classes = {}, wrapperId = 'notices-wrapper'} = params;
+            const {duration = 4000, classes = {}, wrapperId = 'notices-wrapper'} = params;
+
             this.notices = [];
             this.visible = [];
             this.noticeWrapper = document.getElementById(wrapperId); // Wrapper element for notices
-            this.timeout = timeout;
+            this.duration = duration;
             this.classes = {
                 wrapper: 'notices-wrapper',
                 position: 'notices-position',
@@ -278,7 +297,7 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
                 this.render(); // Update DOM with new notice
 
                 // Remove the notice after a delay
-                const timeShown = this.timeout * this.visible.length;
+                const timeShown = this.duration * this.visible.length;
                 setTimeout(() => {
                     this.remove(id);
                 }, timeShown);
@@ -310,15 +329,18 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
                 const noticeClass = this.classes[notice.type] || this.classes.error;
                 noticeDiv.classList.add(noticeClass);
 
+                // A11y
+                noticeDiv.setAttribute('role', 'alert'); // Add role attribute for screen readers
+                noticeDiv.setAttribute('aria-live', 'assertive'); // Ensure the notice is announced immediately
+
                 // Add click event to remove the notice when clicked
                 noticeDiv.addEventListener('click', () => this.remove(notice.id));
 
-
-                // stack on top
-                // this.noticeWrapper.insertBefore(noticeDiv, this.noticeWrapper.firstChild);
-
                 // Append notice
                 this.noticeWrapper.appendChild(noticeDiv);
+
+                // stack on top, better if notices are placed at the bottom
+                // this.noticeWrapper.insertBefore(noticeDiv, this.noticeWrapper.firstChild);
 
             });
         }
@@ -330,7 +352,7 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 {% if enableNoticesHtml %}
     {% js %}
     // Initialize the notice handler
-    const noticesHandler = new NoticesHandler();
+    const noticesHandler = new NoticesHandler({{ noticesParams|json_encode|raw }});
     {% endjs %}
 
     <div id="notices-wrapper"></div>
@@ -373,27 +395,33 @@ window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
         line-height: 1.25rem;
         box-shadow: 4px 4px 16px -6px rgba(0, 0, 0, 0.5);
     }
-
-    .notice-success {
-        background-color: #16a34a; /* green-600 */
-        color: white;
-    }
-
-    .notice-error {
-        background-color: #dc2626; /* red-600 */
-        color: white;
-    }
-
-    .notice-info {
-        background-color: #2563eb; /* blue-600 */
-        color: white;
-    }
-
-    .notice-warning {
-        background-color: #ea580c; /* orange-600 */
-        color: white;
-    }
+    
     {% endcss %}
+
+    {# Allow custom color styling by disabling this altogether and providing own classes #}
+    {% if enableNoticeItemClasses %}
+        {% css %}
+        .notice-success {
+            background-color: #16a34a; /* green-600 */
+            color: white;
+        }
+
+        .notice-error {
+            background-color: #dc2626; /* red-600 */
+            color: white;
+        }
+
+        .notice-info {
+            background-color: #2563eb; /* blue-600 */
+            color: white;
+        }
+
+        .notice-warning {
+            background-color: #ea580c; /* orange-600 */
+            color: white;
+        }
+        {% endcss %}
+    {% endif %}
 {% endif %}
 
 {# For fetch logic see: https://stackoverflow.com/questions/40248231/how-to-handle-http-code-4xx-responses-in-fetch-api #}
