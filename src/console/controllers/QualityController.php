@@ -4,12 +4,14 @@ namespace wsydney76\extras\console\controllers;
 
 use Craft;
 use craft\console\Controller;
+use craft\db\Query;
 use craft\elements\Asset;
 use craft\elements\Entry;
 use craft\fs\Local;
 use craft\helpers\Console;
 use GuzzleHttp\Exception\GuzzleException;
 use yii\base\InvalidConfigException;
+use yii\base\NotSupportedException;
 use yii\console\ExitCode;
 use function count;
 use const DIRECTORY_SEPARATOR;
@@ -219,5 +221,30 @@ class QualityController extends Controller
         return ExitCode::OK;
     }
 
+    /**
+     * @throws NotSupportedException
+     */
+    public function actionCountRows(): int
+    {
+        $tables = Craft::$app
+            ->getDb()
+            ->getSchema()
+            ->getTableNames();
+
+        $totalCount = 0;
+
+        // Loop through each table and count the records
+        foreach ($tables as $table) {
+            $count = (new Query())->from($table)->count();
+            Console::output("$table: $count");
+            $totalCount += $count;
+        }
+
+        Console::output('---------------------------');
+        Console::output("Total: " . $totalCount );
+
+
+        return ExitCode::OK;
+    }
 
 }
