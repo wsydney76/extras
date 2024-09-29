@@ -15,10 +15,12 @@ If you want to include parts in your own asset bundle or modify them, disable th
 
 Consider including this template only on pages where it is needed.
 
+Page template:
 {% do _globals.set('requireActions', true) %}
 
 ...
 
+Layout template:
 {% if _globals.get('requireActions') %}
     {% include '@extras/_actions.twig' with {} only %}
 {% endif %}
@@ -52,6 +54,7 @@ Consider including this template only on pages where it is needed.
 {% if enableFetchJs %}
 
     {# Store params required for sending ajax (post) requests to web controllers #}
+    {# Workaround: Using twig output inside js tags breaks PhpStorms syntax support #}
     <template id="actions-data"
          data-baseurl="{{ baseUrl }}"
          data-action-trigger="{{ craft.app.config.general.actionTrigger }}"
@@ -74,6 +77,7 @@ Consider including this template only on pages where it is needed.
         } = params;
 
         // Create an AbortController to handle request timeouts
+        // https://kettanaito.com/blog/dont-sleep-on-abort-controller
         const abortController = new AbortController();
         let timeoutId;
         if (timeout > 0) {
@@ -93,6 +97,8 @@ Consider including this template only on pages where it is needed.
             },
             body: JSON.stringify(data),
             signal: abortController.signal
+            // signal: timeout > 0 ? AbortSignal.timeout(timeout) : undefined
+            // easier, but less browser support, so be safe and use manual timeout
         })
             .then((response) => {
                 if (logLevel === 'info') {
@@ -145,7 +151,7 @@ Consider including this template only on pages where it is needed.
                 let errorText = error.message;
 
                 // Provide better error messages for specific error types
-                if (error.name === 'AbortError') {
+                if (error.name === 'AbortError' || error.name === 'TimeoutError') {
                     errorText = 'Request timed out.';
                 } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
                     errorText = 'Could not connect to server.'
