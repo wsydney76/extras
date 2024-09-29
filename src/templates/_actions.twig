@@ -73,7 +73,9 @@ Layout template:
         const {
             timeout = 20000,
             handleFailuresInCallback = false,
-            logLevel = 'none'
+            logLevel = 'none',
+            indicatorId = null,
+            indicatorClass = 'fetch-request'
         } = params;
 
         // Create an AbortController to handle request timeouts
@@ -84,6 +86,11 @@ Layout template:
             // Set a timeout to abort the request if it takes too long
             timeoutId = setTimeout(() => abortController.abort(), timeout);
         }
+
+         const indicator = indicatorId ? document.getElementById(indicatorId) : null;
+         if (indicator) {
+             indicator.classList.add(indicatorClass);
+         }
 
         // Make the fetch request to the specified action
         fetch(actionData.baseurl + '/' + actionData.actionTrigger + '/' + action, {
@@ -109,6 +116,11 @@ Layout template:
                     // Clear the timeout if the request completes in time
                     clearTimeout(timeoutId);
                 }
+
+                if (indicator) {
+                    indicator.classList.remove(indicatorClass);
+                }
+
                 return response.json()
                     .then((json) => ({
                         status: response.status,
@@ -146,6 +158,10 @@ Layout template:
             .catch(function(error) {
                 if (logLevel === 'info' || logLevel === 'error') {
                     console.log('Catch: ', error);
+                }
+
+                if (indicator) {
+                    indicator.classList.remove(indicatorClass);
                 }
 
                 let errorText = error.message;
