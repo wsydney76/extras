@@ -40,11 +40,12 @@ Errors will be (optionally) logged to console and displayed via an error notice:
 - Connection failure (server not running)
 - Non-existing controller actions
 - Uncaught exceptions thrown in controller action
-- Failed 'require...' constraints (like $this->requireAdmin())
+- Failed 'require...' constraints (like $this->requireLogin())
 - Timed out requests
 - Non-JSON responses (that should never happen...)
-- Responses with status code 400, like failed controller actions (return $this->asFailure(...)), if handleFailuresInCallback = false (default)
+- Responses with status code 400, like failed controller actions (`return $this->asFailure(...)`), if handleFailuresInCallback = false (default)
 
+Note that errors may be different depending on Craft environment (dev, staging, production, devMode=on/off).
 
 ---
 
@@ -70,6 +71,8 @@ window.Actions.postAction(action, data, callback, options = {})
     - `handleFailuresInCallback` (Boolean, default: `false`): Set to `true` if you want to handle `400` responses directly in the callback.
     - `timeout` (Number, default: `20000`): The number of milliseconds after which the request is aborted. Set to `0` for no timeout.
     - `logLevel` (String, default: `'none'`): Set to `'info'` to log responses for debugging purposes.
+    - `indicatorId` (String, default: `null`): The ID of the element to show/hide while the request is in progress.
+    - `indicatorClass` (String, default: `'fetch-request'`): The class to apply to the indicator element while the request is in progress.
 
 ---
 
@@ -163,6 +166,37 @@ window.Actions.postAction("mymodule/mycontroller/myaction",
         alert(data.message + ': Foo=' + data.foo);
     }
 );
+```
+
+---
+
+#### Using Indicator
+
+Display an indicator while the request is in progress.
+
+Requires an HTML element with the ID specified in `indicatorId` where the presence of the class specified in `indicatorClass` toggles visibility.
+
+**JavaScript:**
+```javascript
+window.Actions.postAction("mymodule/mycontroller/myaction",
+    {'id': 1234},
+    (data) => {
+        // Do somthing with the data
+        Actions.notice({ type: 'success', text: data.message });
+    },
+    {indicatorId: 'my-indicator', indicatorClass: 'my-indicator-class'}
+);
+```
+
+**CSS (Example)**
+```css
+#my-indicator  {
+    display: none;
+}
+
+#my-indicator.my-indicator-class {
+    display: inline-block;
+}
 ```
 
 ---
