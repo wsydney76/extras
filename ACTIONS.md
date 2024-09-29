@@ -32,21 +32,6 @@ To include the `Actions` component in your Craft CMS templates, use the followin
 
 Ensure that you include this component only on pages where it is necessary to avoid unnecessary JS/CSS loading.
 
-By default, the callback will only be called if the server responds with a status code "200",
-so that you don't have to care about any errors in your client code.
-
-Errors will be (optionally) logged to console and displayed via an error notice:
-- Controller runtime errors
-- Connection failure (server not running)
-- Non-existing controller actions
-- Uncaught exceptions thrown in controller action
-- Failed 'require...' constraints (like $this->requireLogin())
-- Timed out requests
-- Non-JSON responses (that should never happen...)
-- Responses with status code 400, like failed controller actions (`return $this->asFailure(...)`), if handleFailuresInCallback = false (default)
-
-Note that errors may be different depending on Craft environment (dev, staging, production, devMode=on/off).
-
 ---
 
 ### JavaScript Methods
@@ -68,11 +53,11 @@ window.Actions.postAction(action, data, callback, options = {})
     - `data => {...}`
     - `(data, status, ok) => {...}`
 - `options` (Object, Optional): Additional settings for the request:
-    - `handleFailuresInCallback` (Boolean, default: `false`): Set to `true` if you want to handle `400` responses directly in the callback.
+    - `handleFailuresInCallback` (Boolean, default: `false`): Set to `true` if you want to handle `400` responses in the callback.
     - `timeout` (Number, default: `20000`): The number of milliseconds after which the request is aborted. Set to `0` for no timeout.
     - `logLevel` (String, default: `'none'`): Set to `'info'` to log responses for debugging purposes.
-    - `indicatorId` (String, default: `null`): The ID of the element to show/hide while the request is in progress.
-    - `indicatorClass` (String, default: `'fetch-request'`): The class to apply to the indicator element while the request is in progress.
+    - `indicatorSelector` (?String, default: `null`): A unique CSS selector of the HTML element to provide user feedback while the request is in progress, e.g. a spinner.
+    - `indicatorClass` (String, default: `fetch-request`): The class to apply to the indicator element while the request is in progress.
 
 ---
 
@@ -93,6 +78,27 @@ function callback(data, status, ok) {
     - `data.errors`: Validation errors for models (if any).
 - `status` (Number): HTTP status code (e.g., `200`, `400`).
 - `ok` (Boolean): Indicates whether the request was successful (`true` for success, `false` for errors).
+
+#### Handling Errors
+
+By default, the callback will only be called if the server responds with a status code "200",
+so that you don't have to care about any errors in your client code.
+
+Errors will be (optionally) logged to console and displayed via an error notice:
+- Controller runtime errors
+- Connection failure (server not running)
+- Non-existing controller actions
+- Uncaught exceptions thrown in controller action
+- Failed 'require...' constraints (like $this->requireLogin())
+- Timed out requests
+- Non-JSON responses (that should never happen...)
+- Responses with status code 400, like failed controller actions (`return $this->asFailure(...)`), if handleFailuresInCallback = false (default)
+
+Note that errors may be different depending on Craft environment (dev, staging, production, devMode=on/off).
+
+#### Handling Success
+
+User feedback for successful actions is up to you, you may call `Action.notice({type:'success', text: data.message)` inside your callback, or use any other method in order to provide visual feedback.
 
 ---
 
@@ -174,7 +180,9 @@ window.Actions.postAction("mymodule/mycontroller/myaction",
 
 Display an indicator while the request is in progress.
 
-Requires an HTML element with the ID specified in `indicatorId` where the presence of the class specified in `indicatorClass` toggles visibility.
+Requires an HTML element that can be queried by the CSS selector specified in `indicatorSelector`, where the presence of the class specified in `indicatorClass` in some way toggles visibility.
+
+`document.querySelector()` is used internally to find the element, so technically the selector can be anything that works with this method, however using an `id` is best practice.
 
 **JavaScript:**
 ```javascript
@@ -184,8 +192,13 @@ window.Actions.postAction("mymodule/mycontroller/myaction",
         // Do somthing with the data
         Actions.notice({ type: 'success', text: data.message });
     },
-    {indicatorId: 'my-indicator', indicatorClass: 'my-indicator-class'}
+    {indicatorSelector: '#my-indicator', indicatorClass: 'my-indicator-class'}
 );
+```
+
+**HTML (Example)**
+```html
+<div id="my-indicator" class="styling-the-indicator">Loading...</div>
 ```
 
 **CSS (Example)**
@@ -195,7 +208,7 @@ window.Actions.postAction("mymodule/mycontroller/myaction",
 }
 
 #my-indicator.my-indicator-class {
-    display: inline-block;
+    display: block;
 }
 ```
 

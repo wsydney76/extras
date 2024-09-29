@@ -74,7 +74,7 @@ Layout template:
             timeout = 20000,
             handleFailuresInCallback = false,
             logLevel = 'none',
-            indicatorId = null,
+            indicatorSelector = null,
             indicatorClass = 'fetch-request'
         } = params;
 
@@ -87,7 +87,7 @@ Layout template:
             timeoutId = setTimeout(() => abortController.abort(), timeout);
         }
 
-         const indicator = indicatorId ? document.getElementById(indicatorId) : null;
+         const indicator = indicatorSelector ? document.querySelector(indicatorSelector) : null;
          if (indicator) {
              indicator.classList.add(indicatorClass);
          }
