@@ -46,9 +46,16 @@
                             {% set entries = entries|multisort(e => craft.entries.id(e.ownerId).site('*').status(null).unique().one.title ?? null) %}
                             {% for entry in entries|filter %}
                                 <div>
-                                    {% set owner = craft.entries.id(entry.ownerId).site('*').status(null).unique().one %}
+                                    {# {% set owner = craft.entries.id(entry.ownerId).site('*').status(null).unique().one %} #}
+                                    {% set owner = entry.owner %}
+
                                     {% if owner %}
-                                        <a href="{{ entry.cpEditUrl }}">{{ owner.title ?: entry.type.name }}</a> {{ entry.site.name }}
+                                        {% if className(owner) ends with 'Address' %}
+                                            Address
+                                        {% else %}
+                                            <a href="{{ entry.cpEditUrl }}">{{ owner.title ?: entry.type.name }}</a> {{ entry.site.name }}
+                                        {% endif %}
+
                                     {% else %}
                                         <a href="{{ entry.cpEditUrl }}">{{ entry.title ?: entry.type.name }} INVALID
                                             OWNER {{ entry.ownerId }}</a>
