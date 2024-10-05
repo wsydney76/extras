@@ -44,6 +44,7 @@ class QualityController extends Controller
     {
         return match ($actionID) {
             'check-runtime-errors' => ['help', 'section', 'limit', 'offset'],
+            'validate' => ['help', 'section', 'limit', 'offset'],
             'check-asset-files' => ['help', 'volume', 'limit', 'offset'],
             default => ['help'],
         };
@@ -68,26 +69,7 @@ class QualityController extends Controller
     {
         Console::output("Checking all live entries for runtime errors...");
 
-        $query = Entry::find()
-            ->uri(':notempty:')
-            ->site('*')
-            ->limit($this->limit)
-            ->offset($this->offset);
-
-        if ($this->section) {
-            $this->section = explode(',', $this->section);
-            // check valid section
-            foreach ($this->section as $section) {
-                if (!Craft::$app->entries->getSectionByHandle($section)) {
-                    Console::error("Section $section not found.");
-                    return ExitCode::UNSPECIFIED_ERROR;
-                }
-            }
-
-            $query->section($this->section);
-        }
-
-        $entries = $query->all();
+        $entries = $this->getEntriesFromParams();
 
         $client = Craft::createGuzzleClient();
 
@@ -245,6 +227,72 @@ class QualityController extends Controller
 
 
         return ExitCode::OK;
+    }
+
+    public function actionValidate()
+    {
+        $entries = $this->getEntriesFromParams();
+
+        $errors = 0;
+        $ok = 0;
+        $messages = [];
+
+        $totalEntries = count($entries);
+        Console::startProgress(0, $totalEntries, 'Checking...');
+
+        foreach ($entries as $index => $entry) {
+
+            Console::updateProgress($index + 1, $totalEntries, "Checking, found $errors error(s) so far.");
+
+            $entry->validate();
+            if ($entry->hasErrors()) {
+                $errors++;
+
+                $messages[] = "Entry $entry->id $entry->title has errors:";
+                foreach ($entry->getErrors() as $attribute => $errors) {
+                    $messages[] = "  $attribute: " . implode(', ', $errors);
+                }
+            }
+        }
+
+        Console::endProgress();
+
+        foreach ($messages as $message) {
+            Console::output($message);
+        }
+
+        if ($errors > 0) {
+            Console::output("$errors validation errors found.");
+        } else {
+            Console::output("No validation errors found.");
+        }
+    }
+
+    /**
+     * @return array|\craft\base\ElementInterface[]
+     */
+    protected function getEntriesFromParams(): array
+    {
+        $query = Entry::find()
+            ->uri(':notempty:')
+            ->site('*')
+            ->limit($this->limit)
+            ->offset($this->offset);
+
+        if ($this->section) {
+            $this->section = explode(',', $this->section);
+            // check valid section
+            foreach ($this->section as $section) {
+                if (!Craft::$app->entries->getSectionByHandle($section)) {
+                    Console::error("Section $section not found.");
+                    return [];
+                }
+            }
+
+            $query->section($this->section);
+        }
+
+        return $query->all();
     }
 
 }

@@ -77,8 +77,7 @@ class FieldsController extends Controller
                 $handle = Console::prompt("Handle for $toHandle:", ['default' => $fieldInstance->handle]);
                 $instructions = Console::prompt("Instructions for $toHandle:", ['default' => $fieldInstance->instructions]);
 
-
-                $fieldInstance->label = (empty($label) || $label === $to->label) ? null : $label;
+                $fieldInstance->label = (empty($label) || $label === $to->name) ? null : $label;
                 $fieldInstance->handle = (empty($handle) || $handle === $to->handle) ? null : $handle;
                 $fieldInstance->instructions = (empty($instructions) || $instructions === $to->instructions) ? null : $instructions;
 
@@ -100,7 +99,7 @@ class FieldsController extends Controller
         }
 
         Console::output("Field $fromHandle replaced with $toHandle in entry type $entryTypeHandle");
-        Console::output("Check entry type file, run craft project-config/apply.");
+        Console::output("Check entry type file, run craft project-config/apply && craft resave/entries --type=$entryTypeHandle --update-search-index");
 
         return ExitCode::OK;
     }
