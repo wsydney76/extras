@@ -3,11 +3,9 @@
 namespace wsydney76\extras\console\controllers;
 
 use Craft;
-use craft\base\MergeableFieldInterface;
-use craft\ckeditor\Field;
 use craft\console\Controller;
 use craft\fieldlayoutelements\CustomField;
-use craft\fields\Matrix;
+use craft\fields\BaseRelationField;
 use craft\helpers\Console;
 use wsydney76\extras\ExtrasPlugin;
 use yii\console\ExitCode;
@@ -64,14 +62,22 @@ class FieldsController extends Controller
                     return ExitCode::UNSPECIFIED_ERROR;
                 }
 
-                 if ($to->handle === $fieldInstance->originalHandle) {
-                     $this->stdout("Field $fromHandle is the same global field as $toHandle\n");
-                     return ExitCode::UNSPECIFIED_ERROR;
-                 }
+                if ($to->handle === $fieldInstance->originalHandle) {
+                    $this->stdout("Field $fromHandle is the same global field as $toHandle\n");
+                    return ExitCode::UNSPECIFIED_ERROR;
+                }
 
                 $found = true;
 
-                 // $fieldInstance->setField($to);
+                if ($fieldInstance->getField() instanceof BaseRelationField) {
+                    Console::output("This is a relation field. Make sure entries with this field are resaved after upgrading to Craft 5.3.0");
+                    Console::output("Run craft resave/entries --type=$entryTypeHandle if in doubt.");
+                    if (!Console::confirm("Continue?")) {
+                        return ExitCode::UNSPECIFIED_ERROR;
+                    }
+                }
+
+                // $fieldInstance->setField($to);
 
                 $label = Console::prompt("Label for $toHandle:", ['default' => $fieldInstance->label]);
                 $handle = Console::prompt("Handle for $toHandle:", ['default' => $fieldInstance->handle]);
@@ -90,9 +96,11 @@ class FieldsController extends Controller
             return ExitCode::UNSPECIFIED_ERROR;
         }
 
+
         if (!Console::confirm("Replace $fromHandle with $toHandle in entry type $entryTypeHandle?")) {
             return ExitCode::UNSPECIFIED_ERROR;
         }
+
 
         if (!Craft::$app->entries->saveEntryType($entryType)) {
             $this->stdout("Could not save entry type $entryTypeHandle\n");
