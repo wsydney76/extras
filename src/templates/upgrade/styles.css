@@ -13,6 +13,7 @@ table, th, td {
 td, th {
     padding: 6px;
     white-space: nowrap;
+    vertical-align: top;
 }
 
 th {

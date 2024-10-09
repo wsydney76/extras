@@ -1,0 +1,140 @@
+{% extends "@extras/upgrade/_layout.twig" %}
+{% set mode = 'site' %}
+
+{% if not craft.app.request.isPreview %}
+    {% exit 403 %}
+{% endif %}
+
+{# @var layout \craft\models\FieldLayout #}
+{% set entry = entry ?? craft.app.entries.entryById(craft.app.request.param('id')) %}
+
+{% set title = title ?? entry.section.handle %}
+{% set level = level ?? 1 %}
+
+{% if level == 1 %}
+    {% do _globals.set({typeIds: [entry.typeId]}) %}
+{% else %}
+    {% if entry.typeId not in _globals.get('typeIds') %}
+        {% do _globals.set({typeIds: _globals.get('typeIds')|push(entry.typeId)}) %}
+    {% endif %}
+{% endif %}
+
+{% block content %}
+    <div style="padding-left: {{ (level-1)*24 }}px">
+
+
+        {% tag "h#{min(level,3)}" %}
+            <a href="#type-{{ entry.typeId }}">{{ title }}
+                / {{ entry.type.handle }}</a>
+        {% endtag %}
+
+        <table>
+            {{ _self.property('Type', "#{entry.type.id} #{entry.type.handle}") }}
+            {% if level == 1 %}
+                {{ _self.property('Site', "#{entry.site.id} #{entry.site.name}") }}
+            {% endif %}
+            {{ _self.property('ID', entry.id) }}
+            {{ _self.property('Canonical ID', entry.canonicalId) }}
+            {% if not entry.section %}
+                {{ _self.property('Owner ID', entry.ownerId) }}
+                {{ _self.property('Primary Owner ID', entry.primaryOwnerId) }}
+            {% endif %}
+
+            {% if entry.draftId is defined and entry.draftId %}
+                {{ _self.property('Draft ID', entry.draftId) }}
+            {% endif %}
+
+            {{ _self.property('Titel', entry.title ?? 'n/a') }}
+            {{ _self.property('Slug', entry.slug ?? 'n/a') }}
+            {{ _self.property('Status', entry.status ?? 'n/a') }}
+
+            {% set contentRow = craft.query
+                .select('content')
+                .from('{{%elements_sites}}')
+                .where({
+                    elementId: entry.id,
+                    siteId: entry.siteId
+                })
+            .one %}
+
+            {{ _self.property('Content', contentRow.content, 'json') }}
+
+
+        </table>
+
+        {% set layout = entry.type.fieldLayout %}
+
+        {# Assuming that matrix field handles are not overwritten #}
+        {% set matrixFields = layout.visibleCustomFields(entry)|filter(f => className(f) == 'craft\\fields\\Matrix') %}
+
+        {% for matrixField in matrixFields %}
+            {% set nestedEntries = entry.getFieldValue(matrixField.handle).all %}
+
+            {% for nestedEntry in nestedEntries %}
+                {% include '@extras/inspect.twig' with {
+                    entry: nestedEntry,
+                    level: level + 1,
+                    title: matrixField.handle
+                } only %}
+            {% endfor %}
+
+        {% endfor %}
+
+        {# Assuming that CKEditor field handles are not overwritten #}
+        {% set ckEditorFields = layout.visibleCustomFields(entry)|filter(f => className(f) == 'craft\\ckeditor\\Field') %}
+
+        {% for ckEditorField in ckEditorFields %}
+
+            {% for chunk in entry.getFieldValue(ckEditorField.handle) %}
+                {% if chunk.type == 'entry' %}
+                    {% include '@extras/inspect.twig' with {
+                        entry: chunk.entry,
+                        level: level + 1,
+                        title: ckEditorField.handle
+                    } only %}
+                {% endif %}
+            {% endfor %}
+
+
+        {% endfor %}
+
+    </div>
+
+    {% if level == 1 %}
+
+        <h2 style="margin-top:48px; margin-bottom: 12px;">Types</h2>
+
+        {% set settingsUrl = "/#{craft.app.config.general.cpTrigger}/settings/" %}
+        <table style="width: 100%">
+            {% for typeId in _globals.get('typeIds') %}
+                {% set type = craft.app.entries.entryTypeById(typeId) %}
+                {% include '@extras/upgrade/entrytype-row.twig' with {
+                    type,
+                    index: loop.index,
+                    settingsUrl,
+                    context: 'inspect'
+                } only %}
+            {% endfor %}
+        </table>
+    {% endif %}
+{% endblock %}
+
+{% macro property(key, value, type='string') %}
+    <tr>
+        <td style="font-weight: bold; padding-right: 8px; white-space: nowrap">{{ key }}:</td>
+        <td>
+            {% switch type %}
+
+            {% case "json" %}
+                
+                {# reencode in order to apply pretty formatting #}
+                <pre>{{ value|json_decode|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_UNICODE')) }}</pre>
+            {% default %}
+
+                {{ value }}
+
+            {% endswitch %}
+
+        </td>
+    </tr>
+{% endmacro %}

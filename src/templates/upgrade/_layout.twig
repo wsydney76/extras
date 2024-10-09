@@ -1,11 +1,15 @@
-<p>
-    <a href="{{ cpUrl('utilities/upgrade-inventory') }}">Zur Übersicht</a>
-</p>
+{% set mode = mode ?? 'cp' %}
+
+{% if mode == 'cp' %}
+    <p>
+        <a href="{{ cpUrl('utilities/upgrade-inventory') }}">Zur Übersicht</a>
+    </p>
+{% endif %}
 
 {% block content %}
 
 {% endblock %}
 
 <style>
-    {% include '/_extras/upgrade/styles.css' %}
+    {% include mode == 'cp' ? '/_extras/upgrade/styles.css' : '@extras/upgrade/styles.css'%}
 </style>

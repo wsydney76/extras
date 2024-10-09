@@ -1,0 +1,69 @@
+{% set context = context ?? '' %}
+
+{% set layout = type.fieldLayout %}
+
+
+<tr id="type-{{ type.id }}" style="scroll-margin-top: 32px;">
+    {% if context == 'cp' %}
+        <td>{{ index }}</td>
+        <td>{{ type.id }}</td>
+    {% endif %}
+    <td>
+        <a href="{{ settingsUrl }}entry-types/{{ type.id }}" target="_blank">{{ type.name }}</a><br>
+        {{ type.handle }}
+    </td>
+    <td>
+        {% for usage in type.findUsages %}
+            <div>
+                {% if className(usage) == 'craft\\models\\Section' %}
+                    {% set section = craft.app.entries.sectionById(usage.id) %}
+                    <a href="{{ settingsUrl }}sections/{{ usage.id }}"
+                       target="_blank">Section: {{ usage.handle }}</a>
+                {% endif %}
+                {% if className(usage) == 'craft\\fields\\Matrix' %}
+                    {% set matrixField = craft.app.fields.fieldById(usage.id) %}
+                    <a href="{{ settingsUrl }}fields/edit/{{ usage.id }}"
+                       target="_blank">Matrix: {{ usage.handle }}</a>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </td>
+    <td>
+        {{ [
+            type.hasTitleField ? 'Title' : null,
+            type.showSlugField ? 'Slug' : null,
+            type.showStatusField ? 'Status ' : null
+        ] | filter | join('<br>') | raw }}
+    </td>
+    <td>
+        {% for fieldElement in layout.customFieldElements %}
+            <div>
+                {% set field = fieldElement.field %}
+                {{ field.handle }}
+                {{ fieldElement.required ? '<b>*</b>' }}
+                {{ fieldElement.conditions ? '<b>c</b>' }}
+                {% if fieldElement.originalHandle != field.handle %}
+                    = <span style="color: red">{{ fieldElement.originalHandle }}</span>
+                {% endif %}
+                ({{ className(field)|replace('craft\\fields\\','') }})
+                <a href="{{ settingsUrl }}fields/edit/{{ field.id }}" target="_blank">[Edit]</a>
+            </div>
+        {% endfor %}
+    </td>
+    <td>
+        {% for fieldElement in layout.customFieldElements %}
+            <div>
+                {{ fieldElement.uid }}
+            </div>
+        {% endfor %}
+    </td>
+    {% if context == '' %}
+        <td>
+            {% for fieldElement in layout.customFieldElements %}
+                <div>
+                    {{ fieldValueSql(type, fieldElement.field.handle) }}&nbsp;
+                </div>
+            {% endfor %}
+        </td>
+    {% endif %}
+</tr>
