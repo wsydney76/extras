@@ -127,6 +127,18 @@
     onLabel: 'Add a link to view an element on the frontend to cards.'|t('_extras')
 }) }}
 
+{{ forms.selectField({
+    label: 'Enable Inspect Preview Target'|t('_extras'),
+    name: 'enableInspectPreviewTarget',
+    value: settings.enableInspectPreviewTarget,
+    options: [
+        {label: 'Never'|t('_extras'), value: 'never'},
+        {label: 'When DevMode is on'|t('_extras'), value: 'devMode'},
+        {label: 'Always'|t('_extras'), value: 'always'}
+    ],
+    instructions: 'Add a preview target that dumps internal database content.'|t('_extras')
+}) }}
+
 <hr>
 
 <h2 class="heading">{{ 'Assets'|t }}</h2>

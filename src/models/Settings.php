@@ -34,6 +34,9 @@ class Settings extends Model
 
     public bool $enableViewLinkInCards = false;
 
+    // never, devMode, always
+    public string $enableInspectPreviewTarget = 'no';
+
     public string $diffRendererName = 'Combined';
     public int $diffContext = 1;
     public bool $diffIgnoreCase = false;

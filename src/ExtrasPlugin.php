@@ -15,6 +15,7 @@ use craft\events\DefineFieldLayoutElementsEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterConditionRulesEvent;
 use craft\events\RegisterElementActionsEvent;
+use craft\events\RegisterPreviewTargetsEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\events\SetElementRouteEvent;
 use craft\helpers\Cp;
@@ -98,6 +99,7 @@ class ExtrasPlugin extends Plugin
                 $this->initRestoreDismissedTips();
                 $this->initFieldLayoutElements();
                 $this->initUtilities();
+                $this->initPreviewTargets();
             } else {
                 $this->registerSiteTemplateRoot();
             }
@@ -280,12 +282,12 @@ class ExtrasPlugin extends Plugin
             Event::on(
                 Cp::class,
                 Cp::EVENT_DEFINE_ELEMENT_CARD_HTML,
-                function (DefineElementHtmlEvent $event) {
+                function(DefineElementHtmlEvent $event) {
                     if ($event->element instanceof Entry && $event->element->section && $event->element->url) {
 
                         $viewLinkHtml = sprintf('<a href="%s" class="go" title="%s" target="_blank"></a>',
                             $event->element->url,
-                           Craft::t('_extras', 'View')
+                            Craft::t('_extras', 'View')
                         );
 
                         $event->html = $this->insertViewLink($event->html, $viewLinkHtml);
@@ -388,7 +390,7 @@ class ExtrasPlugin extends Plugin
         // Load the given HTML content into a DOMDocument object
         $dom = new DOMDocument();
         // Load HTML with proper encoding handling
-        @$dom->loadHTML ('<?xml encoding="utf-8" ?>' . $givenHtml);
+        @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $givenHtml);
 
         // Find the target div to append the new content
         // TODO: This does not work for singles
@@ -421,5 +423,26 @@ class ExtrasPlugin extends Plugin
                 $event->roots['@extras'] = __DIR__ . '/templates';
             }
         );
+    }
+
+    private function initPreviewTargets()
+    {
+        $enableInspectPreviewTarget = $this->getSettings()->enableInspectPreviewTarget;
+        if (
+            $enableInspectPreviewTarget === 'always' ||
+            ($enableInspectPreviewTarget === 'devMode' && Craft::$app->config->general->devMode)
+        ) {
+            Event::on(
+                Entry::class,
+                Entry::EVENT_REGISTER_PREVIEW_TARGETS,
+                function(RegisterPreviewTargetsEvent $event) {
+                    $event->previewTargets[] = [
+                        'label' => 'Inspect',
+                        'refresh' => 1,
+                        'urlFormat' => '@extras/inspect?id={id}'
+                    ];
+                }
+            );
+        }
     }
 }
