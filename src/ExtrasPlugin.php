@@ -17,12 +17,14 @@ use craft\events\RegisterConditionRulesEvent;
 use craft\events\RegisterElementActionsEvent;
 use craft\events\RegisterPreviewTargetsEvent;
 use craft\events\RegisterTemplateRootsEvent;
+use craft\events\RegisterUrlRulesEvent;
 use craft\events\SetElementRouteEvent;
 use craft\helpers\Cp;
 use craft\models\FieldLayout;
 use craft\services\Dashboard;
 use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
+use craft\web\UrlManager;
 use craft\web\View;
 use DOMDocument;
 use DOMXPath;
@@ -90,6 +92,7 @@ class ExtrasPlugin extends Plugin
             $this->setEntryRoute();
 
             if (Craft::$app->request->isCpRequest) {
+                $this->registerCpUrlRules();
                 $this->initSidebarVisibility();
                 $this->initConditionRules();
                 $this->initElementMap();
@@ -106,18 +109,35 @@ class ExtrasPlugin extends Plugin
         });
     }
 
+
+
     protected function createSettingsModel(): ?Model
     {
         return Craft::createObject(Settings::class);
     }
 
-    protected function settingsHtml(): ?string
+    private function registerCpUrlRules(): void
     {
-        return Craft::$app->view->renderTemplate('_extras/_settings.twig', [
-            'plugin' => $this,
-            'settings' => $this->getSettings(),
-        ]);
+        Event::on(UrlManager::class, UrlManager::EVENT_REGISTER_CP_URL_RULES,
+            function(RegisterUrlRulesEvent $event) {
+                // Merge so that settings controller action comes first (important!)
+                $event->rules = array_merge([
+                    'settings/plugins/_extras' => '_extras/settings/edit',
+                ],
+                    $event->rules
+                );
+            }
+        );
     }
+
+//    protected function settingsHtml(): ?string
+//    {
+//        return Craft::$app->view->renderTemplate('_extras/_settings.twig', [
+//            'plugin' => $this,
+//            'settings' => $this->getSettings(),
+//            'config' => Craft::$app->getConfig()->getConfigFromFile('_extras')
+//        ]);
+//    }
 
 
     /**
