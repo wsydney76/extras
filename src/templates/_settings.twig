@@ -2,11 +2,12 @@
 
 {% extends '_layouts/cp' %}
 
+{# Behave like Crafts templates/settings/plugins/_settings.twig #}
 
-{% import 'codeeditor/codeEditor' as codeEditor %}
-{% import '_includes/forms.twig' as forms %}
+{% requireAdmin %}
 
 {% set title = 'Extras' %}
+{% set docTitle = title ~ ' - ' ~ "Plugins"|t('app') %}
 {% set fullPageForm = true %}
 
 {% set crumbs = [
@@ -14,6 +15,21 @@
     { label: 'Plugins'|t('app'), url: url('settings/plugins') }
 ] %}
 
+{% set formActions = [
+    {
+        label: 'Save and continue editing'|t('app'),
+        redirect: "settings/plugins/_extras"|hash,
+        shortcut: true,
+        retainScroll: true,
+    },
+] %}
+
+{# ============= Settings template ======================== #}
+
+{% import 'codeeditor/codeEditor' as codeEditor %}
+{% import '_includes/forms.twig' as forms %}
+
+{# Tabs won't work if plugin::settingsHtml is used #}
 {% set tabs = {
     ax: { label: 'Authoring Experience'|t('_extras'), url: '#ax' },
     general: { label: 'General Settings'|t('_extras'), url: '#general' },
@@ -22,12 +38,15 @@
 } %}
 
 
-
 {% block content %}
 
-    <input type="hidden" name="action" value="_extras/settings/save">
+    {{ actionInput('plugins/save-plugin-settings') }}
+    {{ hiddenInput('pluginHandle', '_extras') }}
+    {{ redirectInput('settings') }}
 
     <div id="ax">
+        {# namespace outside of tab container breaks things ??? #}
+
         {% namespace "settings" %}
             {{ forms.lightswitchField({
                 first: true,
