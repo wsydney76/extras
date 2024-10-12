@@ -1,0 +1,28 @@
+{# Tabs won't work if plugin::settingsHtml is used on its own, so using this wrapper to pass tabs config around #}
+
+{# https://craftcms.com/docs/5.x/extend/plugin-settings.html#advanced-settings-pages #}
+
+{# params from plugin: plugin, settings, config #}
+
+{% extends "settings/plugins/_settings" %}
+
+
+{# The tab div ids get namespaced, so we have to add a 'settings-' prefix #}
+{% set tabs = {
+    ax: {
+        label: 'Authoring Experience'|t('_extras'),
+        url: '#ax'
+    },
+    general: {
+        label: 'General Settings'|t('_extras'),
+        url: '#general'
+    },
+    assets: {
+        label: 'CP Assets'|t('_extras'),
+        url: '#assets'
+    },
+    compare: {
+        label: 'Settings for Comparison'|t('_extras'),
+        url: '#compare'
+    },
+} %}

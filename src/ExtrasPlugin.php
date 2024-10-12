@@ -22,6 +22,7 @@ use craft\helpers\Cp;
 use craft\models\FieldLayout;
 use craft\services\Dashboard;
 use craft\services\Utilities;
+use craft\web\Controller;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
 use DOMDocument;
@@ -114,14 +115,24 @@ class ExtrasPlugin extends Plugin
 
     public function getSettingsResponse(): mixed
     {
-        // using the settingsHtml() method to render the settings template does not allow tabs
-        return Craft::$app
-            ->controller
-            ->renderTemplate('_extras/_settings.twig', [
-                'plugin' => $this,
-                'settings' => ExtrasPlugin::getInstance()->getSettings(),
-                'config' => Craft::$app->getConfig()->getConfigFromFile('_extras')
-            ]);
+        // using the settingsHtml() method alone does not allow tabs
+
+         $settingsHtml = Craft::$app->getView()->namespaceInputs(function() {
+             return (string)$this->settingsHtml();
+         }, 'settings', false);
+
+        return Craft::$app->controller->renderTemplate('_extras/_settings_layout.twig', [
+            'plugin' => $this,
+            'settingsHtml' => $settingsHtml
+        ]);
+    }
+
+    protected function settingsHtml(): ?string
+    {
+        return Craft::$app->view->renderTemplate('_extras/_settings', [
+            'settings' => $this->getSettings(),
+            'config' => Craft::$app->getConfig()->getConfigFromFile('_extras')
+        ]);
     }
 
     /**
