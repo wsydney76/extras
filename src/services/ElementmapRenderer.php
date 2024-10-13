@@ -171,6 +171,7 @@ class ElementmapRenderer extends Component
 
         return Entry::find()
             ->ownerId($elementIds)
+            ->status(null)
             ->site('*')
             ->ids();
     }
@@ -454,7 +455,7 @@ class ElementmapRenderer extends Component
         }
 
         if ($element instanceof Entry) {
-            $targets = Entry::find()->id($element->canonicalId)->site('*')->ids();
+            $targets = Entry::find()->id($element->canonicalId)->status(null)->site('*')->ids();
         } else {
             $targets = [$element->id];
         }

@@ -25,49 +25,56 @@ class MapController extends Controller
 
         $element = null;
         switch ($class) {
-            case 'entry': {
+            case 'entry':
+            {
                 $draftId = Craft::$app->request->getParam('draftId');
 
                 if ($draftId) {
-                    $element = Entry::find()->draftId($draftId)->provisionalDrafts(null)->anyStatus()->site('*')->preferSites([$site])->unique()->one();
+                    $element = Entry::find()->draftId($draftId)->provisionalDrafts(null)->status(null)->site('*')->preferSites([$site])->unique()->one();
                 } else {
                     $element = Entry::find()->id($id)->status(null)->site('*')->preferSites([$site])->unique()->one();
                     if (!$element) {
-                        $element = Entry::find()->drafts(true)->provisionalDrafts(null)->id($id)->anyStatus()->site('*')->preferSites([$site])->unique()->one();
+                        $element = Entry::find()->drafts(true)->provisionalDrafts(null)->id($id)->status(null)->site('*')->preferSites([$site])->unique()->one();
                     }
                     if (!$element) {
-                        $element = Entry::find()->revisions(true)->id($id)->anyStatus()->site('*')->preferSites([$site])->unique()->one();
+                        $element = Entry::find()->revisions(true)->id($id)->status(null)->site('*')->preferSites([$site])->unique()->one();
                     }
                 }
 
                 break;
             }
-            case 'asset': {
+            case 'asset':
+            {
                 $element = Asset::find()->site($site)->id($id)->one();
                 break;
             }
 
-            case 'category': {
+            case 'category':
+            {
                 $element = Category::find()->id($id)->one();
                 break;
             }
 
-            case 'tag': {
+            case 'tag':
+            {
                 $element = Tag::find()->id($id)->one();
                 break;
             }
 
-            case 'user': {
+            case 'user':
+            {
                 $element = User::find()->id($id)->one();
                 break;
             }
 
-            case 'globalset': {
+            case 'globalset':
+            {
                 $element = GlobalSet::find()->id($id)->one();
                 break;
             }
 
-            case 'product': {
+            case 'product':
+            {
                 $element = Product::find()->id($id)->one();
                 break;
             }

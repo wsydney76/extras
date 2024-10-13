@@ -47,7 +47,7 @@
                             {% for entry in entries|filter %}
                                 <div>
                                     {# {% set owner = craft.entries.id(entry.ownerId).site('*').status(null).unique().one %} #}
-                                    {% set owner = entry.owner %}
+                                    {% set owner = entry.owner ?? null %}
 
                                     {% if owner %}
                                         {% if className(owner) ends with 'Address' %}
