@@ -1,0 +1,385 @@
+{#
+Call Craft web controller actions from JavaScript and display success/error notices
+
+Usage:
+
+Template:
+{% include '@extras/_actions.twig' with {...} only %}
+
+See ACTIONS.md for details.
+
+Note:
+For simplicity and having just one file, all JS/HTML/CSS is included directly in each page's source code.
+
+If you want to include parts in your own asset bundle or modify them, disable the corresponding part.
+
+Consider including this template only on pages where it is needed.
+
+Page template:
+{% do _globals.set('requireActions', true) %}
+
+...
+
+Layout template:
+{% if _globals.get('requireActions') %}
+    {% include '@extras/_actions.twig' with {} only %}
+{% endif %}
+#}
+
+{% set baseUrl = baseUrl ?? parseEnv('$PRIMARY_SITE_URL') %}
+
+{% set enableFetchJs = enableFetchJs is defined ? enableFetchJs : true %}
+
+{% set enableNotices = enableNotices is defined ? enableNotices : true %}
+{% set noticesParams = noticesParams ?? {} %}
+
+{% if enableNotices %}
+    {# Allow using your own stuff #}
+    {% set enableClasses = enableClasses is defined ? enableClasses : true %}
+    {% set enableNoticeItemClasses = enableNoticeItemClasses is defined ? enableNoticeItemClasses : true %}
+    {% set enableNoticesJs = enableNoticesJs is defined ? enableNoticesJs : true %}
+    {% set enableNoticesHtml = enableNoticesHtml is defined ? enableNoticesHtml : true %}
+{% else %}
+    {# Disable notices altogether #}
+    {% set enableNoticesHtml = false %}
+    {% set enableNoticesJs = false %}
+    {% set enableClasses = false %}
+{% endif %}
+
+
+{# ======================================================================= #}
+{# Fetch response Craft web controller actions                             #}
+{# ======================================================================= #}
+
+{% if enableFetchJs %}
+
+    {# Store params required for sending ajax (post) requests to web controllers #}
+    {# Workaround: Using twig output inside js tags breaks PhpStorms syntax support #}
+    <template id="actions-data"
+         data-baseurl="{{ baseUrl }}"
+         data-action-trigger="{{ craft.app.config.general.actionTrigger }}"
+         data-csrf-token="{{ craft.app.request.csrfToken }}"></template>
+
+    {% js %}
+
+    const actionData = document.getElementById('actions-data').dataset
+
+    // Namespace functions
+    window.Actions = {};
+
+    // Function to post an action to the Craft web controller
+
+    window.Actions.postAction = function(action, data, callback, params = {}) {
+        const {
+            timeout = 20000,
+            handleFailuresInCallback = false,
+            logLevel = 'none',
+            indicatorSelector = null,
+            indicatorClass = 'fetch-request'
+        } = params;
+
+        // Create an AbortController to handle request timeouts
+        // https://kettanaito.com/blog/dont-sleep-on-abort-controller
+        const abortController = new AbortController();
+        let timeoutId;
+        if (timeout > 0) {
+            // Set a timeout to abort the request if it takes too long
+            timeoutId = setTimeout(() => abortController.abort(), timeout);
+        }
+
+         const indicator = indicatorSelector ? document.querySelector(indicatorSelector) : null;
+         if (indicator) {
+             indicator.classList.add(indicatorClass);
+         }
+
+        // Make the fetch request to the specified action
+        fetch(actionData.baseurl + '/' + actionData.actionTrigger + '/' + action, {
+            method: 'POST',
+            headers: {
+                // https://craftcms.com/docs/5.x/development/forms.html#ajax
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-Csrf-Token': actionData.csrfToken
+            },
+            body: JSON.stringify(data),
+            signal: abortController.signal
+            // signal: timeout > 0 ? AbortSignal.timeout(timeout) : undefined
+            // easier, but less browser support, so be safe and use manual timeout
+        })
+            .then((response) => {
+                if (logLevel === 'info') {
+                    console.log('Response: ', response);
+                }
+
+                if (timeout > 0) {
+                    // Clear the timeout if the request completes in time
+                    clearTimeout(timeoutId);
+                }
+
+                if (indicator) {
+                    indicator.classList.remove(indicatorClass);
+                }
+
+                return response.json()
+                    .then((json) => ({
+                        status: response.status,
+                        ok: response.ok,
+                        json
+                    }));
+            })
+            .then(({status, json, ok}) => {
+                const message = json.message;
+                switch (status) {
+                    case 200:
+                    case 201:
+                        // Call the callback function for successful responses
+                        callback(json, status, ok);
+                        break;
+
+                    case 400:
+                        if (handleFailuresInCallback) {
+                            // Call the callback function for 400 responses if handleFailuresInCallback is true
+                            callback(json, status, ok);
+                            break;
+                        }
+
+                        // Throw an error for 400 responses if handleFailuresInCallback is false
+                        throw new Error(message, {cause: 'Failure'})
+
+                    default:
+                        // Log and throw an error for other response statuses
+                        if (logLevel === 'info') {
+                            console.log(status, json);
+                        }
+                        throw new Error(status + ' - ' + (message || 'Unspecified Error'));
+                }
+            })
+            .catch(function(error) {
+                if (logLevel === 'info' || logLevel === 'error') {
+                    console.log('Catch: ', error);
+                }
+
+                if (indicator) {
+                    indicator.classList.remove(indicatorClass);
+                }
+
+                let errorText = error.message;
+
+                // Provide better error messages for specific error types
+                if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+                    errorText = 'Request timed out.';
+                } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                    errorText = 'Could not connect to server.'
+                }
+
+                // Display the error notice or alert
+                typeof Actions.notice === 'function' ?
+                    Actions.notice({type: 'error', text: errorText}) :
+                    alert(errorText)
+            });
+    }
+
+    // Convert errors array to string
+    // This is equivalent to php "implode(" ", $model->getErrorSummary())"
+    window.Actions.errorsToString = function(errors, includeAttributeNames = false) {
+        let errorMessage = '';
+        for (const field in errors) {
+            const messages = errors[field];
+            errorMessage += (includeAttributeNames ? `${field.charAt(0).toUpperCase() + field.slice(1)}: ` : '') + messages.join(' ') + ' ';
+        }
+        return errorMessage;
+    }
+
+    {% endjs %}
+{% endif %}
+
+{# ======================================================================= #}
+{# Show notices via NoticesHandler class                                   #}
+{# ======================================================================= #}
+
+{% if enableNoticesJs %}
+    {% js %}
+
+    // Actions.notice({type:'success', text: 'It worked'})
+    // Type: one of success|info|warning|error
+    // In AlpineJS `$dispatch('actions.notice', data)` can be used
+    window.Actions.notice = function(data) {
+        window.dispatchEvent(new CustomEvent('actions.notice', {detail: data}));
+    }
+
+    class NoticesHandler {
+        constructor(params = {}) {
+            const {duration = 4000, classes = {}, wrapperId = 'notices-wrapper'} = params;
+
+            this.notices = [];
+            this.visible = [];
+            this.noticeWrapper = document.getElementById(wrapperId); // Wrapper element for notices
+            this.duration = duration;
+            this.classes = {
+                wrapper: 'notices-wrapper',
+                position: 'notices-position',
+                item: 'notices-item',
+                success: 'notice-success',
+                info: 'notice-info',
+                warning: 'notice-warning',
+                error: 'notice-error',
+                ...classes
+            };
+            this.init();
+        }
+
+        // Initialize the notice handler
+        init() {
+            // Add global event listener for custom "notice" events
+            window.addEventListener('actions.notice', (event) => this.add(event.detail));
+            this.noticeWrapper.classList.add(this.classes.wrapper, this.classes.position);
+        }
+
+        // Add a new notice
+        add(notice) {
+            notice.id = Date.now(); // Unique ID for each notice
+            this.notices.push(notice); // Add to notices array
+            this.fire(notice.id); // Make notice visible
+        }
+
+        // Show the notice
+        fire(id) {
+            const notice = this.notices.find(notice => notice.id === id);
+            if (notice) {
+                this.visible.push(notice); // Add to visible array
+                this.render(); // Update DOM with new notice
+
+                // Remove the notice after a delay
+                const timeShown = this.duration * this.visible.length;
+                setTimeout(() => {
+                    this.remove(id);
+                }, timeShown);
+            }
+        }
+
+        // Remove a notice
+        remove(id) {
+            const index = this.visible.findIndex(notice => notice.id === id);
+            if (index > -1) {
+                this.visible.splice(index, 1); // Remove from visible array
+                this.render(); // Update DOM after removal
+            }
+        }
+
+        // Render notices to the DOM
+        render() {
+            // Clear existing notices in the DOM
+            this.noticeWrapper.innerHTML = '';
+
+            // Iterate over visible notices and create the necessary DOM elements
+            this.visible.forEach(notice => {
+                const noticeDiv = document.createElement('div');
+                noticeDiv.classList.add(this.classes.item);
+
+                noticeDiv.textContent = notice.text; // Set the text of the notice
+
+                // Add appropriate class based on the type of notice
+                const noticeClass = this.classes[notice.type] || this.classes.error;
+                noticeDiv.classList.add(noticeClass);
+
+                // A11y
+                noticeDiv.setAttribute('role', 'alert'); // Add role attribute for screen readers
+                noticeDiv.setAttribute('aria-live', 'assertive'); // Ensure the notice is announced immediately
+
+                // Add click event to remove the notice when clicked
+                noticeDiv.addEventListener('click', () => this.remove(notice.id));
+
+                // Append notice
+                this.noticeWrapper.appendChild(noticeDiv);
+
+                // stack on top, better if notices are placed at the bottom
+                // this.noticeWrapper.insertBefore(noticeDiv, this.noticeWrapper.firstChild);
+
+            });
+        }
+    }
+
+    {% endjs %}
+{% endif %}
+
+{% if enableNoticesHtml %}
+    {# Hack so that PhpStorm does not report syntax error in {% js %}  #}
+    {% set jsCode %}
+        const noticesHandler = new NoticesHandler({{ noticesParams|json_encode|raw }});
+    {% endset %}
+    {% js %}
+    {{ jsCode }}
+    {% endjs %}
+
+    <div id="notices-wrapper"></div>
+{% endif %}
+
+{# ======================================================================= #}
+{# Classes for notices                                                     #}
+{# ======================================================================= #}
+
+{% if enableClasses %}
+    {% css %}
+    .notices-wrapper {
+        pointer-events: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+        flex-direction: column;
+    }
+
+    .notices-position {
+        align-items: center; /* self-start, self-end for left/right */
+        justify-content: flex-start; /* flex-end for bottom */
+    }
+
+    .notices-item {
+        pointer-events: auto;
+        cursor: pointer;
+        z-index: 9999;
+        margin: 0.5rem;
+        display: flex;
+        width: 24rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.5rem;
+        padding: 0.5rem 2rem;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        box-shadow: 4px 4px 16px -6px rgba(0, 0, 0, 0.5);
+    }
+
+    {% endcss %}
+
+    {# Allow custom color styling by disabling this altogether and providing own classes #}
+    {% if enableNoticeItemClasses %}
+        {% css %}
+        .notice-success {
+            background-color: #16a34a; /* green-600 */
+            color: white;
+        }
+
+        .notice-error {
+            background-color: #dc2626; /* red-600 */
+            color: white;
+        }
+
+        .notice-info {
+            background-color: #2563eb; /* blue-600 */
+            color: white;
+        }
+
+        .notice-warning {
+            background-color: #ea580c; /* orange-600 */
+            color: white;
+        }
+        {% endcss %}
+    {% endif %}
+{% endif %}
+
+{# For fetch logic see: https://stackoverflow.com/questions/40248231/how-to-handle-http-code-4xx-responses-in-fetch-api #}
+{# For notice component see: https://codepen.io/KevinBatdorf/pen/JjGKbMa?css-preprocessor=none, converted to vanilla JavaScript #}

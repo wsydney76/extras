@@ -18,7 +18,6 @@ The `Actions` component allows you to make asynchronous requests to Craft CMS we
     - [Handling Failures in the Callback](#handling-failures-in-the-callback)
     - [Using Additional Data](#using-additional-data)
 - [Notices System](#notices-system)
-    - [Customizing Notices](#customizing-notices)
 
 ---
 
@@ -42,13 +41,13 @@ This method allows you to send a POST request to a Craft CMS web controller acti
 
 **Syntax:**
 ```javascript
-window.Actions.postAction(action, data, callback, options = {})
+window.Actions.postAction(action, data = {}, callback = null, options = {})
 ```
 
 **Parameters:**
 - `action` (String): The route to the controller action (e.g., `mymodule/mycontroller/myaction`).
 - `data` (Object): Key-value pairs of parameters to be passed to the server.
-- `callback` (Function): Function to handle the response. It can be in the form:
+- `callback` (Function): Function to handle the response. If null, a success notice will be displayed. It can be in the form:
     - `() => {...}`
     - `data => {...}`
     - `(data, status, ok) => {...}`
@@ -58,6 +57,7 @@ window.Actions.postAction(action, data, callback, options = {})
     - `logLevel` (String, default: `'none'`): Set to `'info'` to log responses for debugging purposes.
     - `indicatorSelector` (?String, default: `null`): A unique CSS selector of the HTML element to provide user feedback while the request is in progress, e.g. a spinner.
     - `indicatorClass` (String, default: `fetch-request`): The class to apply to the indicator element while the request is in progress.
+
 
 ---
 
@@ -143,7 +143,7 @@ window.Actions.postAction("mymodule/mycontroller/myaction",
     {'id': 1234},
     (data, status, ok) => {
         if (ok) {
-            // Do somthing with the data
+            // Do something with the data
             Actions.notice({ type: 'success', text: data.message });
         } else {
             // cleanup...
@@ -223,46 +223,7 @@ The `Actions` component includes a built-in system for displaying notifications 
 
 **Types of notices:**
 - `success`
-- `info`
-- `warning`
 - `error`
 
-#### Customizing Notices
-
-You can customize the appearance and behavior of notices using CSS and JavaScript parameters.
-
-**Default Notice CSS Classes:**
-```css
-.notice-success {
-    background-color: #16a34a;
-    color: white;
-}
-.notice-error {
-    background-color: #dc2626;
-    color: white;
-}
-.notice-info {
-    background-color: #2563eb;
-    color: white;
-}
-.notice-warning {
-    background-color: #ea580c;
-    color: white;
-}
-```
-
-**Example Notice Initialization:**
-```javascript
-const noticesHandler = new NoticesHandler({
-    duration: 5000,  // Time in milliseconds the notice stays visible
-    classes: {
-        wrapper: 'custom-wrapper-class',
-        item: 'custom-item-class',
-        success: 'custom-success-class'
-    }
-});
-```
-
----
 
 By following these guidelines, you can efficiently use the `Actions` component in Craft CMS to interact with your controllers and display feedback to users via notices.
