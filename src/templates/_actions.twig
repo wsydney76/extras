@@ -71,6 +71,11 @@ window.Actions.postAction = function(action, data = {}, callback = null, params 
         })
 
         .then(({status, json, ok}) => {
+
+            if (logLevel === 'info') {
+                console.log(status, json);
+            }
+
             const message = json.message;
 
             switch (status) {
@@ -92,11 +97,10 @@ window.Actions.postAction = function(action, data = {}, callback = null, params 
 
                     throw new Error(message, {cause: 'Failure'})
 
-                default:
-                    if (logLevel === 'info') {
-                        console.log(status, json);
-                    }
+                case 403:
+                    throw new Error('403 - Forbidden. Not logged in or insufficient permissions.', {cause: 'Failure'})
 
+                default:
                     throw new Error(status + ' - ' + (message || 'Unspecified Error'));
             }
         })
@@ -133,6 +137,14 @@ window.Actions.errorsToString = function(errors, includeAttributeNames = false) 
 
 window.Actions.notice = function(data) {
     window.dispatchEvent(new CustomEvent('actions.notice', {detail: data}));
+}
+
+window.Actions.success = function(message) {
+    window.Actions.notice({type: 'success', text: message})
+}
+
+window.Actions.error = function(message) {
+    window.Actions.notice({type: 'error', text: message})
 }
 
 class NoticesHandler {
