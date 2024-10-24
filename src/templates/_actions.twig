@@ -14,7 +14,7 @@ const actionData = document.getElementById('actions-data').dataset
 
 window.Actions = {};
 
-window.Actions.postAction = function(action, data = {}, callback = null, params = {}) {
+window.Actions.postAction = async function(action, data = {}, callback = null, params = {}) {
     const {
         timeout = 20000,
         handleFailuresInCallback = false,
@@ -37,93 +37,84 @@ window.Actions.postAction = function(action, data = {}, callback = null, params 
         indicator.classList.add(indicatorClass);
     }
 
-    fetch(actionData.baseurl + '/' + actionData.actionTrigger + '/' + action, {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-Csrf-Token': actionData.csrfToken
-        },
-        body: JSON.stringify(data),
-        signal: abortController.signal
-    })
+    try {
+        const response = await fetch(actionData.baseurl + '/' + actionData.actionTrigger + '/' + action, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-Csrf-Token': actionData.csrfToken
+            },
+            body: JSON.stringify(data),
+            signal: abortController.signal
+        });
 
-        .then((response) => {
-            if (logLevel === 'info') {
-                console.log('Response: ', response);
-            }
+        if (logLevel === 'info') {
+            console.log('Response: ', response);
+        }
 
-            if (timeout > 0) {
-                clearTimeout(timeoutId);
-            }
+        if (timeout > 0) {
+            clearTimeout(timeoutId);
+        }
 
-            if (indicator) {
-                indicator.classList.remove(indicatorClass);
-            }
+        if (indicator) {
+            indicator.classList.remove(indicatorClass);
+        }
 
-            return response.json()
-                .then((json) => ({
-                    status: response.status,
-                    ok: response.ok,
-                    json
-                }));
-        })
+        const json = await response.json();
+        const { status, ok } = response;
 
-        .then(({status, json, ok}) => {
+        if (logLevel === 'info') {
+            console.log(status, json);
+        }
 
-            if (logLevel === 'info') {
-                console.log(status, json);
-            }
+        const message = json.message;
 
-            const message = json.message;
+        switch (status) {
+            case 200:
+                if (callback) {
+                    callback(json, status, ok);
+                } else {
+                    Actions.notice({type: 'success', text: message});
+                }
+                break;
 
-            switch (status) {
-                case 200:
+            case 400:
+                if (handleFailuresInCallback) {
                     if (callback) {
                         callback(json, status, ok);
-                    } else {
-                        Actions.notice({type: 'success', text: message})
                     }
                     break;
+                }
 
-                case 400:
-                    if (handleFailuresInCallback) {
-                        if (callback) {
-                            callback(json, status, ok);
-                        }
-                        break;
-                    }
+                throw new Error(message, { cause: 'Failure' });
 
-                    throw new Error(message, {cause: 'Failure'})
+            case 403:
+                throw new Error('403 - Forbidden. Not logged in or insufficient permissions.', { cause: 'Failure' });
 
-                case 403:
-                    throw new Error('403 - Forbidden. Not logged in or insufficient permissions.', {cause: 'Failure'})
+            default:
+                throw new Error(status + ' - ' + (message || 'Unspecified Error'));
+        }
+    } catch (error) {
+        if (logLevel === 'info' || logLevel === 'error') {
+            console.log('Catch: ', error);
+        }
 
-                default:
-                    throw new Error(status + ' - ' + (message || 'Unspecified Error'));
-            }
-        })
+        if (indicator) {
+            indicator.classList.remove(indicatorClass);
+        }
 
-        .catch(function(error) {
-            if (logLevel === 'info' || logLevel === 'error') {
-                console.log('Catch: ', error);
-            }
+        let errorText = error.message;
 
-            if (indicator) {
-                indicator.classList.remove(indicatorClass);
-            }
+        if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+            errorText = 'Request timed out.';
+        } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+            errorText = 'Could not connect to server.';
+        }
 
-            let errorText = error.message;
-
-            if (error.name === 'AbortError' || error.name === 'TimeoutError') {
-                errorText = 'Request timed out.';
-            } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-                errorText = 'Could not connect to server.'
-            }
-
-            Actions.notice({type: 'error', text: errorText})
-        });
+        Actions.notice({type: 'error', text: errorText});
+    }
 }
 
 window.Actions.errorsToString = function(errors, includeAttributeNames = false) {
