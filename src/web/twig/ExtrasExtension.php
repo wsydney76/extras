@@ -195,7 +195,7 @@ class ExtrasExtension extends AbstractExtension
                 return null;
             }
 
-            if ($options['default'] === null) {
+            if (!array_key_exists('default', $options)) {
                 throw new \InvalidArgumentException('Required param ' . $key . ' missing. Either a parameter must be passed or a default value must be defined.');
             }
 
@@ -225,7 +225,7 @@ class ExtrasExtension extends AbstractExtension
 
 
         $isValid = match ($options['type']) {
-            'string' => is_string($value),
+            'string' => is_string($value) || $value instanceof \Twig\Markup,
             'int' => is_scalar($value) && preg_match('/^\d+$/', $value), // is_int($value) does not work for request parameters
             'float' => is_float($value),
             'array' => is_array($value),
