@@ -10,6 +10,7 @@ namespace wsydney76\extras\services;
 use Craft;
 use craft\commerce\elements\db\ProductQuery;
 use craft\commerce\elements\db\VariantQuery;
+use craft\commerce\elements\Product;
 use craft\db\Query;
 use craft\elements\db\AssetQuery;
 use craft\elements\db\CategoryQuery;
@@ -150,7 +151,7 @@ class ElementmapRenderer extends Component
         }
 
         $conditions = [
-            'productId' => $elementIds,
+            'primaryOwnerId' => $elementIds,
         ];
         return (new Query())
             ->select('id')
@@ -304,14 +305,14 @@ class ElementmapRenderer extends Component
             switch ($type) {
                 /* Just in case individual variant mapping turns out to be a bad idea.
                 // Variants should instead map to their products, as those are
-                // the elements through which they may be edited.
+                // the elements through which they may be edited.*/
                 case 'craft\\commerce\\elements\\Variant':
                     $items = $this->getProductsForVariants($elements[$type]);
                     unset($elements[$type]);
                     $items = $this->groupByType($items);
                     $elements = $this->mergeGroups($elements, $items);
                     break;
-                */
+
                 // Matrix blocks should find their owners, and then those may
                 // be reprocessed to determine if they are usable.
                 case 'craft\\elements\\MatrixBlock':
@@ -491,7 +492,7 @@ class ElementmapRenderer extends Component
     private function getProductsForVariants(array $elementIds)
     {
         $conditions = [
-            'productId' => $elementIds,
+            'primaryOwnerId' => $elementIds,
         ];
         return (new Query())
             ->select('id')
@@ -528,19 +529,36 @@ class ElementmapRenderer extends Component
             $title = $element->title;
 
             // TODO: Cleanup, this is a mess...
-            if ($element->section) {
-                $sectionName = Craft::t('site', $element->section->name);
-            } else {
-                $topLevelEntry = $this->getTopLevelEntry($element);
-                if ($topLevelEntry && $topLevelEntry->section) {
-                    $sectionName = Craft::t('site', $topLevelEntry->section->name) . ' -> ' . Craft::t('site', $element->type->name);
-                    if ($title) {
-                        $title = $topLevelEntry->title . ' -> ' . $title;
-                    } else {
-                        $title = $topLevelEntry->title;
-                    }
+            $sectionName = 'n/a';
+
+            if ($element instanceof Entry) {
+                if ($element->section) {
+                    $sectionName = Craft::t('site', $element->section->name);
                 } else {
-                    $sectionName = ' -> ' . $element->type->name;
+                    $topLevelEntry = $element->getRootOwner();
+
+                    if ($topLevelEntry) {
+                        if ($topLevelEntry instanceof Entry && $topLevelEntry->section) {
+                            $sectionName = Craft::t('site', $topLevelEntry->section->name) . ' -> ' . Craft::t('site', $element->type->name);
+                            if ($title) {
+                                $title = $topLevelEntry->title . ' -> ' . $title;
+                            } else {
+                                $title = $topLevelEntry->title;
+                            }
+                        } elseif ($topLevelEntry instanceof Product) {
+                            $sectionName = Craft::t('site', $topLevelEntry->type->name);
+                            if ($title) {
+                                $title = $topLevelEntry->title . ' -> ' . $title;
+                            } else {
+                                $title = $topLevelEntry->title;
+                            }
+                        }
+
+                    }
+
+                    else {
+                        $sectionName = ' -> ' . $element->type->name;
+                    }
                 }
             }
 
@@ -586,6 +604,8 @@ class ElementmapRenderer extends Component
             return null;
         }
 
+        return $entry->getRootOwner();
+
         $owner = $entry->owner;
         if (!$owner) {
             return null;
@@ -595,7 +615,7 @@ class ElementmapRenderer extends Component
         }
 
         if ($owner->owner) {
-            return $this->getTopLevelEntry($owner, ++$level);
+            return $owner->getRootOwner();
         }
 
         return null;

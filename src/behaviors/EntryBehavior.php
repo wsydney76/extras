@@ -5,6 +5,7 @@ namespace wsydney76\extras\behaviors;
 use Craft;
 use craft\base\ElementInterface;
 use craft\base\Field;
+use craft\commerce\elements\Product;
 use craft\db\Query;
 use craft\db\Table;
 use craft\elements\Entry;
@@ -17,15 +18,17 @@ class EntryBehavior extends Behavior
 {
     public function getOwnerPath()
     {
-        /** @var Entry $entry */
-        $entry = $this->owner;
+
+        return Collection::make([$this->owner->getRootOwner()]);
+        /** @var Entry $element */
+        $element = $this->owner;
 
         $path = Collection::make();
 
-        while ($entry = $entry->getOwner()) {
-            $path = $path->prepend($entry);
+        while ($element = $element->getOwner()) {
+            $path = $path->prepend($element);
             // array_unshift($path, $entry);
-            if ($entry->section !== null) {
+            if (($element instanceof Entry && $element->section) || $element instanceof Product) {
                 break;
             }
         }

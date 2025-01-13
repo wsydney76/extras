@@ -5,6 +5,7 @@ namespace wsydney76\extras\services;
 use Craft;
 use craft\base\Element;
 use craft\base\Event;
+use craft\commerce\elements\Product;
 use craft\elements\Asset;
 use craft\elements\Entry;
 use craft\events\DefineAttributeHtmlEvent;
@@ -37,7 +38,7 @@ class Elementmap
 //        Craft::$app->getView()->hook('cp.categories.edit.details', [$this, 'renderCategoryElementMap']);
 //          Craft::$app->getView()->hook('cp.users.edit.meta', [$this, 'renderUserElementMap']);
 //        Craft::$app->getView()->hook('cp.globals.edit.content', [$this, 'renderGlobalsElementMap']);
-//        Craft::$app->getView()->hook('cp.commerce.product.edit.details', [$this, 'renderProductElementMap']);
+        Craft::$app->getView()->hook('cp.commerce.product.edit.details', [$this, 'renderProductElementMap']);
 
         // Dont' show button in slideout editors
         if (!Craft::$app->request->isConsoleRequest && !Craft::$app->request->isAjax) {
@@ -60,6 +61,13 @@ class Elementmap
                 Asset::EVENT_DEFINE_SIDEBAR_HTML,
                 function(DefineHtmlEvent $event) {
                     $event->html .= $this->renderMap($event->sender, 'asset');;
+                }
+            );
+            Event::on(
+                Product::class,
+                Product::EVENT_DEFINE_SIDEBAR_HTML,
+                function(DefineHtmlEvent $event) {
+                    $event->html .= $this->renderMap($event->sender, 'product');;
                 }
             );
         }
@@ -217,8 +225,8 @@ class Elementmap
      * @throws SyntaxError
      * @throws Exception
      */
-//    public function renderProductElementMap(array &$context)
-//    {
-//        return $this->renderMap($context['product'], 'product');
-//    }
+    public function renderProductElementMap(array &$context)
+    {
+        return $this->renderMap($context['product'], 'product');
+    }
 }
