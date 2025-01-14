@@ -91,7 +91,9 @@ class ElementmapRenderer extends Component
 
         // Any variants within the element, as the variant and element share the
         // same editor pages.
-        $sources = array_merge($sources, $this->getVariantIdsByProducts($sources));
+        if (Craft::$app->getPlugins()->isPluginEnabled('commerce')) {
+            $sources = array_merge($sources, $this->getVariantIdsByProducts($sources));
+        }
 
         // Craft 5: get IDs of all nested entries
         $sources = array_merge($sources, $this->getNestedEntryIds($element->id));

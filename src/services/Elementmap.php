@@ -63,13 +63,16 @@ class Elementmap
                     $event->html .= $this->renderMap($event->sender, 'asset');;
                 }
             );
-            Event::on(
-                Product::class,
-                Product::EVENT_DEFINE_SIDEBAR_HTML,
-                function(DefineHtmlEvent $event) {
-                    $event->html .= $this->renderMap($event->sender, 'product');;
-                }
-            );
+
+            if (Craft::$app->plugins->isPluginEnabled('commerce')) {
+                Event::on(
+                    Product::class,
+                    Product::EVENT_DEFINE_SIDEBAR_HTML,
+                    function(DefineHtmlEvent $event) {
+                        $event->html .= $this->renderMap($event->sender, 'product');;
+                    }
+                );
+            }
         }
 
         // Allow some elements to have map data shown in their overview tables.
