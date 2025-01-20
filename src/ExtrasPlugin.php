@@ -41,6 +41,7 @@ use wsydney76\extras\services\DraftsHelper;
 use wsydney76\extras\services\Elementmap;
 use wsydney76\extras\services\ElementmapRenderer;
 use wsydney76\extras\services\UpgradeService;
+use wsydney76\extras\services\VideoService;
 use wsydney76\extras\utilities\UpgradeInventory;
 use wsydney76\extras\utilities\VolumesInventory;
 use wsydney76\extras\variables\ExtrasVariable;
@@ -69,7 +70,8 @@ class ExtrasPlugin extends Plugin
                 'elementmap' => Elementmap::class,
                 'renderer' => ElementmapRenderer::class,
                 'draftsHelper' => DraftsHelper::class,
-                'upgradeService' => UpgradeService::class
+                'upgradeService' => UpgradeService::class,
+                'video' => VideoService::class
             ],
         ];
     }
