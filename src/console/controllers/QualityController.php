@@ -3,6 +3,8 @@
 namespace wsydney76\extras\console\controllers;
 
 use Craft;
+use craft\commerce\elements\Product;
+use craft\commerce\Plugin;
 use craft\console\Controller;
 use craft\db\Query;
 use craft\elements\Asset;
@@ -39,11 +41,21 @@ class QualityController extends Controller
      */
     public string $volume = '';
 
+    /**
+     * @var bool Process Commerce products instead of entries
+     */
+    public bool $commerce = false;
+
+    /**
+     * @var string|array Comma separated list of product types
+     */
+    public string|array $type = '';
+
     // Define allowed flags per action
     public function options($actionID): array
     {
         return match ($actionID) {
-            'check-runtime-errors' => ['help', 'section', 'limit', 'offset'],
+            'check-runtime-errors' => ['help', 'section', 'limit', 'offset', 'commerce', 'type'],
             'validate' => ['help', 'section', 'limit', 'offset'],
             'check-asset-files' => ['help', 'volume', 'limit', 'offset'],
             default => ['help'],
@@ -56,7 +68,9 @@ class QualityController extends Controller
             's' => 'section',
             'l' => 'limit',
             'o' => 'offset',
-            'v' => 'volume'
+            'v' => 'volume',
+            'c' => 'commerce',
+            't' => 'type',
         ];
     }
 
@@ -67,9 +81,10 @@ class QualityController extends Controller
      */
     public function actionCheckRuntimeErrors(): int
     {
-        Console::output("Checking all live entries for runtime errors...");
+        Console::output("Checking all live elements for runtime errors...");
 
-        $entries = $this->getEntriesFromParams();
+
+        $elements =  $this->commerce ? $this->getProductsFromParams() : $this->getEntriesFromParams();
 
         $client = Craft::createGuzzleClient();
 
@@ -78,13 +93,13 @@ class QualityController extends Controller
         $has403 = false;
         $messages = [];
 
-        $totalEntries = count($entries);
+        $totalEntries = count($elements);
         Console::startProgress(0, $totalEntries, 'Checking...');
 
-        foreach ($entries as $index => $entry) {
+        foreach ($elements as $index => $element) {
             Console::updateProgress($index + 1, $totalEntries, "Checking, found $errors error(s) so far.");
 
-            $url = $entry->url;
+            $url = $element->url;
 
             try {
                 $response = $client->get($url);
@@ -292,7 +307,32 @@ class QualityController extends Controller
             $query->section($this->section);
         }
 
+      return $query->all();
+    }
+
+    protected function getProductsFromParams(): array
+    {
+        $query = Product::find()
+            ->uri(':notempty:')
+            ->site('*')
+            ->limit($this->limit)
+            ->offset($this->offset);
+
+        if ($this->type) {
+            $this->type = explode(',', $this->type);
+            // check valid section
+            foreach ($this->type as $type) {
+                if (! Plugin::getInstance()->getProductTypes()->getProductTypeByHandle($type)) {
+                    Console::error("Type $type not found.");
+                    return [];
+                }
+            }
+
+            $query->type($this->type);
+        }
+
         return $query->all();
+
     }
 
 }
