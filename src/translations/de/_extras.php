@@ -155,5 +155,8 @@ return [
     '{count,plural,=1{Open provisional draft} other{Open provisional drafts}}' => '{count,plural,=1{Offener provisorischer Entwurf} other{Offene provisorische Entwürfe}}',
     '{count} provisional draft(s) by other users' => '{count} provisorische Entwurf/Entwürfe von anderen Benutzern',
     '{count} regular draft(s) by other users' => '{count} reguläre Entwürfe von anderen Benutzern',
-
+    'Incoming Relationships' => 'Eingehende Beziehungen',
+    'No products found.' => 'Keine Produkte gefunden.',
+    'Enter any additional CSS here.' => 'Geben Sie hier zusätzliches CSS ein.',
+    'Additional CSS' => 'Zusätzliches CSS'
 ];
