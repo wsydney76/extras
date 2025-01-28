@@ -12,6 +12,10 @@ class ViewController extends Controller
     public function actionRenderTemplate()
     {
         $template = $this->request->getRequiredBodyParam('template');
+        $template = Craft::$app->security->validateData($template);
+        if (!$template) {
+            return $this->asFailure('Template has been tampered with');
+        }
         $variables = $this->request->getBodyParam('variables', []);
         $templateMode = $this->request->getBodyParam('templateMode', Craft::$app->getView()->getTemplateMode());
 
