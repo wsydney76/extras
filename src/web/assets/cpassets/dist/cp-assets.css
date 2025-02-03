@@ -4,11 +4,12 @@ html, body {
     font-size: 15px;
 }
 
-/* Hack to adjust the menu button height to the changed font-size */
+/* Hack to adjust the menu button height to the changed font-size
 #action-buttons .btngroup .btn.submit.menubtn {
     font-size: 14px !important;
     height: 35.2969px;
 }
+*/
 
 /* Fix flickering when spinner shows and title is empty */
 #page-title {
@@ -77,7 +78,7 @@ h2 {
 }
 
 #content-container h2 {
-    border-color: var(--gray-900);
+    border-color: var(--gray-400);
     font-size: 20px;
 
 }
