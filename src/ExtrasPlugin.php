@@ -8,6 +8,7 @@ use craft\base\Element;
 use craft\base\Event;
 use craft\base\Model;
 use craft\base\Plugin;
+use craft\commerce\elements\Product;
 use craft\elements\Entry;
 use craft\events\DefineBehaviorsEvent;
 use craft\events\DefineElementHtmlEvent;
@@ -120,9 +121,9 @@ class ExtrasPlugin extends Plugin
     {
         // using the settingsHtml() method alone does not allow tabs
 
-         $settingsHtml = Craft::$app->getView()->namespaceInputs(function() {
-             return (string)$this->settingsHtml();
-         }, 'settings', false);
+        $settingsHtml = Craft::$app->getView()->namespaceInputs(function() {
+            return (string)$this->settingsHtml();
+        }, 'settings', false);
 
         return Craft::$app->controller->renderTemplate('_extras/_settings_layout.twig', [
             'plugin' => $this,
@@ -301,7 +302,11 @@ class ExtrasPlugin extends Plugin
                 Cp::class,
                 Cp::EVENT_DEFINE_ELEMENT_CARD_HTML,
                 function(DefineElementHtmlEvent $event) {
-                    if ($event->element instanceof Entry && $event->element->section && $event->element->url) {
+                    if ((
+                            ($event->element instanceof Entry && $event->element->section) ||
+                            $event->element instanceof Product
+                        ) &&
+                        $event->element->url) {
 
                         $viewLinkHtml = sprintf('<a href="%s" class="go" title="%s" target="_blank"></a>',
                             $event->element->url,
