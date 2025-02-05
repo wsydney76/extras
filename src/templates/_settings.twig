@@ -86,7 +86,7 @@
         name: 'enableViewLinkInCards',
         on: settings.enableViewLinkInCards,
         onLabel: 'Add a link to view an element on the frontend to cards.'|t('_extras'),
-        warning: config.enableViewLinkInCards is defined ? _self.configWarning('enableViewLinkInCards')
+        warning: (config.enableViewLinkInCards is defined ? _self.configWarning('enableViewLinkInCards')) ~ ' Deprecated, causes the element selection modal to hang in Craft 5.6.? when adding a new element to a field. Use disclosure menu "Show in new tab" instead.'
     }) }}
 
     {{ forms.selectField({

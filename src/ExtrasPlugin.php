@@ -319,7 +319,7 @@ class ExtrasPlugin extends Plugin
                         ) &&
                         $event->element->url) {
 
-                        $viewLinkHtml = sprintf('<a href="%s" class="go" title="%s" target="_blank"></a>',
+                        $viewLinkHtml = sprintf('<li><a href="%s" class="go" title="%s" target="_blank"></a></li>',
                             $event->element->url,
                             Craft::t('_extras', 'View')
                         );
