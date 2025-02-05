@@ -11,6 +11,15 @@
 .one %}
 
 {% if not entry %}
+    {% set entry = craft.products
+        .draftId(draftId)
+        .provisionalDrafts(isProvisionalDraft)
+        .siteId(siteId)
+        .anyStatus()
+    .one %}
+{% endif %}
+
+{% if not entry %}
     {% exit 404 %}
 {% endif %}
 

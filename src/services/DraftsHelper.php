@@ -6,6 +6,7 @@ use Craft;
 use craft\base\Component;
 use craft\base\Element;
 use craft\base\Event;
+use craft\commerce\elements\Product;
 use craft\elements\Entry;
 use craft\events\DefineAttributeHtmlEvent;
 use craft\events\DefineHtmlEvent;
@@ -34,7 +35,7 @@ class DraftsHelper extends Component
         Event::on(
             Element::class,
             Element::EVENT_DEFINE_SIDEBAR_HTML, function(DefineHtmlEvent $event) {
-            if ($event->sender instanceof Entry) {
+            if ($event->sender instanceof Entry || $event->sender instanceof Product) {
                 $event->html =
                     Craft::$app->view->renderTemplate('_extras/entry_hasdrafts.twig', [
                         'entry' => $event->sender

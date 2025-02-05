@@ -221,12 +221,23 @@ class ExtrasPlugin extends Plugin
     {
         Event::on(
             Entry::class,
-            Entry::EVENT_DEFINE_BEHAVIORS,
+            Model::EVENT_DEFINE_BEHAVIORS,
             function(DefineBehaviorsEvent $event) {
                 if (!isset($event->behaviors['extrasBehavior'])) {
                     $event->behaviors['extrasBehavior'] = EntryBehavior::class;
                 }
             });
+
+        if (Craft::$app->plugins->isPluginEnabled('commerce')) {
+            Event::on(
+                Product::class,
+                Model::EVENT_DEFINE_BEHAVIORS,
+                function(DefineBehaviorsEvent $event) {
+                    if (!isset($event->behaviors['extrasBehavior'])) {
+                        $event->behaviors['extrasBehavior'] = EntryBehavior::class;
+                    }
+                });
+        }
     }
 
     private function initExtrasVariable(): void

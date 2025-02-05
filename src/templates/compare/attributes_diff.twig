@@ -12,7 +12,7 @@
     </div>
 {% endif %}
 
-{% if entry.authorId != canonicalEntry.authorId %}
+{% if className(entry) == 'craft\\elements\\Entry' and entry.authorId != canonicalEntry.authorId %}
     <div class="field-diff">
         <h2>{{ 'Author'|t('_extras') }}</h2>
         {{ _self.attrDiff(entry.author.fullName, canonicalEntry.author.fullName) }}
