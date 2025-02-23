@@ -555,10 +555,7 @@ class ElementmapRenderer extends Component
                                 $title = $topLevelEntry->title;
                             }
                         }
-
-                    }
-
-                    else {
+                    } else {
                         $sectionName = ' -> ' . $element->type->name;
                     }
                 }
@@ -578,9 +575,18 @@ class ElementmapRenderer extends Component
                 $text .= ", " . Craft::t('_extras', 'Revision');
             }
 
+            $icon = $element instanceof Entry && $element->type->icon ?
+                "@appicons/{$element->type->icon}.svg" :
+                '@appicons/newspaper.svg';
+
+            $color = $element instanceof Entry && $element->type->color ?
+                $element->type->color->cssVar(500)  :
+                'var(--black)';
+
             $results[] = [
                 'id' => $element->id,
-                'icon' => '@vendor/craftcms/cms/src/icons/newspaper.svg',
+                'icon' => $icon,
+                'color' => $color,
                 'title' => $title . ' (' . $text . ')',
                 'url' => $element->cpEditUrl,
                 'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)] . $sectionName

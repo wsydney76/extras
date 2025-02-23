@@ -25,9 +25,7 @@
 {% macro showElement(element) %}
     <li>
         <div style="display: flex; align-items: center">
-            {% if element.icon is defined %}
-                <div class="icon icon-mask">{{ svg(element.icon) }}</div>
-            {% endif %}
+
 
             {% if element.image is defined %}
                 <div>
@@ -40,7 +38,11 @@
                     {% endif %}
                 </div>
             {% else %}
-                {{ svg('@appicons/newspaper.svg') }}
+                {% if element.icon is defined %}
+                    {% set icon = svg(element.icon) %}
+                    
+                    <div class="icon icon-mask">{{ svg(element.icon)|attr({style: "fill: #{element.color};"}) }}</div>
+                {% endif %}
             {% endif %}
             <a href="{{ element.url }}" data-id="{{ element.id }}" data-editable>
                 {{ element.title }}

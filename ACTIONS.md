@@ -26,7 +26,7 @@ The `Actions` component allows you to make asynchronous requests to Craft CMS we
 To include the `Actions` component in your Craft CMS templates, use the following Twig code:
 
 ```twig
-{% include '@extras/_actions.twig' with {...} only %}
+{% include '<pathToTemplates>/_actions.twig' with {...} only %}
 ```
 
 Ensure that you include this component only on pages where it is necessary to avoid unnecessary JS/CSS loading.
@@ -225,5 +225,9 @@ The `Actions` component includes a built-in system for displaying notifications 
 - `success`
 - `error`
 
+#### Shortcuts
 
-By following these guidelines, you can efficiently use the `Actions` component in Craft CMS to interact with your controllers and display feedback to users via notices.
+````javascript
+Actions.success(data.message)
+Actions.error(data.message)
+````

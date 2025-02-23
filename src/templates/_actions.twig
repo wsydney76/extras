@@ -1,3 +1,30 @@
+{#
+Call Craft web controller actions from JavaScript and display success/error notices
+
+Usage:
+
+Template:
+{% include '@extras/_actions.twig' with {baseUrl: currentSite.baseUrl|trim('/', 'right')} only %}
+
+See ACTIONS.md for details.
+
+Note:
+For simplicity and having just one file, all JS/HTML/CSS is included directly in each page's source code.
+
+Consider including this template only on pages where it is needed.
+
+Page template:
+{% do _globals.set('requireActions', true) %}
+
+...
+
+Layout template:
+{% if _globals.get('requireActions') %}
+    {% include '@extras/_actions.twig' with {} only %}
+{% endif %}
+#}
+
+{# Set to baseUrl of currentSite for multi-site projects #}
 {% set baseUrl = baseUrl ?? parseEnv('$PRIMARY_SITE_URL') %}
 
 <template id="actions-data"
@@ -245,3 +272,6 @@ const noticesHandler = new NoticesHandler();
 }
 
 {% endcss %}
+
+{# For fetch logic see: https://stackoverflow.com/questions/40248231/how-to-handle-http-code-4xx-responses-in-fetch-api #}
+{# For notice component see: https://codepen.io/KevinBatdorf/pen/JjGKbMa?css-preprocessor=none, converted to vanilla JavaScript #}
