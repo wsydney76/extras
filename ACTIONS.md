@@ -17,6 +17,7 @@ The `Actions` component allows you to make asynchronous requests to Craft CMS we
     - [Basic Success Example](#basic-success-example)
     - [Handling Failures in the Callback](#handling-failures-in-the-callback)
     - [Using Additional Data](#using-additional-data)
+    - [Rendering Twig Templates](#rendering-twig-templates)
 - [Notices System](#notices-system)
 
 ---
@@ -46,7 +47,7 @@ window.Actions.postAction(action, data = {}, callback = null, options = {})
 
 **Parameters:**
 - `action` (String): The route to the controller action (e.g., `mymodule/mycontroller/myaction`).
-- `data` (Object): Key-value pairs of parameters to be passed to the server.
+- `data` (Object): Parameters to be passed to the server. Can be anything that can be converted to valid JSON data.
 - `callback` (Function): Function to handle the response. If null, a success notice will be displayed. It can be in the form:
     - `() => {...}`
     - `data => {...}`
@@ -71,13 +72,36 @@ function callback(data, status, ok) {
 }
 ```
 
+The content of the data parameter depends on the content type returned from the server:
+
+__application/json__: 
+
+This is the content type expected from the server, if the controller uses `return asSuccess()/asModelSuccess()/asFailure()/asModelFailure()`.
+
+The data parameter will be an object with the following properties:
+
 - `data` (Object): Decoded JSON response from the server.
     - `data.message`: Success or error message returned from the server.
     - `data.<key>`: Additional data returned from the server.
     - `data.<modelName>`: Model data returned from server via `->asModelSuccess()`. `->asModelFailure()`.
     - `data.errors`: Validation errors for models (if any).
+    - `data.cart`: Commerce only: The cart data returned from Commerce actions like `commerce/cart/update-cart`.
+
 - `status` (Number): HTTP status code (e.g., `200`, `400`).
 - `ok` (Boolean): Indicates whether the request was successful (`true` for success, `false` for errors).
+
+If the controller uses `return $this->asJson(...)`, the data parameter will be the raw response from the server.
+In this case, the default failure/notice handling will not work, and you will have to handle errors manually.
+
+__text/html__:
+
+This is the content type returned from the server if the controller uses `return $this->renderTemplate()`.
+
+The data parameter will be a string containing the HTML content of the response. `data.message` is not present in this case.
+
+__other__:
+
+No specific handling is provided for other content types. The data parameter will be what `response.text()` returns. Gook luck!
 
 #### Handling Errors
 
@@ -118,8 +142,7 @@ return $this->asSuccess('Action completed successfully');
 window.Actions.postAction("mymodule/mycontroller/myaction",
     {'id': 1234},
     (data) => {
-        // Do somthing with the data
-        Actions.notice({ type: 'success', text: data.message });
+        window.Actions.success(data.message);
     }
 );
 ```
@@ -142,13 +165,14 @@ return $this->asSuccess('Action completed successfully');
 window.Actions.postAction("mymodule/mycontroller/myaction",
     {'id': 1234},
     (data, status, ok) => {
-        if (ok) {
-            // Do something with the data
-            Actions.notice({ type: 'success', text: data.message });
-        } else {
+        if (!ok) {
             // cleanup...
-            Actions.notice({ type: 'error', text: data.message });
+            window.Actions.error(data.message);
+            return;
         }
+        // Do something with the data
+        window.Actions.success(data.message);
+        
     },
     { handleFailuresInCallback: true }
 );
@@ -173,6 +197,47 @@ window.Actions.postAction("mymodule/mycontroller/myaction",
     }
 );
 ```
+
+#### Rendering twig templates
+
+
+**HTML (Alpine JS Example)**
+```html
+<div x-html="searchResultsHtml"></div>
+```
+
+
+**JavaScript:**
+```javascript
+window.Actions.postAction("mymodule/mycontroller/myaction",
+    {
+        variables: {
+            q: this.q,
+            section: this.section
+        }
+    },
+    (html) => {
+        this.searchResultsHtml = html;
+    }
+);
+```
+
+**Controller Action:**
+```php
+return $this->renderTemplate(
+    'path/to/your-twig-template.twig',
+    Craft::$app->getRequest()->getRequiredBodyParam('variables')
+);
+```
+
+For security reasons, this script does not support calling twig templates directly without using a controller action.
+
+In case you want to write a generic controller action that renders any template passed as a parameter, make sure:
+
+- to pass the template path as a hashed value
+- to validate the path using `Craft::$app->security->validateData($templatePath)`
+
+You may want to look into [Alpine's Morph plugin](https://alpinejs.dev/plugins/morph) for more intelligent DOM updates.
 
 ---
 

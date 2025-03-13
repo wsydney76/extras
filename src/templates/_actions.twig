@@ -89,19 +89,26 @@ window.Actions.postAction = async function(action, data = {}, callback = null, p
             indicator.classList.remove(indicatorClass);
         }
 
-        const json = await response.json();
-        const { status, ok } = response;
+        const {status, ok} = response;
 
-        if (logLevel === 'info') {
-            console.log(status, json);
+        const contentType = response.headers.get("content-type");
+        let body = null;
+        if (contentType && contentType.includes("application/json")) {
+            body = await response.json();
+        } else {
+            body = await response.text();
         }
 
-        const message = json.message;
+        if (logLevel === 'info') {
+            console.log(status, body);
+        }
+
+        const message = body.message || '';
 
         switch (status) {
             case 200:
                 if (callback) {
-                    callback(json, status, ok);
+                    callback(body, status, ok);
                 } else {
                     Actions.notice({type: 'success', text: message});
                 }
@@ -110,15 +117,15 @@ window.Actions.postAction = async function(action, data = {}, callback = null, p
             case 400:
                 if (handleFailuresInCallback) {
                     if (callback) {
-                        callback(json, status, ok);
+                        callback(body, status, ok);
                     }
                     break;
                 }
 
-                throw new Error(message, { cause: 'Failure' });
+                throw new Error(message, {cause: 'Failure'});
 
             case 403:
-                throw new Error('403 - Forbidden. Not logged in or insufficient permissions.', { cause: 'Failure' });
+                throw new Error('403 - Forbidden. Not logged in or insufficient permissions.', {cause: 'Failure'});
 
             default:
                 throw new Error(status + ' - ' + (message || 'Unspecified Error'));
@@ -154,6 +161,9 @@ window.Actions.errorsToString = function(errors, includeAttributeNames = false) 
 }
 
 window.Actions.notice = function(data) {
+    if (data.text === '') {
+        return;
+    }
     window.dispatchEvent(new CustomEvent('actions.notice', {detail: data}));
 }
 
