@@ -57,6 +57,8 @@ Specify params for twig files, with type checking, defaults, get query params et
 ], true) %}
 ```
 
+Easier
+
 ```twig
 // craft.app.config.custom.facetTypes
 {% set facetTypes = option('facetTypes') %}
@@ -74,13 +76,12 @@ Pedantic localization of German texts
 {{ 'Maße'|upperWithSz }} // -> MAẞE
 
 // There is no 'ß' in the Swiss alphabet
-{{ 'Maße'|upper }} // -> MAẞE
 {{ 'Maße'|swissText }} // -> Masse 
 
 // Correct number formatting
 // https://www.duden.de/sprachwissen/rechtschreibregeln/zahlen-und-ziffern
 
-// No separator in numbers < 1000
+// No separator in numbers < 10000
 {{ 1000|germanNumber }} // -> 1000
 
 // (non-breaking) Space as thousands separator
@@ -91,7 +92,7 @@ Pedantic localization of German texts
 // https://www.sekretaria.de/bueroorganisation/korrespondenz/geschaeftsbriefe/brief-ins-ausland-adressieren/
 // uppercase, only german, french, english allowed
 
-{{ postalCountryName('DE') }} // -> DEUTSCHLAND
-{{ postalCountryName('DE', 'es') }} // -> GERMANY
+{{ postalCountryName('FR') }} // -> FRANKREICH
+{{ postalCountryName('FR', 'es') }} // -> FRANCE
 
 ```
