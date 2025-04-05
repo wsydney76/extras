@@ -2,6 +2,7 @@
   "name": "wsydney76/extras",
   "description": "Extra features for Craft5",
   "type": "craft-plugin",
+  "license": "Unlicense",
   "require": {
     "php": ">=8.2",
     "craftcms/cms": "^5.0.0-beta.3",
