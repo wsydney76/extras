@@ -52,7 +52,7 @@ Please note that this may not work with certain element types, field types, plug
 
 ### Drafts Helpers
 
-Originates back to Craft3, where working with drafts was more intransparent than it is now. But still useful.
+Originates from Craft3, where working with drafts was less transparent than today and the  requirements of projects in terms of collaboration were more important back then. But still useful.
 
 In sidebar:
 
@@ -61,6 +61,10 @@ In sidebar:
 Compare drafts with the current version of the entry
 
 ![Compare drafts](screenshots/compare.jpg)
+
+Dashboard widget
+
+![Widget](screenshots/widget.jpg)
 
 Permissions required:
 
@@ -75,6 +79,8 @@ Make element index sections collapsible (useful for large sites with many sectio
 Restore dismissed tipps/warnings
 
 ![Permissions](screenshots/restore.jpg)
+
+Enable Action Routes: Enable section template settings to point to a custom controller, in the form of "action:module/controller/action"
 
 ### Twig extensions
 
@@ -161,6 +167,63 @@ Pedantic localization of German texts
 
 ```
 
+### CLI
+
+Check for runtime errors in templates. Also forces the creation of image transforms, if the `generateTransformsBeforePageLoad` config setting is enabled.
+
+```bash
+ddev craft _extras/quality/check-runtime-errors
+ddev craft _extras/quality/check-runtime-errors -c // Commerce
+```
+
+Check for missing asset files (local filesystem only)
+
+```bash
+ddev craft _extras/quality/check-asset-files
+```
+Check if entries still valide. Useful after config changes or updated validation rules.
+
+```bash
+ddev craft _extras/quality/validate
+```
+
+Craft 5 migration, detect merge candidates for field instances. Superseded by Craft's own migration tool.
+
+```bash
+craft _extras/fields/merge-candidates
+```
+
+Craft 5 migration, detect merge candidates for field instances. Superseded by Craft's own migration tool.
+
+```bash
+craft _extras/fields/merge-candidates
+```
+
+Experimental: Replace global field used by a field instance. As Craft only allows to overwrite a few field properties, it may be necessary to replace the underlying global field with a new one.
+Caution: This is a just for fun coding challenge, not a production ready solution. Use at your own risk.
+
+```bash
+ddev craft _extras/fields/replace-field <entryTypeHandle> <fromFieldInstanceHandle> <toFieldHandle>
+```
+
+Retrieve json sql for a field instance. This is useful for debugging.
+
+```bash
+ddev craft _extras/json-custom-field/dump-field subheading
+```
+
+```sql
+COALESCE(CAST((`elements_sites`.`content`->>'$.\"1531a738-286f-4853-91dd-d0b677d6b9d1\"') AS CHAR(255)), CAST((`elements_sites`.`content`->>'$.\"f2231d84-26f5-4ace-9640-af7d2c33a631\"') AS CHAR(255)))
+```
+
+Experimental: Create functional index for json custom field.
+
+```bash
+ddev craft _extras/json-custom-field/create-functional-index person.lastName
+```
+
+In our typical setup with not so much data, this doesn't improve performance significantly, so not finally tested. But if you have a lot of data and complex queries, this may be useful.
+
 ### Services
 
 Create entry, e.g. for testing, dummy content, or simple content migrations
@@ -244,6 +307,8 @@ Internship project back in Craft3 days, upgrade to Craft 5 incomplete, life is s
 ```php
 class MainModule extends BaseModule 
 ...
+protected string $handle = 'main';
+...
 $this->registerBehaviors(Entry::class, [
     EntryBehavior::class,
 ]);
@@ -262,3 +327,9 @@ $this->registerTwigExtensions([
     TwigExtension::class,
 ]);
 ```
+
+### Live Preview
+
+The 'Inspect' live preview dumps the entry and nested entry data incl JSON custom fields. This is useful for debugging and testing.
+
+![Inspect](screenshots/inspect.jpg)
