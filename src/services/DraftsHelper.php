@@ -148,7 +148,7 @@ class DraftsHelper extends Component
             $event->permissions['Extras Plugin'] = [
                 'heading' => 'Extras Plugin',
                 'permissions' => [
-                    'accessPlugin-extras' => [
+                    'accessPlugin-_extras' => [
                         'label' => Craft::t('_extras', 'Access Extras Plugin'),
                     ],
                     'viewpeerprovisionaldrafts' => [
