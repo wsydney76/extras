@@ -21,7 +21,7 @@
     "handle": "_extras",
     "name": "Extras",
     "developer": "wsydney76",
-    "documentationUrl": "",
+    "documentationUrl": "https://github.com/wsydney76/extras",
     "class": "wsydney76\\extras\\ExtrasPlugin"
   },
   "scripts": {

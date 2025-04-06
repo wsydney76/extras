@@ -10,7 +10,37 @@ Readme work in progress.
 
 This plugin requires Craft CMS 5.0.0-beta.3 or later, and PHP 8.2 or later.
 
+## Installation
+
+Add to `composer.json` file in your project root to require this plugin:
+
+```json
+{
+  "require": {
+    "wsydney76/extras": "dev-main"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/wsydney76/extras"
+    }
+  ]
+}
+```
+
+Then run `composer update` to install the plugin.
+
+Goto `Settings -> Extras` in the control panel to enable selected functionality.
+
 ## Usage
+
+### Relationships
+
+Forked from the abandoned elementmaps plugin.
+
+![Relationships](screenshots/relationships1.jpg)
 
 ### Twig extensions
 
@@ -95,4 +125,106 @@ Pedantic localization of German texts
 {{ postalCountryName('FR') }} // -> FRANKREICH
 {{ postalCountryName('FR', 'es') }} // -> FRANCE
 
+```
+
+### Services
+
+Create entry, e.g. for testing, dummy content, or simple content migrations
+
+Note: This is not meant as a comprehensive solution for content migration, but rather as a quick way for simple use cases
+
+```php
+use wsydney76\extras\base\services\BaseContentService;
+...
+$service = new BaseContentService();
+
+$service->createEntry([
+    'section' => 'post',
+    'type' => 'post',
+    'author' => User::find()->admin()->one(),
+    'title' => 'This is a test post',
+    'fields' => [
+        'subheading' => 'This is a test subheading',
+        'featuredImage' => [722],
+        'topics' => [767],
+        'bodyContent' => [
+            [
+                'type' => 'text',
+                'fields' => [
+                    'text' => 'This is a test text field',
+                ]
+            ],
+            [
+                'type' => 'heading',
+                'fields' => [
+                    'text' => 'This is a test heading field',
+                    'headingLevel' => 'h2',
+                ]
+            ],
+            [
+                'type' => 'image',
+                'fields' => [
+                    'image' => [722],
+                    'caption' => 'This is a test caption',
+                ]
+            ]
+        ]
+    ],
+    'localized' => [
+        'de' => [
+            'title' => 'Dies ist ein Testbeitrag',
+            'slug' => 'dies-ist-ein-testbeitrag',
+            'fields' => [
+                'subheading' => 'Dies ist eine Testunterüberschrift',
+                'bodyContent' => [
+                    // ... matrix blocks in the same order as the default locale
+                ]
+            ]
+        ]
+    ]
+]);
+```
+
+Video service: Create video poster from video
+
+```php
+use wsydney76\extras\services\VideoService;
+...
+$service = new VideoService();
+$video = Asset::findOne(4955);
+$service->createVideoPoster($video);
+```
+
+Requires ffmpeg to be installed and available in the PATH, and an asset field in the field layout for the volume where the video is stored.
+
+in `.ddev/config.yaml`: `webimage_extra_packages: [ ffmpeg ]`, in `composer.json` require: `"php-ffmpeg/php-ffmpeg": "^1.1",`.
+
+Signature `public function createVideoPoster(Asset $video, int $fromSeconds = 1, bool $replace = false, string $posterField = 'videoPoster'): bool`
+
+### Base module
+
+A module class can extend this one to register components in a unified way without using complex event listeners.
+
+Internship project back in Craft3 days, upgrade to Craft 5 incomplete, life is simpler now that Craft generator can be used.
+
+```php
+class MainModule extends BaseModule 
+...
+$this->registerBehaviors(Entry::class, [
+    EntryBehavior::class,
+]);
+
+$this->registerFieldTypes([
+    SiteField::class,
+    IncludeField::class,
+    SectionField::class,
+]);
+
+$this->registerCraftVariableServices([
+    ['project', ProjectService::class],
+]);
+
+$this->registerTwigExtensions([
+    TwigExtension::class,
+]);
 ```
