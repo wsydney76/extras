@@ -40,7 +40,41 @@ Goto `Settings -> Extras` in the control panel to enable selected functionality.
 
 Forked from the abandoned elementmaps plugin.
 
-![Relationships](screenshots/relationships1.jpg)
+Show relationships between elements. 
+
+Please note that this may not work with certain element types, field types, plugins like CKEditor, deeply nested content models.
+
+(Intentionally vague, as only tested for our setups)
+
+
+![Relationships Sidebar](screenshots/relationships1.jpg)
+![Relationships Element Index](screenshots/relationships2.jpg)
+
+### Drafts Helpers
+
+Originates back to Craft3, where working with drafts was more intransparent than it is now. But still useful.
+
+In sidebar:
+
+![Hint drafts](screenshots/drafthelper1.jpg)
+
+Compare drafts with the current version of the entry
+
+![Compare drafts](screenshots/compare.jpg)
+
+Permissions required:
+
+![Permissions](screenshots/permissions.png)
+
+### Misc
+
+Make element index sections collapsible (useful for large sites with many sections)
+
+![Permissions](screenshots/sidebar.jpg)
+
+Restore dismissed tipps/warnings
+
+![Permissions](screenshots/restore.jpg)
 
 ### Twig extensions
 
