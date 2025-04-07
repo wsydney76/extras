@@ -134,7 +134,6 @@ Additionally, you can choose a custom font-size.
 
 Add a `extrasFontSize` plain text custom field to the user field layout, and let each user choose the font size. This is useful for users with visual impairments.
 
-```php
 
 ### Twig extensions
 
