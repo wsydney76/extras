@@ -294,16 +294,10 @@ Check for missing asset files (local filesystem only)
 ```bash
 ddev craft _extras/quality/check-asset-files
 ```
-Check if entries still valide. Useful after config changes or updated validation rules.
+Check if entries still validate. Useful after config changes or updated validation rules.
 
 ```bash
 ddev craft _extras/quality/validate
-```
-
-Craft 5 migration, detect merge candidates for field instances. Superseded by Craft's own migration tool.
-
-```bash
-craft _extras/fields/merge-candidates
 ```
 
 Craft 5 migration, detect merge candidates for field instances. Superseded by Craft's own migration tool.
@@ -447,7 +441,7 @@ $this->registerTwigExtensions([
 ]);
 ```
 
-### Utilites
+### Utilities
 
 #### Upgrade Inventory
 
