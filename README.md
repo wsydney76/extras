@@ -144,7 +144,7 @@ Specify params for twig files, with type checking, defaults, get query params et
 ]) %}
 
 // Get from query params with default:
-// Second param true: check whether the param list is complete. Relies on certain conventiosn
+// Second param true: check whether the param list is complete. Relies on certain conventions
 {% do params([
     'entry',
     {name: 'orderBy', get: true, default: 'title'},
