@@ -1,0 +1,8 @@
+{{ value }}
+
+{# Using dump for now because different Craft version have different link attributes #}
+{% if value is instance of('craft\\fields\\data\\LinkData') %}
+    <p>
+        {{ dump(value) }}
+    </p>
+{% endif %}

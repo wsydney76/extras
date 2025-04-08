@@ -6,6 +6,7 @@ use Craft;
 use craft\base\ElementInterface;
 use craft\base\Field;
 use craft\commerce\elements\Product;
+use craft\commerce\elements\Variant;
 use craft\db\Query;
 use craft\db\Table;
 use craft\elements\Entry;
@@ -16,10 +17,14 @@ use yii\base\Behavior;
 
 class EntryBehavior extends Behavior
 {
-    public function getOwnerPath()
+    public function getOwnerPath(bool $fullPath = false): Collection
     {
 
-        return Collection::make([$this->owner->getRootOwner()]);
+        // restrict to top level entry
+        if (!$fullPath) {
+            return Collection::make([$this->owner->getRootOwner()]);
+        }
+
         /** @var Entry $element */
         $element = $this->owner;
 
@@ -28,7 +33,7 @@ class EntryBehavior extends Behavior
         while ($element = $element->getOwner()) {
             $path = $path->prepend($element);
             // array_unshift($path, $entry);
-            if (($element instanceof Entry && $element->section) || $element instanceof Product) {
+            if (($element instanceof Entry && $element->section) || $element instanceof Product || $element instanceof Variant) {
                 break;
             }
         }

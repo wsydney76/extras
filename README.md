@@ -44,6 +44,8 @@ Add to `composer.json` file in your project root to require this plugin:
 
 Then run `composer update` to install the plugin.
 
+Run `ddev craft plugin/install _extras`.
+
 Goto `Settings -> Extras` in the control panel to enable selected functionality.
 
 ## Usage
@@ -99,41 +101,6 @@ Permissions required:
 ![Permissions](screenshots/permissions.png)
 
 </div>
-
-### Misc
-
-#### Element index sidebar
-
-Make element index sections collapsible (useful for large sites with many sections)
-
-<div style="max-width:200px">
-
-![Permissions](screenshots/sidebar.jpg)
-
-</div>
-
-#### Restore dismissed tipps/warnings
-
-<div style="max-width:250px">
-
-![Permissions](screenshots/restore.jpg)
-
-</div>
-
-#### Enable Action Routes
-
-Enable section template settings to point to a custom controller, in the form of "action:module/controller/action"
-
-#### Styles
-
-Enable CP assets to apply some custom styles to the control panel.
-
-Enhances font size, makes toast messages stand out, darkens colors etc.
-
-Additionally, you can choose a custom font-size. 
-
-Add a `extrasFontSize` plain text custom field to the user field layout, and let each user choose the font size. This is useful for users with visual impairments.
-
 
 ### Twig extensions
 
@@ -224,6 +191,94 @@ Specify params for twig files, with type checking, defaults, get query params et
 {{ postalCountryName('FR', 'es') }} // -> FRANCE
 
 ```
+### Misc
+
+#### Element index sidebar
+
+Make element index sections collapsible (useful for large sites with many sections)
+
+<div style="max-width:200px">
+
+![Permissions](screenshots/sidebar.jpg)
+
+</div>
+
+#### Restore dismissed tipps/warnings
+
+<div style="max-width:250px">
+
+![Permissions](screenshots/restore.jpg)
+
+</div>
+
+#### Enable Action Routes
+
+Enable section template settings to point to a custom controller, in the form of "action:module/controller/action"
+
+#### Owner Path
+
+For nested entries, retrieve the owner entries for each level on the path to the top level entry.
+
+Partially superseded by Craft's `getRootOwner()` method.
+
+There is also an element index column for this. (Experimental, buggy)
+
+
+```twig
+
+// Full path
+{% set path = entry.getOwnerPath(true) %}
+
+// Top level only
+{% set path = entry.ownerPath %}
+
+```
+
+#### Element Actions
+
+Enable to add `Copy reference tag with link` and `Copy reference tag with markdown link` to the element actions menu.
+
+#### Conditions
+
+Enable conditions for element index.
+
+Experimental.
+
+* All Types: Allows to filter by all entry types, including nested ones.
+* Is Edited: Filter your provisional drafts.
+* My Drafts: Filter all your drafts.
+
+#### Field Layout Elements
+
+* `Instruction`: Superseded by Craft's own `Markdown` field layout element.
+
+#### Collection Macros
+
+Enable to add a `addToCollection` macro to collections.
+
+Manages a collection key that holds an array of items.
+
+The key will be created if it does not exist.
+
+Example: Collect all images for a copyright notice in the footer.
+
+```twig
+{% do _globals.addToCollection('imagesForCopyrightNotice', featuredImage) %}
+```
+
+#### Styles
+
+Enable CP assets to apply some custom styles to the control panel.
+
+Enhances font size, makes toast messages stand out, darkens colors etc.
+
+Additionally, you can choose a custom font-size.
+
+Add a `extrasFontSize` plain text custom field to the user field layout, and let each user choose the font size. This is useful for users with visual impairments.
+
+#### Extras variable
+
+Enables `craft._extras` variable. Superseded by Craft's `fieldValueSql` function.
 
 ### CLI
 
