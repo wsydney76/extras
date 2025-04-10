@@ -23,13 +23,25 @@
         warning: config.enableElementmap is defined ? _self.configWarning('enableElementmap')
     }) }}
 
-    <div style="margin-left: 48px">
+    <div style="margin-left: 48px;">
         {{ forms.lightswitchField({
-            label: 'Show relationships to all sites'|t('_extras'),
+            label: 'Look for relationships on which site?'|t('_extras'),
             name: 'showAllSites',
             on: settings.showAllSites,
-            warning: config.showAllSites is defined ? _self.configWarning('showAllSites')
+            onLabel: 'On all sites'|t('_extras'),
+            offLabel: 'On active site only'|t('_extras'),
+            warning: config.showAllSites is defined ? _self.configWarning('showAllSites'),
+        }) }}
+    </div>
 
+    <div style="margin-top: 24px; margin-left: 48px;">
+        {{ forms.lightswitchField({
+            label: 'Where the link for a found relationship to a nested element should point to'|t('_extras'),
+            name: 'linkToNestedElement',
+            on: settings.linkToNestedElement,
+            onLabel: 'Link to nested element'|t('_extras'),
+            offLabel: 'Link to top level element'|t('_extras'),
+            warning: config.linkToNestedElement is defined ? _self.configWarning('linkToNestedElement')
         }) }}
     </div>
 

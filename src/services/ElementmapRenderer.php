@@ -525,6 +525,8 @@ class ElementmapRenderer extends Component
 
         $results = [];
 
+        $linkToNestedElement = ExtrasPlugin::getInstance()->getSettings()->linkToNestedElement;
+
         /** @var Entry $element */
         foreach ($elements as $element) {
 
@@ -533,26 +535,28 @@ class ElementmapRenderer extends Component
             // TODO: Cleanup, this is a mess...
             $sectionName = 'n/a';
 
+            $topLevelElement = $element;
+
             if ($element instanceof Entry) {
                 if ($element->section) {
                     $sectionName = Craft::t('site', $element->section->name);
                 } else {
-                    $topLevelEntry = $element->getRootOwner();
+                    $topLevelElement = $element->getRootOwner();
 
-                    if ($topLevelEntry) {
-                        if ($topLevelEntry instanceof Entry && $topLevelEntry->section) {
-                            $sectionName = Craft::t('site', $topLevelEntry->section->name) . ' -> ' . Craft::t('site', $element->type->name);
+                    if ($topLevelElement) {
+                        if ($topLevelElement instanceof Entry && $topLevelElement->section) {
+                            $sectionName = Craft::t('site', $topLevelElement->section->name) . ' -> ' . Craft::t('site', $element->type->name);
                             if ($title) {
-                                $title = $topLevelEntry->title . ' -> ' . $title;
+                                $title = $topLevelElement->title . ' -> ' . $title;
                             } else {
-                                $title = $topLevelEntry->title;
+                                $title = $topLevelElement->title;
                             }
-                        } elseif ($topLevelEntry instanceof Product) {
-                            $sectionName = Craft::t('site', $topLevelEntry->type->name);
+                        } elseif ($topLevelElement instanceof Product) {
+                            $sectionName = Craft::t('site', $topLevelElement->type->name);
                             if ($title) {
-                                $title = $topLevelEntry->title . ' -> ' . $title;
+                                $title = $topLevelElement->title . ' -> ' . $title;
                             } else {
-                                $title = $topLevelEntry->title;
+                                $title = $topLevelElement->title;
                             }
                         }
                     } else {
@@ -563,15 +567,16 @@ class ElementmapRenderer extends Component
 
 
             $text = $sectionName;
-            if ($element->isProvisionalDraft) {
+
+            if ($topLevelElement->isProvisionalDraft) {
                 $text .= ", " . Craft::t('_extras', 'Provisional Draft');
-                $user = User::findOne($element->creatorId);
+                $user = User::findOne($topLevelElement->creatorId);
                 if ($user) {
                     $text .= ", " . $user->username;
                 }
-            } elseif ($element->getIsDraft()) {
+            } elseif ($topLevelElement->getIsDraft()) {
                 $text .= ", " . Craft::t('_extras', 'Draft');
-            } elseif ($element->getIsRevision()) {
+            } elseif ($topLevelElement->getIsRevision()) {
                 $text .= ", " . Craft::t('_extras', 'Revision');
             }
 
@@ -588,7 +593,7 @@ class ElementmapRenderer extends Component
                 'icon' => $icon,
                 'color' => $color,
                 'title' => $title . ' (' . $text . ')',
-                'url' => $element->cpEditUrl,
+                'url' => $linkToNestedElement ? $element->cpEditUrl : $topLevelElement->cpEditUrl,
                 'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)] . $sectionName
             ];
         }

@@ -158,5 +158,12 @@ return [
     'Incoming Relationships' => 'Eingehende Beziehungen',
     'No products found.' => 'Keine Produkte gefunden.',
     'Enter any additional CSS here.' => 'Geben Sie hier zusätzliches CSS ein.',
-    'Additional CSS' => 'Zusätzliches CSS'
+    'Additional CSS' => 'Zusätzliches CSS',
+    'Look for relationships on which site?' => 'Nach Verknüpfungen auf welcher Site suchen?',
+    'On active site only' => 'Nur auf aktiver Site',
+    'On all sites' => 'Auf allen Sites',
+    'Where the link for a found relationship to a nested element should point to' => 'Wohin der Link für eine gefundene Beziehung zu einem eingebetteten Element zeigen soll',
+    'Link to top level element' => 'Link zum Hauptelement',
+    'Link to nested element' => 'Link zum eingebetteten Element',
+
 ];
