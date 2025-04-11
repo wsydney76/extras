@@ -16,7 +16,8 @@ html, body {
     height: 34px;
 }
 
-body {
+/* Does not make sense in Craft 5.7 due to redesign
+/*body {
     --gray-050: var(--gray-100);
     --red-050: var(--red-100);
     --orange-050: var(--orange-100);
@@ -36,7 +37,7 @@ body {
     --pink-050: var(--pink-100);
     --rose-050: var(--rose-100);
 
-}
+}*/
 
 /*.fields .element-index .toolbar > div, .fields .element-index .footer  {
     display: none;

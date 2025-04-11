@@ -1,0 +1,19 @@
+{% set color = value.hex ?? value|string %}
+
+{% if color %}
+    <div style="display: flex; align-items: center">
+        <div style="width:32px; height: 32px; border-radius: 100%; background-color: {{ color }}">
+
+        </div>
+        <div style="margin-left: 8px;">
+            {{ attribute(value, 'label') is defined ? value.label : value }}
+        </div>
+    </div>
+{% endif %}
+
+{# Using dump for now because different Craft version have different attributes #}
+{% if value is instance of('craft\\fields\\data\\ColorData') %}
+    <p>
+        {{ dump(value) }}
+    </p>
+{% endif %}

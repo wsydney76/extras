@@ -23,7 +23,6 @@ use craft\helpers\Cp;
 use craft\models\FieldLayout;
 use craft\services\Dashboard;
 use craft\services\Utilities;
-use craft\web\Controller;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
 use DOMDocument;
@@ -59,11 +58,17 @@ use function sprintf;
  * @method static ExtrasPlugin getInstance()
  * @method Settings getSettings()
  * @property-read UpgradeService $upgradeService
+ * @property-read Elementmap $elementmap
+ * @property-read ElementmapRenderer $renderer
+ * @property-read DraftsHelper $draftsHelper
+ * @property-read VideoService $video
  */
 class ExtrasPlugin extends Plugin
 {
     public string $schemaVersion = '1.0.0';
     public bool $hasCpSettings = true;
+
+    public bool $hasReadOnlyCpSettings = true;
 
     public static function config(): array
     {
