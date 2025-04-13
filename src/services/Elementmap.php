@@ -13,6 +13,7 @@ use craft\events\DefineHtmlEvent;
 use craft\events\RegisterElementTableAttributesEvent;
 use craft\events\RegisterUrlRulesEvent;
 use craft\web\UrlManager;
+use putyourlightson\campaign\elements\CampaignElement;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
@@ -63,6 +64,16 @@ class Elementmap
                     $event->html .= $this->renderMap($event->sender, 'asset');;
                 }
             );
+
+            if (Craft::$app->plugins->isPluginEnabled('campaign')) {
+                Event::on(
+                    CampaignElement::class,
+                    CampaignElement::EVENT_DEFINE_SIDEBAR_HTML,
+                    function(DefineHtmlEvent $event) {
+                        $event->html .= $this->renderMap($event->sender, 'campaign');;
+                    }
+                );
+            }
 
             if (Craft::$app->plugins->isPluginEnabled('commerce')) {
                 Event::on(

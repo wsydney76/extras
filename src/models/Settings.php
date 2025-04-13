@@ -13,6 +13,7 @@ class Settings extends Model
     public bool $enableElementmap = false;
     public bool $enableConditionRules = false;
     public bool $showAllSites = true;
+    public bool $showRevisions = false;
     public bool $linkToNestedElement = false;
     public bool $enableCpAssets = false;
     public string $bodyFontSize = '';

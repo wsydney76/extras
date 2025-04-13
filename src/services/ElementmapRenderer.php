@@ -20,7 +20,10 @@ use craft\elements\db\TagQuery;
 use craft\elements\db\UserQuery;
 use craft\elements\Entry;
 use craft\elements\User;
+use putyourlightson\campaign\elements\CampaignElement;
+use wsydney76\extras\events\ElementMapDataEvent;
 use wsydney76\extras\ExtrasPlugin;
+use wsydney76\extras\models\Settings;
 use yii\base\Component;
 
 class ElementmapRenderer extends Component
@@ -35,6 +38,7 @@ class ElementmapRenderer extends Component
         'craft\elements\User' => 'getUserElements',
         'craft\commerce\elements\Product' => 'getProductElements',
         'craft\commerce\elements\Variant' => 'getVariantElements',
+        'putyourlightson\campaign\elements\CampaignElement' => 'getCampaignElements',
     ];
 
     const ELEMENT_TYPE_SORT_MAP = [
@@ -46,7 +50,17 @@ class ElementmapRenderer extends Component
         'craft\elements\User' => '20',
         'craft\commerce\elements\Product' => '30',
         'craft\commerce\elements\Variant' => '35',
+        'putyourlightson\campaign\elements\CampaignElement' => '40',
     ];
+
+    public const EVENT_ELEMENT_MAP_DATA = 'elementmap_data';
+
+    private Settings $settings;
+
+    public function init(): void
+    {
+        $this->settings = ExtrasPlugin::getInstance()->getSettings();
+    }
 
     /**
      * Generates a data structure containing elements that reference the given
@@ -65,10 +79,11 @@ class ElementmapRenderer extends Component
         }
 
         return [
-            'outgoing' => $this->getOutgoingElements($element, $siteId),
             'incoming' => $this->getIncomingElements($element, $siteId),
+            'outgoing' => $this->getOutgoingElements($element, $siteId),
         ];
     }
+
 
     /**
      * Retrieves a list of elements that the given element references.
@@ -98,26 +113,13 @@ class ElementmapRenderer extends Component
         // Craft 5: get IDs of all nested entries
         $sources = array_merge($sources, $this->getNestedEntryIds($element->id));
 
-        // Any matrix blocks, because they contain fields that may reference
-        // other elements
-        // $sources = array_merge($sources, $this->getMatrixBlockIdsByOwners($sources));
-
-        // Any super table blocks, for the same reason as matrix blocks, and
-        // because they may themselves be contained within the matrix blocks.
-        // $sources = array_merge($sources, $this->getSuperTableBlockIdsByOwners($sources));
-
-        // Any matrix blocks, again, in the case of any matrix blocks being
-        // contained within the super table blocks. This is thankfully as
-        // far as the recursion can go.
-        // $sources = array_merge($sources, $this->getMatrixBlockIdsByOwners($sources));
-
         // Find all elements that have any of these elements as sources.
         $relationships = $this->getRelationships($sources, $siteId, false);
 
         // Outgoing connections may be going to elements such as variants.
         // Before retrieving proper elements and generating the map, their
         // appropriate owner elements should be found.
-        $relationships = $this->getUsableRelationElements($relationships, $siteId);
+        // $relationships = $this->getUsableRelationElements($relationships, $siteId);
 
         // Retrieve the underlying elements from the relationships.
         return $this->getElementMapData($relationships, $siteId);
@@ -163,47 +165,6 @@ class ElementmapRenderer extends Component
     }
 
     /**
-     * Retrieves matrix blocks that are owned by the provided elements.
-     *
-     * @param $elementId The element(s) to retrieve blocks for.
-     * @return array An array of elements, with their ID `id` and element type
-     * `type`.
-     */
-    private function getMatrixBlockIdsByOwners($elementIds)
-    {
-
-        return Entry::find()
-            ->ownerId($elementIds)
-            ->status(null)
-            ->site('*')
-            ->ids();
-    }
-
-    /**
-     * Retrieves super table blocks that are owned by the provided elements.
-     *
-     * @param $elementId The element(s) to retrieve blocks for.
-     * @return array An array of elements, with their ID `id` and element type
-     * `type`.
-     */
-    private function getSuperTableBlockIdsByOwners($elementIds)
-    {
-        // Make sure super table is installed.
-        if (!Craft::$app->getPlugins()->getPlugin('super-table')) {
-            return [];
-        }
-
-        $conditions = [
-            'primaryOwnerId' => $elementIds,
-        ];
-        return (new Query())
-            ->select('id')
-            ->from('{{%supertableblocks}}')
-            ->where($conditions)
-            ->column();
-    }
-
-    /**
      * Retrieves elements that are either the source or target of relationships
      * with the provided elements.
      *
@@ -217,6 +178,7 @@ class ElementmapRenderer extends Component
      */
     private function getRelationships(array $elementIds, int $siteId, bool $getSources)
     {
+
         if ($getSources) {
             $fromcol = 'targetId';
             $tocol = 'sourceId';
@@ -238,7 +200,7 @@ class ElementmapRenderer extends Component
 
         // TODO: Check
 
-        if (!ExtrasPlugin::getInstance()->getSettings()->showAllSites) {
+        if (!$this->settings->showAllSites) {
             if (!$getSources) {
                 $conditions[] = [
                     'or',
@@ -254,11 +216,35 @@ class ElementmapRenderer extends Component
             ->leftJoin('{{%elements}} e', '[[r.' . $tocol . ']] = [[e.id]]')
             ->where($conditions);
 
-        $results = $query->all();
 
-        $results = $this->groupByType($results);
+        $elements = $query->all();
+
+        $elements = $this->groupByType($elements);
+
+        $results = [];
+
+        // This will iterate over available elements, bundled by type,
+        // processing whole groups by type, adding them to the result
+
+        // This has been simplified for Craft 5, there is no longer a need to handle MatrixBlock/SuperTable elements
+        // TODO: Test if this works for all use cases
+
+        while (count($elements)) {
+            // Retrieve the next element type.
+            reset($elements);
+            $type = key($elements);
+
+            foreach ($elements[$type] as $element) {
+                $results[] = [
+                    'id' => $element,
+                    'type' => $type,
+                ];
+            }
+            unset($elements[$type]);
+        }
 
         return $results;
+
     }
 
     /**
@@ -291,58 +277,27 @@ class ElementmapRenderer extends Component
      */
     private function getUsableRelationElements(array $elements, int $siteId)
     {
+
         $results = [];
 
         // This will iterate over available elements, bundled by type,
-        // processing whole groups by type, either adding them to the result
-        // set if they can be used outright, or retrieving a related element
-        // to use to show the relationship instead.
+        // processing whole groups by type, adding them to the result
+
+        // This has been simplified for Craft 5, there is no longer a need to handle MatrixBlock/SuperTable elements
+        // TODO: Test if this works for all use cases
+
         while (count($elements)) {
             // Retrieve the next element type.
             reset($elements);
             $type = key($elements);
 
-            // Determine if that element type should be processed or if it
-            // should simply be added to the result set.
-            switch ($type) {
-                /* Just in case individual variant mapping turns out to be a bad idea.
-                // Variants should instead map to their products, as those are
-                // the elements through which they may be edited.*/
-                case 'craft\\commerce\\elements\\Variant':
-                    $items = $this->getProductsForVariants($elements[$type]);
-                    unset($elements[$type]);
-                    $items = $this->groupByType($items);
-                    $elements = $this->mergeGroups($elements, $items);
-                    break;
-
-                // Matrix blocks should find their owners, and then those may
-                // be reprocessed to determine if they are usable.
-                case 'craft\\elements\\MatrixBlock':
-                    $items = $this->getOwnersForMatrixBlocks($elements[$type]);
-                    unset($elements[$type]);
-                    $items = $this->groupByType($items);
-                    $elements = $this->mergeGroups($elements, $items);
-                    break;
-                // Super table blocks should find their owners, and then those
-                // may be reprocessed to determine if they are usable.
-                case 'verbb\\supertable\\elements\\SuperTableBlockElement':
-                    $items = $this->getOwnersForSuperTableBlocks($elements[$type]);
-                    unset($elements[$type]);
-                    $items = $this->groupByType($items);
-                    $elements = $this->mergeGroups($elements, $items);
-                    break;
-                // Anything not processed above is alright to be added to the
-                // result set and then retrieved later if it is supported.
-                default:
-                    foreach ($elements[$type] as $element) {
-                        $results[] = [
-                            'id' => $element,
-                            'type' => $type,
-                        ];
-                    }
-                    unset($elements[$type]);
-                    break;
+            foreach ($elements[$type] as $element) {
+                $results[] = [
+                    'id' => $element,
+                    'type' => $type,
+                ];
             }
+            unset($elements[$type]);
         }
         return $results;
     }
@@ -387,26 +342,6 @@ class ElementmapRenderer extends Component
         return $groupsA;
     }
 
-    /**
-     * Retrieves owner IDs/types of owning elements using the super table block
-     * IDs provided.
-     *
-     * @param $elements An array of IDs.
-     * @return array An array of elements, with their ID `id` and element type
-     * `type`.
-     */
-    private function getOwnersForSuperTableBlocks($elementIds)
-    {
-        $conditions = [
-            'stb.id' => $elementIds,
-        ];
-        return (new Query())
-            ->select('[[e.id]] AS id, [[e.type]] AS type')
-            ->from('{{%supertableblocks}} stb')
-            ->leftJoin('{{%elements}} e', '[[stb.primaryOwnerId]] = [[e.id]]')
-            ->where($conditions)
-            ->all();
-    }
 
     /**
      * Converts a set of elements to an array of map-ready associative arrays.
@@ -430,6 +365,18 @@ class ElementmapRenderer extends Component
             if (isset(self::ELEMENT_TYPE_MAP[$type])) {
                 /** @noinspection SlowArrayOperationsInLoopInspection */
                 $results = array_merge($results, call_user_func([$this, self::ELEMENT_TYPE_MAP[$type]], $elements[$type], $siteId));
+            } else {
+                if ($this->hasEventHandlers(static::EVENT_ELEMENT_MAP_DATA)) {
+                    $event = new ElementMapDataEvent([
+                        'type' => $type,
+                        'elements' => $elements[$type],
+                        'siteId' => $siteId,
+                    ]);
+                    $this->trigger(static::EVENT_ELEMENT_MAP_DATA, $event);
+                    if ($event->data) {
+                        $results = array_merge($results, $event->data);
+                    }
+                }
             }
 
             unset($elements[$type]);
@@ -474,10 +421,11 @@ class ElementmapRenderer extends Component
         // Find all elements that have any of these elements as targets.
         $relationships = $this->getRelationships($targets, $siteId, true);
 
+
         // Incoming connections may be coming from elements such as matrix
         // blocks. Before retrieving proper elements and generating the map,
         // their appropriate owner elements should be found.
-        $relationships = $this->getUsableRelationElements($relationships, $siteId);
+        // $relationships = $this->getUsableRelationElements($relationships, $siteId);
 
         // Retrieve the underlying elements from the relationships.
         return $this->getElementMapData($relationships, $siteId);
@@ -520,12 +468,12 @@ class ElementmapRenderer extends Component
         $criteria->provisionalDrafts(null);
         $criteria->drafts(null);
         $criteria->status(null);
-        $criteria->revisions(false);
+        $criteria->revisions($this->settings->showRevisions);
         $elements = $criteria->all();
 
         $results = [];
 
-        $linkToNestedElement = ExtrasPlugin::getInstance()->getSettings()->linkToNestedElement;
+        $linkToNestedElement = $this->settings->linkToNestedElement;
 
         /** @var Entry $element */
         foreach ($elements as $element) {
@@ -549,14 +497,21 @@ class ElementmapRenderer extends Component
                             if ($title) {
                                 $title = $topLevelElement->title . ' -> ' . $title;
                             } else {
-                                $title = $topLevelElement->title;
+                                $title = $topLevelElement->title . ' -> ' . $element->type->name;
                             }
                         } elseif ($topLevelElement instanceof Product) {
                             $sectionName = Craft::t('site', $topLevelElement->type->name);
                             if ($title) {
                                 $title = $topLevelElement->title . ' -> ' . $title;
                             } else {
-                                $title = $topLevelElement->title;
+                                $title = $topLevelElement->title . ' -> ' . $element->type->name;
+                            }
+                        } elseif ($topLevelElement instanceof CampaignElement) {
+                            $sectionName = Craft::t('site', $topLevelElement->getCampaignType()->name);
+                            if ($title) {
+                                $title = $topLevelElement->title . ' -> ' . $title;
+                            } else {
+                                $title = $topLevelElement->title . ' -> ' . $element->type->name;
                             }
                         }
                     } else {
@@ -577,7 +532,7 @@ class ElementmapRenderer extends Component
             } elseif ($topLevelElement->getIsDraft()) {
                 $text .= ", " . Craft::t('_extras', 'Draft');
             } elseif ($topLevelElement->getIsRevision()) {
-                $text .= ", " . Craft::t('_extras', 'Revision');
+                $text .= ", " . Craft::t('_extras', 'Revision ' . $topLevelElement->revisionNum);
             }
 
             $icon = $element instanceof Entry && $element->type->icon ?
@@ -599,39 +554,6 @@ class ElementmapRenderer extends Component
         }
 
         return $results;
-    }
-
-    // Get the top level entry (section)
-    // TODO: Check if there is a native way to do this
-    private function getTopLevelEntry(?Entry $entry, $level = 1)
-    {
-        if (!$entry) {
-            return null;
-        }
-
-        if ($level > 4) {
-            return null;
-        }
-
-        if ($entry->getIsRevision()) {
-            return null;
-        }
-
-        return $entry->getRootOwner();
-
-        $owner = $entry->owner;
-        if (!$owner) {
-            return null;
-        }
-        if ($owner && $owner->section) {
-            return $owner;
-        }
-
-        if ($owner->owner) {
-            return $owner->getRootOwner();
-        }
-
-        return null;
     }
 
     /**
@@ -759,7 +681,7 @@ class ElementmapRenderer extends Component
         foreach ($elements as $element) {
             $results[] = [
                 'id' => $element->id,
-                'icon' => '@vendor/craftcms/cms/src/icons/user.svg',
+                'icon' => '@appicons/user.svg',
                 'title' => $element->name,
                 'url' => $element->cpEditUrl,
                 'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)]
@@ -786,7 +708,7 @@ class ElementmapRenderer extends Component
             $results[] = [
                 'id' => $element->id,
                 'icon' => '@vendor/craftcms/commerce/src/icon-mask.svg',
-                'title' => $element->title,
+                'title' => $element->title . ' (' . $element->type->name . ')',
                 'url' => $element->cpEditUrl,
                 'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)]
             ];
@@ -807,12 +729,34 @@ class ElementmapRenderer extends Component
         $criteria->siteId = $siteId;
         $elements = $criteria->all();
 
+
+        $results = [];
+        foreach ($elements as $element) {
+            $product = $element->getOwner();
+            $results[] = [
+                'id' => $element->id,
+                'icon' => '@vendor/craftcms/commerce/src/icon-mask.svg',
+                'title' => $product->title . '-> ' . $element->title . ' (' . $product->type->name . ')',
+                'url' => $product->cpEditUrl,
+                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)]
+            ];
+        }
+        return $results;
+    }
+
+    private function getCampaignElements($elementIds, $siteId)
+    {
+        $criteria = CampaignElement::find();
+        $criteria->id = $elementIds;
+        $criteria->site = '*';
+        $elements = $criteria->all();
+
         $results = [];
         foreach ($elements as $element) {
             $results[] = [
                 'id' => $element->id,
-                'icon' => '@vendor/craftcms/commerce/src/icon-mask.svg',
-                'title' => $element->product->title . ': ' . $element->title,
+                'icon' => '@appicons/envelope.svg',
+                'title' => $element->title . ' (' . $element->site->name . ', ' . $element->getCampaignType()->name . ')',
                 'url' => $element->cpEditUrl,
                 'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)]
             ];

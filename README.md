@@ -70,6 +70,16 @@ Show relationships between elements.
 
 </div>
 
+Note: This would actually require a rewrite to handle drafts for all relevant element types, complex multi-site setups.
+
+Should be ok with canonical entries and assets, with untranslatable relationship fields, but might miss something elsewhere.
+
+Also, it can only detect relationships in the `relations` database table, so it won't work for links created by reference tags, or in CKEditor inline links.
+
+Does not take permissions into account, so it may show elements that are not editable by the user, resulting in 403 pages.
+
+Only handles Craft's own element types, Products/Variants from Craft Commerce, and (on special request) the Campaign element type from Campaign plugin.
+
 ![Relationships Element Index](screenshots/relationships2.jpg)
 
 ### Drafts Helpers

@@ -11,6 +11,7 @@ use craft\elements\GlobalSet;
 use craft\elements\Tag;
 use craft\elements\User;
 use craft\web\Controller;
+use putyourlightson\campaign\elements\CampaignElement;
 use wsydney76\extras\ExtrasPlugin;
 use yii\web\NotFoundHttpException;
 
@@ -24,6 +25,8 @@ class MapController extends Controller
     {
 
         $element = null;
+
+        // TODO: ensure that drafts/sites are handled correctly for all element types
         switch ($class) {
             case 'entry':
             {
@@ -78,6 +81,16 @@ class MapController extends Controller
                 $element = Product::find()->id($id)->one();
                 break;
             }
+
+            case 'campaign':
+            {
+                $element = CampaignElement::find()->id($id)->one();
+                break;
+            }
+
+            default:
+                $siteId = Craft::$app->sites->getSiteByHandle($site)->id;
+                $element = Craft::$app->elements->getElementById($id, siteId: $siteId);
         }
 
         if (!$element) {

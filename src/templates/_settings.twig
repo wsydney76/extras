@@ -45,6 +45,17 @@
         }) }}
     </div>
 
+    <div style="margin-top:24px; margin-left: 48px;">
+        {{ forms.lightswitchField({
+            label: 'Show revisions?'|t('_extras'),
+            name: 'showRevisions',
+            on: settings.showRevisions,
+            onLabel: 'Also show revisions'|t('_extras'),
+            offLabel: 'Show canonical elements and drafts'|t('_extras'),
+            warning: config.showRevisions is defined ? _self.configWarning('showRevisions'),
+        }) }}
+    </div>
+
     {{ forms.lightswitchField({
         label: 'Enable dashboard widgets'|t('_extras'),
         name: 'enableWidgets',
