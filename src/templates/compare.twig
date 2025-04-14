@@ -3,21 +3,15 @@
 {% set siteId = craft.app.request.requiredQueryParam('siteId') %}
 {% set isProvisionalDraft = craft.app.request.requiredQueryParam('isProvisionalDraft', 0) %}
 
-{% set entry = craft.entries
-    .draftId(draftId)
-    .provisionalDrafts(isProvisionalDraft)
-    .siteId(siteId)
-    .anyStatus()
-.one %}
+{# TODO: Check simplified logic #}
 
-{% if not entry %}
-    {% set entry = craft.products
-        .draftId(draftId)
-        .provisionalDrafts(isProvisionalDraft)
-        .siteId(siteId)
-        .anyStatus()
-    .one %}
+{% set elementRecord = create('craft\\records\\Element').findOne({draftId}) %}
+
+{% if not elementRecord %}
+    {% exit 404 %}
 {% endif %}
+
+{% set entry = craft.app.elements.getElementById(elementRecord.id, elementRecord.type, siteId) %}
 
 {% if not entry %}
     {% exit 404 %}
@@ -32,7 +26,8 @@
 <div class="compare-heading">
     {% set user = craft.users.id(entry.creatorId).one %}
     {{ entry.draftName }}:
-    {{ 'Draft created by'|t('_extras') }} {{ user ? user.fullName : entry.creatorId }}, {{ 'last updated'|t('_extras') }}
+    {{ 'Draft created by'|t('_extras') }} {{ user ? user.fullName : entry.creatorId }}
+    , {{ 'last updated'|t('_extras') }}
     : {{ entry.dateUpdated|datetime }}
 </div>
 

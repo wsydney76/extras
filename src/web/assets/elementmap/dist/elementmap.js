@@ -21,8 +21,15 @@ $btn.on('click', function() {
         });
 });
 
-if (window.draftEditor) {
+/*if (window.draftEditor) {
     window.draftEditor.on('createDraft', function() {
         draftId = window.draftEditor.settings.draftId;
     });
-}
+}*/
+
+setTimeout(() => {
+    Craft.cp.$primaryForm.data('elementEditor').on('createProvisionalDraft', function() {
+         draftId = Craft.cp.$primaryForm.data('elementEditor').settings.draftId;
+    });
+}, 500)
+

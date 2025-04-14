@@ -34,6 +34,18 @@
         }) }}
     </div>
 
+    <div style="margin-top:24px; margin-left: 48px;">
+        {{ forms.lightswitchField({
+            label: 'Show image thumbnails?'|t('_extras'),
+            name: 'showThumbnails',
+            on: settings.showThumbnails,
+            onLabel: 'Show small thumbnails for link to image assets'|t('_extras'),
+            offLabel: 'Show icon'|t('_extras'),
+            tip: 'This slows down performance significantly, so disable it if a lot of images are related to an element.'|t('_extras'),
+            warning: config.showThumbnails is defined ? _self.configWarning('showThumbnails'),
+        }) }}
+    </div>
+
     <div style="margin-top: 24px; margin-left: 48px;">
         {{ forms.lightswitchField({
             label: 'Where the link for a found relationship to a nested element should point to'|t('_extras'),

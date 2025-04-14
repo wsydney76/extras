@@ -3,13 +3,18 @@
 namespace wsydney76\extras\controllers;
 
 use Craft;
+use craft\base\ElementInterface;
 use craft\commerce\elements\Product;
+use craft\db\Query;
+use craft\db\Table;
 use craft\elements\Asset;
 use craft\elements\Category;
 use craft\elements\Entry;
 use craft\elements\GlobalSet;
 use craft\elements\Tag;
 use craft\elements\User;
+use craft\gql\arguments\mutations\Draft;
+use craft\records\Element;
 use craft\web\Controller;
 use putyourlightson\campaign\elements\CampaignElement;
 use wsydney76\extras\ExtrasPlugin;
@@ -24,26 +29,12 @@ class MapController extends Controller
     public function actionMap($site, $class, $id)
     {
 
-        $element = null;
 
         // TODO: ensure that drafts/sites are handled correctly for all element types
         switch ($class) {
             case 'entry':
             {
-                $draftId = Craft::$app->request->getParam('draftId');
-
-                if ($draftId) {
-                    $element = Entry::find()->draftId($draftId)->provisionalDrafts(null)->status(null)->site('*')->preferSites([$site])->unique()->one();
-                } else {
-                    $element = Entry::find()->id($id)->status(null)->site('*')->preferSites([$site])->unique()->one();
-                    if (!$element) {
-                        $element = Entry::find()->drafts(true)->provisionalDrafts(null)->id($id)->status(null)->site('*')->preferSites([$site])->unique()->one();
-                    }
-                    if (!$element) {
-                        $element = Entry::find()->revisions(true)->id($id)->status(null)->site('*')->preferSites([$site])->unique()->one();
-                    }
-                }
-
+                $element = $this->getElement(Entry::find(), $id, $site);
                 break;
             }
             case 'asset':
@@ -54,7 +45,7 @@ class MapController extends Controller
 
             case 'category':
             {
-                $element = Category::find()->id($id)->one();
+                $element = $this->getElement(Category::find(), $id, $site);
                 break;
             }
 
@@ -78,7 +69,8 @@ class MapController extends Controller
 
             case 'product':
             {
-                $element = Product::find()->id($id)->one();
+                $element = $this->getElement(Product::find(), $id, $site);
+
                 break;
             }
 
@@ -101,11 +93,36 @@ class MapController extends Controller
         $map = $plugin->renderer->getElementMap($element, $element->siteId);
 
 
-        return Craft::$app->view->renderTemplate('_extras/_elementmap_content', ['map' => $map]);;
+        return Craft::$app->view->renderTemplate('_extras/_elementmap_content', [
+            'element' => $element,
+            'map' => $map
+        ]);
     }
 
     // Public Methods
     // =========================================================================
+    /**
+     * @param $query
+     * @param $id
+     * @param $site
+     * @return array|ElementInterface|mixed|null
+     */
+    protected function getElement($query, $id, $site): mixed
+    {
+        $draftId = Craft::$app->request->getParam('draftId');
+        $siteId = Craft::$app->sites->getSiteByHandle($site)->id;
+
+        if ($draftId) {
+            $elementRecord = Element::findOne(['draftId' => $draftId]);
+            if(!$elementRecord) {
+                throw new NotFoundHttpException("Draft not found: {$draftId}");
+            }
+            return Craft::$app->elements->getElementById($elementRecord->id, $elementRecord->type, $siteId);
+        }
+
+        return Craft::$app->elements->getElementById($id, siteId: $siteId);
+    }
+
     /**
      * @var    bool|array Allows anonymous access to this controller's actions.
      *         The actions must be in 'kebab-case'

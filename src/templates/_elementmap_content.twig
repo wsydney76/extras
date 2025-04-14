@@ -1,6 +1,15 @@
 {% from _self import showElement %}
+
+
 <div class="map">
     <label>{{ 'References to This Element'|t('_extras') }}</label>
+
+    {% if element.canonicalId != element.id %}
+        <div style="margin-top: 6px; font-size: 13px">
+            {{ 'Showing relations to canonical element'|t('_extras') }}
+        </div>
+    {% endif %}
+
     <ul>
         {% for element in map.incoming %}
             {{ showElement(element) }}
@@ -26,11 +35,17 @@
     <li>
         <div style="display: flex; align-items: center">
 
-
+            {# TODO: Move to ElementmapRenderer ? #}
             {% if element.image is defined %}
                 <div>
                     {% if element.kind == 'image' %}
-                        <img class="thumbnail" src="{{ element.image }}" height="32" width="32">
+                        {% if element.image %}
+                            <img class="thumbnail" src="{{ element.image }}" height="32" width="32">
+                        {% else %}
+                            {{ svg('@appicons/image.svg') }}
+                        {% endif %}
+                    {% elseif element.kind == 'video' %}
+                        {{ svg('@appicons/video.svg') }}
                     {% else %}
                         <a href="{{ element.fileUrl }}" target="_blank">
                             {{ svg('@appicons/download.svg') }}
@@ -40,7 +55,7 @@
             {% else %}
                 {% if element.icon is defined %}
                     {% set icon = svg(element.icon) %}
-                    
+
                     <div class="icon icon-mask">{{ svg(element.icon)|attr({style: "fill: #{element.color ?? '#000000'};"}) }}</div>
                 {% endif %}
             {% endif %}

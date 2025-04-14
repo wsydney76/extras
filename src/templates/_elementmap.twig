@@ -3,9 +3,9 @@
 <a class="btn" id="map-btn">{{ 'Relationships'|t('_extras') }}</a>
 
 {% set ajaxBaseUrl = cpUrl("elementmap-getrelations/#{element.site.handle}/#{class}/#{element.id}") %}
+{% set draftId = element.isProvisionalDraft or element.isDraft ? element.draftId : 0 %}
 
 {% js at POS_END %}
     ajaxBaseUrl = '{{ ajaxBaseUrl }}';
-    draftId = 0;
+    draftId = {{ draftId }};
 {% endjs %}
-

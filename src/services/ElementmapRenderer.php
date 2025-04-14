@@ -8,6 +8,7 @@
 namespace wsydney76\extras\services;
 
 use Craft;
+use craft\base\Element;
 use craft\commerce\elements\db\ProductQuery;
 use craft\commerce\elements\db\VariantQuery;
 use craft\commerce\elements\Product;
@@ -54,6 +55,7 @@ class ElementmapRenderer extends Component
     ];
 
     public const EVENT_ELEMENT_MAP_DATA = 'elementmap_data';
+
 
     private Settings $settings;
 
@@ -244,7 +246,6 @@ class ElementmapRenderer extends Component
         }
 
         return $results;
-
     }
 
     /**
@@ -398,17 +399,10 @@ class ElementmapRenderer extends Component
      * be gathered within.
      * @return array|null
      */
-    public function getIncomingElements($element, int $siteId)
+    public function getIncomingElements(Element $element, int $siteId)
     {
-        if (!$element) { // No element, no related elements.
-            return null;
-        }
 
-        if ($element instanceof Entry) {
-            $targets = Entry::find()->id($element->canonicalId)->status(null)->site('*')->ids();
-        } else {
-            $targets = [$element->id];
-        }
+        $targets = [$element->canonical->id ?? $element->id];
 
         // Assemble a set of elements that should be used as the targets.
 
@@ -420,12 +414,6 @@ class ElementmapRenderer extends Component
 
         // Find all elements that have any of these elements as targets.
         $relationships = $this->getRelationships($targets, $siteId, true);
-
-
-        // Incoming connections may be coming from elements such as matrix
-        // blocks. Before retrieving proper elements and generating the map,
-        // their appropriate owner elements should be found.
-        // $relationships = $this->getUsableRelationElements($relationships, $siteId);
 
         // Retrieve the underlying elements from the relationships.
         return $this->getElementMapData($relationships, $siteId);
@@ -460,16 +448,10 @@ class ElementmapRenderer extends Component
     private function getEntryElements($elementIds, $siteId)
     {
 
-        $criteria = new EntryQuery('craft\elements\Entry');
-        $criteria->id = $elementIds;
-        $criteria->site('*');
-        $criteria->unique();
-        $criteria->preferSites([$siteId]);
-        $criteria->provisionalDrafts(null);
-        $criteria->drafts(null);
-        $criteria->status(null);
-        $criteria->revisions($this->settings->showRevisions);
-        $elements = $criteria->all();
+        $elements = $this->getElementsForType(
+            new EntryQuery('craft\\elements\\Entry'),
+            $elementIds,
+            $siteId);
 
         $results = [];
 
@@ -521,33 +503,19 @@ class ElementmapRenderer extends Component
             }
 
 
-            $text = $sectionName;
-
-            if ($topLevelElement->isProvisionalDraft) {
-                $text .= ", " . Craft::t('_extras', 'Provisional Draft');
-                $user = User::findOne($topLevelElement->creatorId);
-                if ($user) {
-                    $text .= ", " . $user->username;
-                }
-            } elseif ($topLevelElement->getIsDraft()) {
-                $text .= ", " . Craft::t('_extras', 'Draft');
-            } elseif ($topLevelElement->getIsRevision()) {
-                $text .= ", " . Craft::t('_extras', 'Revision ' . $topLevelElement->revisionNum);
-            }
-
             $icon = $element instanceof Entry && $element->type->icon ?
                 "@appicons/{$element->type->icon}.svg" :
                 '@appicons/newspaper.svg';
 
             $color = $element instanceof Entry && $element->type->color ?
-                $element->type->color->cssVar(500)  :
+                $element->type->color->cssVar(500) :
                 'var(--black)';
 
             $results[] = [
                 'id' => $element->id,
                 'icon' => $icon,
                 'color' => $color,
-                'title' => $title . ' (' . $text . ')',
+                'title' => $title . $this->getExtraText($topLevelElement, $topLevelElement->type->name),
                 'url' => $linkToNestedElement ? $element->cpEditUrl : $topLevelElement->cpEditUrl,
                 'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)] . $sectionName
             ];
@@ -589,11 +557,10 @@ class ElementmapRenderer extends Component
      */
     private function getCategoryElements($elementIds, $siteId)
     {
-        $criteria = new CategoryQuery('craft\elements\Category');
-        $criteria->id = $elementIds;
-        $criteria->siteId = $siteId;
-        $criteria->status = null;
-        $elements = $criteria->all();
+        $elements = $this->getElementsForType(
+            new CategoryQuery('craft\\elements\\Category'),
+            $elementIds,
+            $siteId);
 
         $results = [];
         foreach ($elements as $element) {
@@ -655,7 +622,7 @@ class ElementmapRenderer extends Component
             $results[] = [
                 'id' => $element->id,
                 'kind' => $element->kind,
-                'image' => $element->kind === 'image' ? $element->getUrl(['width' => 32, 'height' => 32]) : '',
+                'image' => $element->kind === 'image' && $this->settings->showThumbnails ? $element->getUrl(['width' => 32, 'height' => 32]) : '',
                 'title' => $element->title . ' (' . $volumeName . ')',
                 'url' => $element->cpEditUrl,
                 'fileUrl' => $element->url,
@@ -698,17 +665,17 @@ class ElementmapRenderer extends Component
      */
     private function getProductElements($elementIds, $siteId)
     {
-        $criteria = new ProductQuery('craft\commerce\elements\Product');
-        $criteria->id = $elementIds;
-        $criteria->siteId = $siteId;
-        $elements = $criteria->all();
+        $elements = $this->getElementsForType(
+            new ProductQuery('craft\\commerce\\elements\\Product'),
+            $elementIds,
+            $siteId);
 
         $results = [];
         foreach ($elements as $element) {
             $results[] = [
                 'id' => $element->id,
                 'icon' => '@vendor/craftcms/commerce/src/icon-mask.svg',
-                'title' => $element->title . ' (' . $element->type->name . ')',
+                'title' => $element->title . $this->getExtraText($element, $element->type->name),
                 'url' => $element->cpEditUrl,
                 'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)]
             ];
@@ -762,5 +729,50 @@ class ElementmapRenderer extends Component
             ];
         }
         return $results;
+    }
+
+    /**
+     * @param $elementIds
+     * @param $siteId
+     * @return array|\craft\base\ElementInterface[]
+     */
+    protected function getElementsForType($query, $elementIds, $siteId): array
+    {
+        $query->id = $elementIds;
+
+        if ($this->settings->showAllSites) {
+            $query->site('*');
+            $query->unique();
+            $query->preferSites([$siteId]);
+        } else {
+            $query->siteId = $siteId;
+        }
+
+        $query->provisionalDrafts(null);
+        $query->drafts(null);
+        $query->status(null);
+        $query->revisions($this->settings->showRevisions ? null : false);
+
+        return $query->all();
+    }
+
+    private function getExtraText($element, $type)
+    {
+        $parts = $type ? [$type] : [];
+
+        if ($element->isProvisionalDraft) {
+            $parts[] = Craft::t('_extras', 'Provisional Draft');
+            $user = User::findOne($element->creatorId);
+            if ($user) {
+                $parts[] = $user->username;
+            }
+        } elseif ($element->getIsDraft()) {
+            $parts[] = Craft::t('_extras', 'Draft');
+            $parts[] = $element->draftName;
+        } elseif ($element->getIsRevision()) {
+            $parts[] = Craft::t('_extras', 'Revision') . ' ' . $element->revisionNum;
+        }
+
+        return ' (' . implode(', ', $parts) . ')';
     }
 }
