@@ -58,9 +58,12 @@ class ElementmapRenderer extends Component
 
 
     private Settings $settings;
+    private User $user;
 
     public function init(): void
     {
+        // Should be present as the controller requires login
+        $this->user = Craft::$app->getUser()->getIdentity();
         $this->settings = ExtrasPlugin::getInstance()->getSettings();
     }
 
@@ -517,7 +520,8 @@ class ElementmapRenderer extends Component
                 'color' => $color,
                 'title' => $title . $this->getExtraText($topLevelElement, $topLevelElement->type->name),
                 'url' => $linkToNestedElement ? $element->cpEditUrl : $topLevelElement->cpEditUrl,
-                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)] . $sectionName
+                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)] . $sectionName,
+                'canView' => $element->canView($this->user)
             ];
         }
 
@@ -543,7 +547,8 @@ class ElementmapRenderer extends Component
                 'icon' => '@vendor/craftcms/cms/src/icons/globe.svg',
                 'title' => $element->name,
                 'url' => $element->cpEditUrl,
-                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)]
+                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)],
+                'canView' => $element->canView($this->user)
             ];
         }
         return $results;
@@ -569,7 +574,8 @@ class ElementmapRenderer extends Component
                 'icon' => '@vendor/craftcms/cms/src/icons/folder-open.svg',
                 'title' => $element->title,
                 'url' => $element->cpEditUrl,
-                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)]
+                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)],
+                'canView' => $element->canView($this->user)
             ];
         }
         return $results;
@@ -595,7 +601,8 @@ class ElementmapRenderer extends Component
                 'icon' => '@vendor/craftcms/cms/src/icons/tags.svg',
                 'title' => $element->title,
                 'url' => '/' . Craft::$app->getConfig()->getGeneral()->cpTrigger . '/settings/tags/' . $element->groupId,
-                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)]
+                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)],
+                'canView' => $element->canView($this->user)
             ];
         }
         return $results;
@@ -626,7 +633,8 @@ class ElementmapRenderer extends Component
                 'title' => $element->title . ' (' . $volumeName . ')',
                 'url' => $element->cpEditUrl,
                 'fileUrl' => $element->url,
-                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)] . $volumeName
+                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)] . $volumeName,
+                'canView' => $element->canView($this->user)
             ];
         }
         return $results;
@@ -651,7 +659,8 @@ class ElementmapRenderer extends Component
                 'icon' => '@appicons/user.svg',
                 'title' => $element->name,
                 'url' => $element->cpEditUrl,
-                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)]
+                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)],
+                'canView' => $element->canView($this->user)
             ];
         }
         return $results;
@@ -677,7 +686,8 @@ class ElementmapRenderer extends Component
                 'icon' => '@vendor/craftcms/commerce/src/icon-mask.svg',
                 'title' => $element->title . $this->getExtraText($element, $element->type->name),
                 'url' => $element->cpEditUrl,
-                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)]
+                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)],
+                'canView' => $element->canView($this->user)
             ];
         }
         return $results;
@@ -705,7 +715,8 @@ class ElementmapRenderer extends Component
                 'icon' => '@vendor/craftcms/commerce/src/icon-mask.svg',
                 'title' => $product->title . '-> ' . $element->title . ' (' . $product->type->name . ')',
                 'url' => $product->cpEditUrl,
-                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)]
+                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)],
+                'canView' => $element->canView($this->user)
             ];
         }
         return $results;
@@ -725,7 +736,8 @@ class ElementmapRenderer extends Component
                 'icon' => '@appicons/envelope.svg',
                 'title' => $element->title . ' (' . $element->site->name . ', ' . $element->getCampaignType()->name . ')',
                 'url' => $element->cpEditUrl,
-                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)]
+                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)],
+                'canView' => $element->canView($this->user)
             ];
         }
         return $results;
@@ -752,7 +764,7 @@ class ElementmapRenderer extends Component
         $query->drafts(null);
         $query->status(null);
         $query->revisions($this->settings->showRevisions ? null : false);
-
+        $query->orderBy('title');
         return $query->all();
     }
 

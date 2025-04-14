@@ -70,17 +70,20 @@ Show relationships between elements.
 
 </div>
 
-Note: This would actually require a rewrite to handle drafts for all relevant element types, complex multi-site setups.
+![Relationships Element Index](screenshots/relationships2.jpg)
 
-Should be ok with canonical entries and assets, with untranslatable relationship fields, but might miss something elsewhere.
+Note: While this is actually the most used feature, it is currently only used/tested in limited use cases.
+
+In complex multi-site, multi-user, Commerce settings or deeply nested content models, it hopefully works as expected, but maybe not.
 
 Also, it can only detect relationships in the `relations` database table, so it won't work for links created by reference tags, or in CKEditor inline links.
 
-Does not take permissions into account, so it may show elements that are not editable by the user, resulting in 403 pages.
-
 Only handles Craft's own element types, Products/Variants from Craft Commerce, and (on special request) the Campaign element type from Campaign plugin.
 
-![Relationships Element Index](screenshots/relationships2.jpg)
+Update: 2025-04-14: Started some cleanup, simplified some code, removed some unused stuff, added some settings and permission checks. Not yet fully tested, but should (mostly) work. 
+
+Also pushed a Craft 5 version of the [Content Overview Plugin](https://github.com/wsydney76/craft-contentoverview/tree/craft5), that should work with this version.
+
 
 ### Drafts Helpers
 

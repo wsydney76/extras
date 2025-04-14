@@ -2,34 +2,23 @@ var $btn = $('#map-btn');
 
 $btn.on('click', function() {
 
-    if(ajaxBaseUrl.indexOf('?') === -1) {
-        url = ajaxBaseUrl + '?draftId=' + draftId;
-    } else {
-        url = ajaxBaseUrl + '&draftId=' + draftId;
-    }
-
+    url = elementMapAjaxBaseUrl + '/' + elementMapElementId;
 
     $.get(url)
         .done(function(data) {
-            hud = new new Garnish.HUD($btn, data, {
+            hud = new Garnish.HUD($btn, data, {
                 orientations: ['top', 'bottom', 'right', 'left'],
                 hudClass: 'hud guide-hud',
             });
         })
         .fail(function() {
-            alert("error");
+            alert("Error");
         });
 });
 
-/*if (window.draftEditor) {
-    window.draftEditor.on('createDraft', function() {
-        draftId = window.draftEditor.settings.draftId;
-    });
-}*/
-
 setTimeout(() => {
     Craft.cp.$primaryForm.data('elementEditor').on('createProvisionalDraft', function() {
-         draftId = Craft.cp.$primaryForm.data('elementEditor').settings.draftId;
+        elementMapElementId = Craft.cp.$primaryForm.data('elementEditor').settings.elementId;
     });
 }, 500)
 

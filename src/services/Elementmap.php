@@ -30,7 +30,7 @@ class Elementmap
         Event::on(
             UrlManager::class,
             UrlManager::EVENT_REGISTER_CP_URL_RULES, function(RegisterUrlRulesEvent $event) {
-            $event->rules['elementmap-getrelations/<site:.*>/<class:.*>/<id:[\d]+>'] = '_extras/map/map';
+            $event->rules['elementmap-getrelations/<siteId:.*>/<elementId:[\d]+>'] = '_extras/element-map/map';
         });
 
         // Render element maps within the appropriate template hooks.
@@ -138,21 +138,6 @@ class Elementmap
             $elements = ExtrasPlugin::getInstance()->renderer->getOutgoingElements($entry, $entry->site->id);
             $event->html = Craft::$app->view->renderTemplate('_extras/_elementmap_indexcolumn', ['elements' => $elements]);
         }
-    }
-
-    /**
-     * Renders the element map for an entry within the entry editor, given the current Twig context.
-     *
-     * @param array $context The incoming Twig context.
-     * @return string
-     * @throws Exception
-     * @throws LoaderError
-     * @throws RuntimeError
-     * @throws SyntaxError
-     */
-    public function renderEntryElementMap(array &$context)
-    {
-        return $this->renderMap($context['entry'], 'entry');
     }
 
     /**
