@@ -306,26 +306,7 @@ class ElementmapRenderer extends Component
         return $results;
     }
 
-    /**
-     * Retrieves owner IDs/types of owning elements using the matrix block IDs
-     * provided.
-     *
-     * @param $elementIds An array of IDs.
-     * @return array An array of elements, with their ID `id` and element type
-     * `type`.
-     */
-    private function getOwnersForMatrixBlocks($elementIds)
-    {
-        $conditions = [
-            'mb.id' => $elementIds,
-        ];
-        return (new Query())
-            ->select('[[e.id]] AS id, [[e.type]] AS type')
-            ->from('{{%matrixblocks}} mb')
-            ->leftJoin('{{%elements}} e', '[[mb.primaryOwnerId]] = [[e.id]]')
-            ->where($conditions)
-            ->all();
-    }
+
 
     /**
      * Merges two groups in the same format as that provided by `groupByType`.

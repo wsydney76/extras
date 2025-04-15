@@ -151,6 +151,11 @@ body.ltr #notifications {
     padding: 4px;
 }
 
+.copied-elements-notification .notification-message,
+.copied-elements-notification .notification-close-btn {
+    color: black;
+}
+
 /* .content-pane, .matrixblock {
     background-color: #fbfbff;
 }*/

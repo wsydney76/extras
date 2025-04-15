@@ -4,6 +4,6 @@
 
 
 {% js at POS_END %}
-    elementMapAjaxBaseUrl = '{{ cpUrl("elementmap-getrelations/#{element.site.id}") }}';
+    elementMapAjaxBaseUrl = '{{ cpUrl("elementmap-getrelations/#{element.site.id}/%s") }}';
     elementMapElementId = {{ element.id }};
 {% endjs %}

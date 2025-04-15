@@ -2,7 +2,7 @@ var $btn = $('#map-btn');
 
 $btn.on('click', function() {
 
-    url = elementMapAjaxBaseUrl + '/' + elementMapElementId;
+    url = elementMapAjaxBaseUrl.replace('%s', elementMapElementId);
 
     $.get(url)
         .done(function(data) {

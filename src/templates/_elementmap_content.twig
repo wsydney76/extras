@@ -40,7 +40,7 @@
                 <div>
                     {% if element.kind == 'image' %}
                         {% if element.image %}
-                            <img class="thumbnail" src="{{ element.image }}" height="32" width="32">
+                            <img class="thumbnail" src="{{ element.image }}" height="36" width="36">
                         {% else %}
                             {{ svg('@appicons/image.svg') }}
                         {% endif %}
@@ -59,7 +59,7 @@
                     <div class="icon icon-mask">{{ svg(element.icon)|attr({style: "fill: #{element.color ?? '#000000'};"}) }}</div>
                 {% endif %}
             {% endif %}
-            {% if element.canView %}
+            {% if element.canView ?? true %}
                 <a href="{{ element.url }}" data-id="{{ element.id }}" data-editable>
                     {{ element.title }}
                 </a>
