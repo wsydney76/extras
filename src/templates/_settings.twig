@@ -117,6 +117,47 @@
     }) }}
 
     {{ forms.lightswitchField({
+        label: 'Enable Draft Package Utility'|t('_extras'),
+        name: 'enableDraftPackageUtility',
+        on: settings.enableDraftPackageUtility,
+        onLabel: 'Enable a utility allows to apply related drafts simultaneously'|t('_extras'),
+        warning: config.enableDraftPackageUtility is defined ? _self.configWarning('enableDraftPackageUtility')
+    }) }}
+
+    <div style="margin-left: 48px;">
+        {{ forms.textField({
+            label: 'Draft package section handle'|t('_extras'),
+            name: 'draftPackageSection',
+            value: settings.draftPackageSection,
+            instructions: 'The handle of the section that defines a package'|t('_extras'),
+            tip: 'Element drafts are part of a package if they have a relation to an element that belongs to this section'|t('_extras'),
+            warning: config.draftPackageSection is defined ? _self.configWarning('draftPackageSection')
+        }) }}
+    </div>
+
+    <div style="margin-left: 48px; margin-top: 24px;">
+        {{ forms.textField({
+            label: 'Draft package field handle'|t('_extras'),
+            name: 'draftPackageField',
+            value: settings.draftPackageField,
+            instructions: 'The handle of the field that attaches an element to a package'|t('_extras'),
+            warning: config.draftPackageField is defined ? _self.configWarning('draftPackageField')
+        }) }}
+    </div>
+
+    <div style="margin-left: 48px; margin-top: 24px;">
+        {{ forms.lightswitchField({
+            label: 'Include provisional drafts in package'|t('_extras'),
+            name: 'includeProvisionalDraftsInPackage',
+            on: settings.includeProvisionalDraftsInPackage,
+            offLabel: 'Only regular drafts'|t('_extras'),
+            onLabel: 'Also include provisional drafts'|t('_extras'),
+            tip: 'This is not recommended, it is better to use only drafts that are visible to all users.'|t('_extras'),
+            warning: config.includeProvisionalDraftsInPackage is defined ? _self.configWarning('includeProvisionalDraftsInPackage')
+        }) }}
+    </div>
+
+    {{ forms.lightswitchField({
         label: 'Enable View Links In Cards'|t('_extras'),
         name: 'enableViewLinkInCards',
         on: settings.enableViewLinkInCards,

@@ -82,6 +82,8 @@ Only handles Craft's own element types, Products/Variants from Craft Commerce, a
 
 Update: 2025-04-14: Started some cleanup, simplified some code, removed some unused stuff, added some settings and permission checks. Not yet fully tested, but should (mostly) work. 
 
+Update: 2025-04-19: Added the Draft Package utility.
+
 Also pushed a Craft 5 version of the [Content Overview Plugin](https://github.com/wsydney76/craft-contentoverview/tree/craft5), that should work with this version.
 
 
@@ -467,6 +469,27 @@ Lessons learned: Be very conservative with merging fields...
 #### Volumes Inventory
 
 All volumes/file systems at a glance,
+
+#### Draft Package Utility
+
+Experimental. A Utility to apply a package of drafts at once.
+
+Note: Once upon a time, this has been created as a quick and dirty solution for a specific project, especially only handles `Entry` element type, and has never been tested in a multi-site environment.
+
+Provisionally ported to Craft 5.
+
+Craft lacks a functionality that allows to publish a number of drafts at once. This is a very simplified workaround for this:
+
+* Create a section for draft packages (default handle: `draftPackage`)
+* Create an entries field (default handle: `draftPackage`) applied to all relevant entry types.
+* Create a package entry, and let all drafts point to this entry.
+* Use the utility to publish all drafts at once.
+
+Craft does not allow newly created entries to be the target of a relation, so if this is needed:
+
+* Create and save a new entry in a `disabled` state
+* Now other entries can point to this entry
+* Create a new draft for this entry, set to `enabled`
 
 ### Live Preview
 

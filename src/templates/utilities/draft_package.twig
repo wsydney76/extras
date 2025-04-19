@@ -1,0 +1,178 @@
+{% import '_includes/forms.twig' as forms %}
+
+{% set messages = craft.app.session.flash('draftPackageMessages') %}
+{% if messages %}
+    <ul style="margin-bottom: 24px;">
+        {% for message in messages %}
+            <li>{{ message }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+{% for draftPackage in draftPackages %}
+    <div style="margin-bottom: 48px;">
+        <h2>
+            <a class="go" href="{{ draftPackage.cpEditUrl }}">
+                {{ draftPackage.title }}
+            </a>
+        </h2>
+
+        {% set hasErrors = false %}
+        {% set canonicalIds = [] %}
+
+        <table class="data fullwidth">
+            <thead>
+            <tr>
+                <th>{{ 'Entry type/ID'|t('_extras') }}</th>
+                <th>{{ 'Title'|t('app') }}</th>
+                <th>{{ 'Type of draft'|t('_extras') }}</th>
+                <th>{{ 'Errors'|t('_extras') }}</th>
+                <th>{{ 'Actions'|t('_extras') }}</th>
+            </tr>
+            </thead>
+            {% for entry in draftsByPackage[draftPackage.id] %}
+                <tr>
+                    <td>{{ entry.type.name|t }} {{ entry.id }}</td>
+                    <td>
+                        {% if entry.status == 'draft' %}
+                            <span class="icon" data-icon="draft" role="img" aria-label="Status: Draft"></span>
+                        {% else %}
+                            <span class="status {{ entry.status }}"></span>
+                        {% endif %}
+
+                        <a class="go" href="{{ entry.cpEditUrl }}" target="_blank">{{ entry.title }}</a>
+                    </td>
+                    <td>{{ entry.isProvisionalDraft ? 'Provisional draft'|t('_extras') : 'Regular draft'|t('_extras') }}</td>
+                    <td style="color: var(--red-600)">
+                        {% if entry.hasErrors %}
+                            {% set hasErrors = true %}
+                            {% for error in entry.errors %}
+                                <div>
+                                    {{ error|join(' ')|md }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not entry.isProvisionalDraft %}
+                            <button class="btn"
+                                    onclick="draftPackage_createElementEditor({{ entry.canonicalId }}, {{ entry.siteId }}, {{ entry.draftId }})"
+                            >Edit
+                            </button>
+                        {% elseif entry.creatorId == currentUser.id %}
+                            <button class="btn"
+                                    onclick="draftPackage_createElementEditor({{ entry.canonicalId }}, {{ entry.siteId }}, null)"
+                            >Edit
+                            </button>
+                        {% endif %}
+
+                        <button class="btn"
+                                onclick="draftPackage_Compare({{ entry.draftId }}, {{ entry.siteId }}, {{ entry.isProvisionalDraft }})"
+                        >Compare
+                        </button>
+                    </td>
+                </tr>
+            {% else %}
+                {{ 'No drafts in this package.'|t('_extras') }}
+            {% endfor %}
+        </table>
+
+        {% if draftsByPackage[draftPackage.id]|length and  not hasErrors %}
+            <form style="margin-top:24px;"
+                  method="post"
+                  onsubmit="return confirm('Apply all drafts???')">
+                {{ actionInput('_extras/draft-package/apply') }}
+                {{ csrfInput() }}
+                {{ hiddenInput('draftPackageId', draftPackage.id) }}
+
+                <div style="display:flex; justify-content: space-between">
+                    <div style="display: flex">
+                        <div>
+                            {{ forms.lightswitchField({
+                                label: 'Backup database'|t('_extras'),
+                                name: 'backupDb',
+                                on: true
+                            }) }}
+                        </div>
+
+                        <div style="margin-left: 24px;">
+                            {{ forms.selectField({
+                                label: 'After success'|t('_extras'),
+                                name: 'afterSuccess',
+                                options: [
+                                    {label: 'No action'|t('_extras'), value: ''},
+                                    {label: 'Detach package from elements'|t('_extras'), value: 'detach'},
+                                    {label: 'Delete package'|t('_extras'), value: 'delete'},
+                                ],
+                                value: '',
+                                first: true
+                            }) }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <button class="btn submit">{{ 'Apply Drafts'|t('_extras') }}</button>
+                    </div>
+                </div>
+
+            </form>
+        {% else %}
+            <p>
+                {{ 'Drafts cannot be applied because of errors.'|t('_extras') }}
+            </p>
+        {% endif %}
+
+    </div>
+{% else %}
+    No packages available.
+{% endfor %}
+
+{% css %}
+{% include '_extras/css/work.css' %}
+{% endcss %}
+
+{% js %}
+compareUrl = "{{ cpUrl('_extras/compare') }}"
+{% endjs %}
+
+{% js %}
+
+
+function draftPackage_Compare(draftId, siteId, isProvisionalDraft) {
+
+
+    if (compareUrl.indexOf('?') > -1) {
+        compareUrl = compareUrl + '&'
+    } else {
+        compareUrl = compareUrl + '?'
+    }
+
+    url = `${compareUrl}draftId=${draftId}&siteId=${siteId}&isProvisionalDraft=${isProvisionalDraft}`
+    $.get(url, function(data) {
+            var slideout = new Craft.Slideout(data, {
+                containerAttributes: {class: 'compare-container'}
+            });
+        })
+        .fail(function() {
+            alert("Error");
+        })
+}
+
+function draftPackage_createElementEditor(elementId, siteId, draftId) {
+    const slideout = Craft.createElementEditor('\\craft\\elements\\Entry', {
+        elementId: elementId,
+        draftId: draftId,
+        siteId: siteId
+    })
+
+    // Refresh section
+    slideout.on('submit', () => {
+        window.location.reload()
+    })
+    slideout.on('close', () => {
+        window.location.reload()
+    })
+
+}
+
+{% endjs %}

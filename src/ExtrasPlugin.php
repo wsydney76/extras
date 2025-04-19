@@ -3,11 +3,14 @@
 namespace wsydney76\extras;
 
 use Craft;
-use craft\base\conditions\BaseCondition;
+use DOMDocument;
+use DOMXPath;
+use Illuminate\Support\Collection;
 use craft\base\Element;
 use craft\base\Event;
 use craft\base\Model;
 use craft\base\Plugin;
+use craft\base\conditions\BaseCondition;
 use craft\commerce\elements\Product;
 use craft\elements\Entry;
 use craft\events\DefineBehaviorsEvent;
@@ -23,11 +26,9 @@ use craft\helpers\Cp;
 use craft\models\FieldLayout;
 use craft\services\Dashboard;
 use craft\services\Utilities;
-use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
-use DOMDocument;
-use DOMXPath;
-use Illuminate\Support\Collection;
+use craft\web\twig\variables\CraftVariable;
+use function sprintf;
 use wsydney76\extras\behaviors\EntryBehavior;
 use wsydney76\extras\elements\actions\CopyMarkdownLink;
 use wsydney76\extras\elements\actions\CopyReferenceLinkTag;
@@ -38,11 +39,13 @@ use wsydney76\extras\fieldlayoutelements\IncomingRelationships;
 use wsydney76\extras\fieldlayoutelements\Instruction;
 use wsydney76\extras\models\Settings;
 use wsydney76\extras\services\ContentService;
+use wsydney76\extras\services\DraftPackageService;
 use wsydney76\extras\services\DraftsHelper;
 use wsydney76\extras\services\Elementmap;
 use wsydney76\extras\services\ElementmapRenderer;
 use wsydney76\extras\services\UpgradeService;
 use wsydney76\extras\services\VideoService;
+use wsydney76\extras\utilities\DraftPackageUtility;
 use wsydney76\extras\utilities\UpgradeInventory;
 use wsydney76\extras\utilities\VolumesInventory;
 use wsydney76\extras\variables\ExtrasVariable;
@@ -50,7 +53,7 @@ use wsydney76\extras\web\assets\cpassets\CustomCpAsset;
 use wsydney76\extras\web\assets\sidebarvisibility\SidebarVisibilityAsset;
 use wsydney76\extras\web\twig\ExtrasExtension;
 use wsydney76\extras\widgets\MyProvisionsalDraftsWidget;
-use function sprintf;
+use yii\base\Event as EventAlias;
 
 /**
  * Extras plugin
@@ -62,6 +65,7 @@ use function sprintf;
  * @property-read ElementmapRenderer $renderer
  * @property-read DraftsHelper $draftsHelper
  * @property-read VideoService $video
+ * @property-read DraftPackageService $draftPackageService
  */
 class ExtrasPlugin extends Plugin
 {
@@ -78,7 +82,8 @@ class ExtrasPlugin extends Plugin
                 'renderer' => ElementmapRenderer::class,
                 'draftsHelper' => DraftsHelper::class,
                 'upgradeService' => UpgradeService::class,
-                'video' => VideoService::class
+                'video' => VideoService::class,
+                'draftPackageService' => DraftPackageService::class
             ],
         ];
     }
@@ -114,6 +119,7 @@ class ExtrasPlugin extends Plugin
                 $this->registerSiteTemplateRoot();
             }
         });
+
     }
 
 
@@ -385,6 +391,15 @@ class ExtrasPlugin extends Plugin
                 Utilities::EVENT_REGISTER_UTILITIES,
                 function(RegisterComponentTypesEvent $event) {
                     $event->types[] = UpgradeInventory::class;
+                });
+        }
+
+        if ($this->getSettings()->enableDraftPackageUtility && Craft::$app->user->identity && Craft::$app->user->identity->admin) {
+            Event::on(
+                Utilities::class,
+                Utilities::EVENT_REGISTER_UTILITIES,
+                function(RegisterComponentTypesEvent $event) {
+                    $event->types[] = DraftPackageUtility::class;
                 });
         }
     }

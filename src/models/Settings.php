@@ -32,6 +32,11 @@ class Settings extends Model
 
     public bool $enableVolumeInventory = false;
     public bool $enableUpgradeInventory = false;
+    public bool $enableDraftPackageUtility = false;
+
+    public string $draftPackageSection = 'draftPackage';
+    public string $draftPackageField= 'draftPackage';
+    public bool $includeProvisionalDraftsInPackage = false;
 
     public bool $enableActionRoutes = false;
 
