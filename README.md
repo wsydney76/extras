@@ -84,6 +84,8 @@ Update: 2025-04-14: Started some cleanup, simplified some code, removed some unu
 
 Update: 2025-04-19: Added the Draft Package utility.
 
+Update: 2025-04-22: Added cross-site validation.
+
 Also pushed a Craft 5 version of the [Content Overview Plugin](https://github.com/wsydney76/craft-contentoverview/tree/craft5), that should work with this version.
 
 
@@ -229,6 +231,14 @@ Make element index sections collapsible (useful for large sites with many sectio
 #### Enable Action Routes
 
 Enable section template settings to point to a custom controller, in the form of "action:module/controller/action"
+
+#### Enable Cross-site Validation
+
+Craft does not validate entries across sites, so if you have a multi-site setup, you may end up with entries that are not valid in all sites.
+
+Enable this to validate entries across sites.
+
+Note: Provisionally ported from Craft3, needs fixing (or a FR/Bug report on Craft's side...) Duplicate error messages are shown now.
 
 #### Owner Path
 

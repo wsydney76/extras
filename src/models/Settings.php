@@ -30,6 +30,8 @@ class Settings extends Model
     public bool $enableTwigExtension = false;
     public bool $enableRestoreDismissedTips = false;
 
+    public bool $enableCrossSiteValidation = false;
+
     public bool $enableVolumeInventory = false;
     public bool $enableUpgradeInventory = false;
     public bool $enableDraftPackageUtility = false;
@@ -39,6 +41,9 @@ class Settings extends Model
     public bool $includeProvisionalDraftsInPackage = false;
 
     public bool $enableActionRoutes = false;
+
+    public bool $enableExtendedLightswitchField = false;
+    public bool $enableStylesField = false;
 
     public bool $enableViewLinkInCards = false;
 

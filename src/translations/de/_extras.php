@@ -116,6 +116,7 @@ return [
     'New' => 'Neu',
     'No action' => 'Keine Aktion',
     'No drafts in this package.' => 'Keine Entwürfe in diesem Paket.',
+    'No packages available.' => 'Keine Pakete verfügbar.',
     'No products found.' => 'Keine Produkte gefunden.',
     'None' => 'Keine',
     'On active site only' => 'Nur auf aktiver Site',
@@ -202,4 +203,9 @@ return [
     '{count,plural,=1{Open provisional draft} other{Open provisional drafts}}' => '{count,plural,=1{Offener provisorischer Entwurf} other{Offene provisorische Entwürfe}}',
     '{count} provisional draft(s) by other users' => '{count} provisorische Entwurf/Entwürfe von anderen Benutzern',
     '{count} regular draft(s) by other users' => '{count} reguläre Entwürfe von anderen Benutzern',
+    'Enable cross site validation' => 'Aktivieren Sie die siteübergreifende Validierung',
+    'Validate elements from other sites on save.' => 'Validieren Sie Elemente von anderen Sites beim Speichern.',
+    'Error validating in site' => 'Fehler bei der Validierung in Site',
+    'Yes' => 'Ja',
+    'No' => 'Nein',
 ];

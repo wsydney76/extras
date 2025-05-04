@@ -3,15 +3,15 @@
 namespace wsydney76\extras;
 
 use Craft;
-use DOMDocument;
-use DOMXPath;
-use Illuminate\Support\Collection;
+use craft\base\conditions\BaseCondition;
 use craft\base\Element;
 use craft\base\Event;
 use craft\base\Model;
+use craft\base\NestedElementInterface;
 use craft\base\Plugin;
-use craft\base\conditions\BaseCondition;
 use craft\commerce\elements\Product;
+use craft\db\Query;
+use craft\elements\db\EntryQuery;
 use craft\elements\Entry;
 use craft\events\DefineBehaviorsEvent;
 use craft\events\DefineElementHtmlEvent;
@@ -25,11 +25,15 @@ use craft\events\SetElementRouteEvent;
 use craft\helpers\Cp;
 use craft\models\FieldLayout;
 use craft\services\Dashboard;
+use craft\services\Fields;
 use craft\services\Utilities;
-use craft\web\View;
 use craft\web\twig\variables\CraftVariable;
-use function sprintf;
+use craft\web\View;
+use DOMDocument;
+use DOMXPath;
+use Illuminate\Support\Collection;
 use wsydney76\extras\behaviors\EntryBehavior;
+use wsydney76\extras\behaviors\EntryQueryBehavior;
 use wsydney76\extras\elements\actions\CopyMarkdownLink;
 use wsydney76\extras\elements\actions\CopyReferenceLinkTag;
 use wsydney76\extras\elements\conditions\AllTypesConditionRule;
@@ -37,6 +41,9 @@ use wsydney76\extras\elements\conditions\HasDraftsConditionRule;
 use wsydney76\extras\elements\conditions\IsEditedConditionRule;
 use wsydney76\extras\fieldlayoutelements\IncomingRelationships;
 use wsydney76\extras\fieldlayoutelements\Instruction;
+use wsydney76\extras\fields\ExtendedLightswitch;
+use wsydney76\extras\fields\Properties;
+use wsydney76\extras\fields\Styles;
 use wsydney76\extras\models\Settings;
 use wsydney76\extras\services\ContentService;
 use wsydney76\extras\services\DraftPackageService;
@@ -52,8 +59,9 @@ use wsydney76\extras\variables\ExtrasVariable;
 use wsydney76\extras\web\assets\cpassets\CustomCpAsset;
 use wsydney76\extras\web\assets\sidebarvisibility\SidebarVisibilityAsset;
 use wsydney76\extras\web\twig\ExtrasExtension;
+use wsydney76\extras\web\twig\StylesExtension;
 use wsydney76\extras\widgets\MyProvisionsalDraftsWidget;
-use yii\base\Event as EventAlias;
+use function sprintf;
 
 /**
  * Extras plugin
@@ -103,6 +111,7 @@ class ExtrasPlugin extends Plugin
             $this->initCollectionMakros();
             $this->initTwigExtension();
             $this->setEntryRoute();
+            $this->initFields();
 
             if (Craft::$app->request->isCpRequest) {
                 $this->initSidebarVisibility();
@@ -112,6 +121,7 @@ class ExtrasPlugin extends Plugin
                 $this->initDraftHelpers();
                 $this->initElementActions();
                 $this->initRestoreDismissedTips();
+                $this->initCrossSiteValidation();
                 $this->initFieldLayoutElements();
                 $this->initUtilities();
                 $this->initPreviewTargets();
@@ -119,9 +129,7 @@ class ExtrasPlugin extends Plugin
                 $this->registerSiteTemplateRoot();
             }
         });
-
     }
-
 
     protected function createSettingsModel(): ?Model
     {
@@ -356,6 +364,85 @@ class ExtrasPlugin extends Plugin
                 return Craft::$app->view->renderTemplate('_extras/cp-dismissed-tips.twig');
             });
         }
+    }
+
+    private function initFields()
+    {
+        if ($this->getSettings()->enableExtendedLightswitchField) {
+            Event::on(
+                Fields::class,
+                Fields::EVENT_REGISTER_FIELD_TYPES,
+                function(RegisterComponentTypesEvent $event) {
+                    $event->types[] = ExtendedLightswitch::class;
+                });
+        }
+
+        if ($this->getSettings()->enableStylesField) {
+            Event::on(
+                Fields::class,
+                Fields::EVENT_REGISTER_FIELD_TYPES,
+                function(RegisterComponentTypesEvent $event) {
+                    $event->types[] = Styles::class;
+                });
+            Craft::$app->view->registerTwigExtension(new StylesExtension());
+        }
+    }
+
+
+    private array $validationIds = [];
+
+    private function initCrossSiteValidation(): void
+    {
+        if ($this->getSettings()->enableCrossSiteValidation && Craft::$app->isMultiSite) {
+            Event::on(
+                Entry::class,
+                Entry::EVENT_BEFORE_VALIDATE,
+                function($event) {
+                    /** @var Entry $entry */
+                    $entry = $event->sender;
+                    Craft::error('Cross site validation start ' . $entry->id . ' ' . $entry->siteId . ' ' . $entry->type->handle, __METHOD__);
+
+
+                    // Don't loop infinitely
+                    if (in_array($entry->id, $this->validationIds, true)) {
+                        return;
+                    }
+                    $this->validationIds[] = $entry->id;
+
+                    if ($entry->scenario !== Element::SCENARIO_LIVE) {
+                        return;
+                    }
+
+                    $entry->validate();
+                    if ($entry->hasErrors()) {
+                        return;
+                    }
+
+                    Craft::error('Cross site validation check ' . $entry->id . ' ' . $entry->siteId . ' ' . $entry->type->handle, __METHOD__);
+                    $event->isValid = $this->_validateLocalizedElements($entry);
+                }
+            );
+        }
+    }
+
+    private function _validateLocalizedElements(Element $element): bool
+    {
+
+        foreach ($element->getLocalized()->all() as $localizedElement) {
+            $localizedElement->scenario = Element::SCENARIO_LIVE;
+
+            if (!$localizedElement->validate()) {
+                $element->addError(
+                // $element->type->hasTitleField ? 'title' : 'slug',
+                    'localizedElement',
+                    Craft::t('site', 'Error validating in site') .
+                    ' "' . $localizedElement->site->name . '". ' .
+                    implode(' ', $localizedElement->getErrorSummary(false)));
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function initFieldLayoutElements()

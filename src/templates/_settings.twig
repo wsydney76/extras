@@ -101,6 +101,14 @@
     }) }}
 
     {{ forms.lightswitchField({
+        label: 'Enable cross site validation'|t('_extras'),
+        name: 'enableCrossSiteValidation',
+        on: settings.enableCrossSiteValidation,
+        onLabel: 'Validate elements from other sites on save.'|t('_extras'),
+        warning: config.enableCrossSiteValidation is defined ? _self.configWarning('enableCrossSiteValidation')
+    }) }}
+
+    {{ forms.lightswitchField({
         label: 'Enable Volume Inventory Utility'|t('_extras'),
         name: 'enableVolumeInventory',
         on: settings.enableVolumeInventory,
@@ -250,6 +258,21 @@
         onLabel: 'Enable section template settings to point to custom controller, in the form of "action:module/controller/action"'|t('_extras'),
         warning: config.enableActionRoutes is defined ? _self.configWarning('enableActionRoutes')
     }) }}
+
+    {{ forms.lightswitchField({
+        label: 'Enable Extended lightswitch field'|t('_extras'),
+        name: 'enableExtendedLightswitchField',
+        on: settings.enableExtendedLightswitchField,
+        warning: config.enableExtendedLightswitchField is defined ? _self.configWarning('enableExtendedLightswitchField')
+    }) }}
+
+    {{ forms.lightswitchField({
+        label: 'Enable Styles field'|t('_extras'),
+        name: 'enableStylesField',
+        on: settings.enableStylesField,
+        warning: config.enableStylesField is defined ? _self.configWarning('enableStylesField')
+    }) }}
+
 
 
 </div>

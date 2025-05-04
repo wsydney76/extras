@@ -20,111 +20,115 @@
         {% set hasErrors = false %}
         {% set canonicalIds = [] %}
 
-        <table class="data fullwidth">
-            <thead>
-            <tr>
-                <th>{{ 'Entry type/ID'|t('_extras') }}</th>
-                <th>{{ 'Title'|t('app') }}</th>
-                <th>{{ 'Type of draft'|t('_extras') }}</th>
-                <th>{{ 'Errors'|t('_extras') }}</th>
-                <th>{{ 'Actions'|t('_extras') }}</th>
-            </tr>
-            </thead>
-            {% for entry in draftsByPackage[draftPackage.id] %}
+        {% if draftsByPackage[draftPackage.id] %}
+            <table class="data fullwidth">
+                <thead>
                 <tr>
-                    <td>{{ entry.type.name|t }} {{ entry.id }}</td>
-                    <td>
-                        {% if entry.status == 'draft' %}
-                            <span class="icon" data-icon="draft" role="img" aria-label="Status: Draft"></span>
-                        {% else %}
-                            <span class="status {{ entry.status }}"></span>
-                        {% endif %}
-
-                        <a class="go" href="{{ entry.cpEditUrl }}" target="_blank">{{ entry.title }}</a>
-                    </td>
-                    <td>{{ entry.isProvisionalDraft ? 'Provisional draft'|t('_extras') : 'Regular draft'|t('_extras') }}</td>
-                    <td style="color: var(--red-600)">
-                        {% if entry.hasErrors %}
-                            {% set hasErrors = true %}
-                            {% for error in entry.errors %}
-                                <div>
-                                    {{ error|join(' ')|md }}
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if not entry.isProvisionalDraft %}
-                            <button class="btn"
-                                    onclick="draftPackage_createElementEditor({{ entry.canonicalId }}, {{ entry.siteId }}, {{ entry.draftId }})"
-                            >Edit
-                            </button>
-                        {% elseif entry.creatorId == currentUser.id %}
-                            <button class="btn"
-                                    onclick="draftPackage_createElementEditor({{ entry.canonicalId }}, {{ entry.siteId }}, null)"
-                            >Edit
-                            </button>
-                        {% endif %}
-
-                        <button class="btn"
-                                onclick="draftPackage_Compare({{ entry.draftId }}, {{ entry.siteId }}, {{ entry.isProvisionalDraft }})"
-                        >Compare
-                        </button>
-                    </td>
+                    <th>{{ 'Entry type/ID'|t('_extras') }}</th>
+                    <th>{{ 'Title'|t('app') }}</th>
+                    <th>{{ 'Type of draft'|t('_extras') }}</th>
+                    <th>{{ 'Errors'|t('_extras') }}</th>
+                    <th>{{ 'Actions'|t('_extras') }}</th>
                 </tr>
-            {% else %}
-                {{ 'No drafts in this package.'|t('_extras') }}
-            {% endfor %}
-        </table>
+                </thead>
+                {% for entry in draftsByPackage[draftPackage.id] %}
+                    <tr>
+                        <td>{{ entry.type.name|t }} {{ entry.id }}</td>
+                        <td>
+                            {% if entry.status == 'draft' %}
+                                <span class="icon" data-icon="draft" role="img" aria-label="Status: Draft"></span>
+                            {% else %}
+                                <span class="status {{ entry.status }}"></span>
+                            {% endif %}
 
-        {% if draftsByPackage[draftPackage.id]|length and  not hasErrors %}
-            <form style="margin-top:24px;"
-                  method="post"
-                  onsubmit="return confirm('Apply all drafts???')">
-                {{ actionInput('_extras/draft-package/apply') }}
-                {{ csrfInput() }}
-                {{ hiddenInput('draftPackageId', draftPackage.id) }}
+                            <a class="go" href="{{ entry.cpEditUrl }}" target="_blank">{{ entry.title }}</a>
+                        </td>
+                        <td>{{ entry.isProvisionalDraft ? 'Provisional draft'|t('_extras') : 'Regular draft'|t('_extras') }}</td>
+                        <td style="color: var(--red-600)">
+                            {% if entry.hasErrors %}
+                                {% set hasErrors = true %}
+                                {% for error in entry.errors %}
+                                    <div>
+                                        {{ error|join(' ')|md }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not entry.isProvisionalDraft %}
+                                <button class="btn"
+                                        onclick="draftPackage_createElementEditor({{ entry.canonicalId }}, {{ entry.siteId }}, {{ entry.draftId }})"
+                                >Edit
+                                </button>
+                            {% elseif entry.creatorId == currentUser.id %}
+                                <button class="btn"
+                                        onclick="draftPackage_createElementEditor({{ entry.canonicalId }}, {{ entry.siteId }}, null)"
+                                >Edit
+                                </button>
+                            {% endif %}
 
-                <div style="display:flex; justify-content: space-between">
-                    <div style="display: flex">
+                            <button class="btn"
+                                    onclick="draftPackage_Compare({{ entry.draftId }}, {{ entry.siteId }}, {{ entry.isProvisionalDraft }})"
+                            >Compare
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+
+            {% if draftsByPackage[draftPackage.id]|length and  not hasErrors %}
+                <form style="margin-top:24px;"
+                      method="post"
+                      onsubmit="return confirm('Apply all drafts???')">
+                    {{ actionInput('_extras/draft-package/apply') }}
+                    {{ csrfInput() }}
+                    {{ hiddenInput('draftPackageId', draftPackage.id) }}
+
+                    <div style="display:flex; justify-content: space-between">
+                        <div style="display: flex">
+                            <div>
+                                {{ forms.lightswitchField({
+                                    label: 'Backup database'|t('_extras'),
+                                    name: 'backupDb',
+                                    on: true
+                                }) }}
+                            </div>
+
+                            <div style="margin-left: 24px;">
+                                {{ forms.selectField({
+                                    label: 'After success'|t('_extras'),
+                                    name: 'afterSuccess',
+                                    options: [
+                                        {label: 'No action'|t('_extras'), value: ''},
+                                        {label: 'Detach package from elements'|t('_extras'), value: 'detach'},
+                                        {label: 'Delete package'|t('_extras'), value: 'delete'},
+                                    ],
+                                    value: '',
+                                    first: true
+                                }) }}
+                            </div>
+                        </div>
+
                         <div>
-                            {{ forms.lightswitchField({
-                                label: 'Backup database'|t('_extras'),
-                                name: 'backupDb',
-                                on: true
-                            }) }}
-                        </div>
-
-                        <div style="margin-left: 24px;">
-                            {{ forms.selectField({
-                                label: 'After success'|t('_extras'),
-                                name: 'afterSuccess',
-                                options: [
-                                    {label: 'No action'|t('_extras'), value: ''},
-                                    {label: 'Detach package from elements'|t('_extras'), value: 'detach'},
-                                    {label: 'Delete package'|t('_extras'), value: 'delete'},
-                                ],
-                                value: '',
-                                first: true
-                            }) }}
+                            <button class="btn submit">{{ 'Apply Drafts'|t('_extras') }}</button>
                         </div>
                     </div>
 
-                    <div>
-                        <button class="btn submit">{{ 'Apply Drafts'|t('_extras') }}</button>
-                    </div>
-                </div>
-
-            </form>
+                </form>
+            {% else %}
+                <p>
+                    {{ 'Drafts cannot be applied because of errors.'|t('_extras') }}
+                </p>
+            {% endif %}
         {% else %}
             <p>
-                {{ 'Drafts cannot be applied because of errors.'|t('_extras') }}
+                {{ 'No drafts in this package.'|t('_extras') }}
             </p>
         {% endif %}
 
     </div>
 {% else %}
-    No packages available.
+    {{ 'No packages available.'|t('_extras') }}
 {% endfor %}
 
 {% css %}

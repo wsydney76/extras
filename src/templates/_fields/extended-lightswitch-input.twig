@@ -1,0 +1,26 @@
+{% import '_includes/forms.twig' as forms %}
+
+
+
+{% set isPrimarySite = craft.app.sites.primarySite.handle == selectedSite.handle %}
+
+{% namespace field.handle %}
+
+    <div style="display: flex; align-content: center">
+
+            <div style="padding-top: 6px;">
+                {{ forms.lightswitch({
+                    name: 'selected',
+                    on: value.selected ?? false
+                }) }}
+            </div>
+
+        <div style="margin-left: 10px">
+            {{ forms.text({
+                name: 'comment',
+                value: value.comment ?? ''
+            }) }}
+        </div>
+    </div>
+
+{% endnamespace %}
