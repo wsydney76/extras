@@ -338,7 +338,7 @@ class ExtrasPlugin extends Plugin
                         ) &&
                         $event->element->url) {
 
-                        $viewLinkHtml = sprintf('<li><a href="%s" class="go" title="%s" target="_blank"></a></li>',
+                        $viewLinkHtml = sprintf('<div style="padding-right: 10px; padding-top:1.5px;"><a href="%s" class="go" title="%s" target="_blank"></a></div>',
                             $event->element->url,
                             Craft::t('_extras', 'View')
                         );
@@ -528,6 +528,7 @@ class ExtrasPlugin extends Plugin
 
     private function insertViewLink($givenHtml, $htmlContent): false|string
     {
+
         // Load the given HTML content into a DOMDocument object
         $dom = new DOMDocument();
         // Load HTML with proper encoding handling
@@ -536,17 +537,16 @@ class ExtrasPlugin extends Plugin
         // Find the target div to append the new content
         // TODO: This does not work for singles
         $xpath = new DOMXPath($dom);
-        $cardTargetDiv = $xpath->query("//ul[contains(@class, 'flex') and contains(@class, 'gap-xs')]")->item(0);
+        $cardTargetDiv = $xpath->query("//div[contains(@class, 'card-actions')]")->item(0);
+
 
         if ($cardTargetDiv) {
-            // Create a new div element for custom content
-            // $newDiv = $dom->createElement('div', $htmlContent);
+            // Create a new fragment for custom content
             $fragment = $dom->createDocumentFragment();
             $fragment->appendXML($htmlContent);
 
-            // Append the new content after the card-actions div inner content
-            $cardTargetDiv->appendChild($fragment);
-            // $cardTargetDiv->setAttribute('style', 'align-items: center;');
+            // Prepend the new content as the first child of the target div
+            $cardTargetDiv->insertBefore($fragment, $cardTargetDiv->firstChild);
 
             // Save and return the modified HTML
             return $dom->saveHTML();
