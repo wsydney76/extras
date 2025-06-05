@@ -56,6 +56,7 @@ use wsydney76\extras\utilities\DraftPackageUtility;
 use wsydney76\extras\utilities\UpgradeInventory;
 use wsydney76\extras\utilities\VolumesInventory;
 use wsydney76\extras\variables\ExtrasVariable;
+use wsydney76\extras\web\assets\ckeditor\CkeditorPlugins;
 use wsydney76\extras\web\assets\cpassets\CustomCpAsset;
 use wsydney76\extras\web\assets\sidebarvisibility\SidebarVisibilityAsset;
 use wsydney76\extras\web\twig\ExtrasExtension;
@@ -125,6 +126,7 @@ class ExtrasPlugin extends Plugin
                 $this->initFieldLayoutElements();
                 $this->initUtilities();
                 $this->initPreviewTargets();
+                $this->initCkeditorPlugins();
             } else {
                 $this->registerSiteTemplateRoot();
             }
@@ -385,6 +387,13 @@ class ExtrasPlugin extends Plugin
                     $event->types[] = Styles::class;
                 });
             Craft::$app->view->registerTwigExtension(new StylesExtension());
+        }
+    }
+
+    private function initCkeditorPlugins()
+    {
+        if ($this->getSettings()->enableCkeditorPlugins && Craft::$app->plugins->isPluginEnabled('ckeditor')) {
+            \craft\ckeditor\Plugin::registerCkeditorPackage(CkeditorPlugins::class);
         }
     }
 

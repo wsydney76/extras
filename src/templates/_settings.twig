@@ -173,6 +173,14 @@
         warning: (config.enableViewLinkInCards is defined ? _self.configWarning('enableViewLinkInCards')) ~ ' Deprecated, causes the element selection modal to hang in Craft 5.6.? when adding a new element to a field. Use disclosure menu "Show in new tab" instead.'
     }) }}
 
+    {{ forms.lightswitchField({
+        label: 'Enable CKEditor plugins'|t('_extras'),
+        name: 'enableCkeditorPlugins',
+        on: settings.enableCkeditorPlugins,
+        onLabel: 'Enable Highlight/Mentions CKEditorPlugins'|t('_extras'),
+        warning: (config.enableCkeditorPlugins is defined ? _self.configWarning('enableCkeditorPlugins')) ~ (not craft.app.plugins.pluginEnabled('ckeditor') ? 'CKEditor is not enabled'|t('_extras'))
+    }) }}
+
     {{ forms.selectField({
         label: 'Enable Inspect Preview Target'|t('_extras'),
         name: 'enableInspectPreviewTarget',

@@ -47,6 +47,8 @@ class Settings extends Model
 
     public bool $enableViewLinkInCards = false;
 
+    public bool $enableCkeditorPlugins = false;
+
     // never, devMode, always
     public string $enableInspectPreviewTarget = 'no';
 

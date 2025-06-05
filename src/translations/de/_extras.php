@@ -208,4 +208,7 @@ return [
     'Error validating in site' => 'Fehler bei der Validierung in Site',
     'Yes' => 'Ja',
     'No' => 'Nein',
+    'Enable CKEditor plugins' => 'CKEditor Plugins aktivieren',
+    'Enable Highlight/Mentions CKEditorPlugins' => 'Highlight/Mentions CKEditorPlugins aktivieren',
+    'CKEditor is not enabled' => 'CKEditor ist nicht aktiviert',
 ];

@@ -305,6 +305,88 @@ Add a `extrasFontSize` plain text custom field to the user field layout, and let
 
 Enables `craft._extras` variable. Superseded by Craft's `fieldValueSql` function.
 
+#### CKEditor plugins
+
+Enable selected additional CKEditor plugins.
+
+* Highlight: Highlight text in the editor, useful for marking text. Add the 'Highlight' button to the toolbar in the field settings.
+  In order to use this, you have to provide a custom CSS file that defines the styles for the highlight classes.
+
+E.g.
+
+```css
+mark.pen-red {
+    color: red;
+}
+mark.pen-green {
+    color: green;
+}
+mark.marker-yellow {
+    background-color: yellow !important;
+}
+mark.marker-green {
+    background-color: green  !important;
+    color: white;
+}
+mark.marker-pink{
+    background-color: pink  !important;
+}
+mark.marker-blue{
+    background-color: blue  !important;
+    color: white;
+}
+```
+
+* Mentions: Enables smart autocompletion based on user input.
+  This requires a CKEditor config setting that defines the mention items. See [docs](https://ckeditor.com/docs/ckeditor5/latest/features/mentions.html).
+
+Options can be dynamically loaded via an event:
+
+
+```php
+use craft\ckeditor\Field;
+...
+Event::on(
+    Field::class,
+    Field::EVENT_MODIFY_CONFIG,
+    function(ModifyConfigEvent $event) {
+        if ($event->sender->handle !== 'body' || $event->ckeConfig->name !== 'Simple') {
+            return;
+        }
+
+        $event->ckeConfig->options['mention'] = [
+            'feeds' => [
+                [
+                    'feed' => Entry::find()
+                        ->section('company')
+                        ->collect()
+                        ->map(fn($entry) =>
+                        [
+                            'id' => '@' . strstr($entry->email, '@', true),
+                            'text' => "$entry->title ($entry->email)",
+                        ]
+                        ),
+                    'marker' => '@',
+                    'minimumCharacters' => 2,
+                ],
+            ],
+        ];
+
+
+    }
+);
+```
+
+where `id` is the value that triggers the mention, and `text` is what will be inserted.
+
+Add CSS to style the mentions, if required:
+
+```css
+span.mention {
+    background-color: #eeeeee;
+}
+```
+
 ### CLI
 
 Check for runtime errors in templates. Also forces the creation of image transforms, if the `generateTransformsBeforePageLoad` config setting is enabled.
