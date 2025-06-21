@@ -63,6 +63,7 @@ use wsydney76\extras\web\twig\ExtrasExtension;
 use wsydney76\extras\web\twig\StylesExtension;
 use wsydney76\extras\widgets\MyProvisionsalDraftsWidget;
 use function sprintf;
+use function version_compare;
 
 /**
  * Extras plugin
@@ -166,6 +167,10 @@ class ExtrasPlugin extends Plugin
     private function initSidebarVisibility(): void
     {
         if ($this->getSettings()->enableSidebarVisibility) {
+            if(version_compare(Craft::$app->getVersion(), '5.8', 'ge')) {
+                // Core feature in Craft 5.8+
+                return;
+            }
             $this->view->registerAssetBundle(SidebarVisibilityAsset::class);
         }
     }

@@ -61,8 +61,49 @@
 
 
         </table>
-
         {% set layout = entry.type.fieldLayout %}
+        {% set contentBlockFields = layout.visibleCustomFields(entry)|filter(f => className(f) == 'craft\\fields\\ContentBlock') %}
+
+        {% for contentBlockField in contentBlockFields %}
+            {% set element = entry.getFieldValue(contentBlockField.handle) %}
+            <table style="margin-top:12px; margin-left: 12px;">
+                {{ _self.property('Handle', "#{contentBlockField.handle}") }}
+                {% if level == 1 %}
+                    {{ _self.property('Site', "#{entry.site.id} #{element.site.name}") }}
+                {% endif %}
+                {{ _self.property('ID', element.id) }}
+                {{ _self.property('Canonical ID', element.canonicalId) }}
+
+                {{ _self.property('Owner ID', element.ownerId) }}
+                {{ _self.property('Primary Owner ID', element.primaryOwnerId) }}
+
+
+                {# {% if entry.draftId is defined and entry.draftId %}
+                    {{ _self.property('Draft ID', entry.draftId) }}
+                {% endif %}
+
+                {{ _self.property('Titel', entry.title ?? 'n/a') }}
+                {{ _self.property('Slug', entry.slug ?? 'n/a') }}
+                {{ _self.property('Status', entry.status ?? 'n/a') }}
+                #}
+                {% set contentRow = craft.query
+                    .select('content')
+                    .from('{{%elements_sites}}')
+                    .where({
+                        elementId: element.id,
+                        siteId: element.siteId
+                    })
+                .one %}
+
+                {{ _self.property('Content', contentRow.content, 'json') }}
+
+
+            </table>
+
+
+        {% endfor %}
+
+
 
         {# Assuming that matrix field handles are not overwritten #}
         {% set matrixFields = layout.visibleCustomFields(entry)|filter(f => className(f) == 'craft\\fields\\Matrix') %}
@@ -80,6 +121,8 @@
 
         {% endfor %}
 
+
+        
         {# Assuming that CKEditor field handles are not overwritten #}
         {% set ckEditorFields = layout.visibleCustomFields(entry)|filter(f => className(f) == 'craft\\ckeditor\\Field') %}
 

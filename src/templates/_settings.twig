@@ -12,7 +12,8 @@
         name: 'enableSidebarVisibility',
         on: settings.enableSidebarVisibility,
         onLabel: 'Make heading in element indexes collabsible'|t('_extras'),
-        warning: config.enableSidebarVisibility is defined ? _self.configWarning('enableSidebarVisibility')
+        warning: (config.enableSidebarVisibility is defined ? _self.configWarning('enableSidebarVisibility')) ~
+         'Ignored in Craft 5.8+ (core feature)'|t('_extras')
     }) }}
 
     {{ forms.lightswitchField({
