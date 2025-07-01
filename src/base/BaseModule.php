@@ -447,7 +447,6 @@ class BaseModule extends Module
                     $event->handled = true;
                 }
             });
-
     }
 
     protected function registerLogTarget(array $config)
@@ -467,7 +466,7 @@ class BaseModule extends Module
         Craft::getLogger()->dispatcher->targets[] = new MonologTarget($config);
     }
 
-    protected function registerNestedElementSourcesForRelation(string $section, string $relatedSection, string $fieldHandle): void
+    protected function registerNestedEntriesSourcesForRelation(string $section, string $relatedSection, string $fieldHandle): void
     {
         Event::on(
             Entry::class,
@@ -489,6 +488,43 @@ class BaseModule extends Module
                                     'sectionId' => $section->id,
                                     'editable' => true,
                                     $fieldHandle => $entry->id
+                                ],
+                            ]
+                            )->toArray();
+                    }
+                }
+            }
+        );
+    }
+
+
+    protected function registerNestedEntriesSourcesForDropdown(string $section, string $fieldHandle, bool $showEmpty = false): void
+    {
+        Event::on(
+            Entry::class,
+            Element::EVENT_REGISTER_SOURCES,
+            function(RegisterElementSourcesEvent $event) use ($section, $fieldHandle, $showEmpty): void {
+
+                $section = Craft::$app->entries->getSectionByHandle($section);
+                $field = Craft::$app->fields->getFieldByHandle($fieldHandle);
+
+
+                foreach ($event->sources as &$source) {
+                    if (isset($source['key']) && $source['key'] === "section:{$section->uid}") {
+                        $options = collect($field->settings['options'] ?? []);
+
+                        if (!$showEmpty) {
+                            $options = $options->filter(fn($option) => $option['value'] !== '');
+                        }
+
+                        $source['nested'] = $options
+                            ->map(fn($option) => [
+                                'key' => "nested-$fieldHandle-{$option['value']}",
+                                'label' => $option['label'],
+                                'criteria' => [
+                                    'sectionId' => $section->id,
+                                    'editable' => true,
+                                    $fieldHandle => $option['value']
                                 ],
                             ]
                             )->toArray();
