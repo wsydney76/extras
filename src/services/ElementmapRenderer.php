@@ -13,6 +13,7 @@ use craft\commerce\elements\db\ProductQuery;
 use craft\commerce\elements\db\VariantQuery;
 use craft\commerce\elements\Product;
 use craft\db\Query;
+use craft\elements\ContentBlock;
 use craft\elements\db\AssetQuery;
 use craft\elements\db\CategoryQuery;
 use craft\elements\db\EntryQuery;
@@ -26,6 +27,7 @@ use wsydney76\extras\events\ElementMapDataEvent;
 use wsydney76\extras\ExtrasPlugin;
 use wsydney76\extras\models\Settings;
 use yii\base\Component;
+use function version_compare;
 
 class ElementmapRenderer extends Component
 {
@@ -141,6 +143,14 @@ class ElementmapRenderer extends Component
             $ids = array_merge($ids, $this->getNestedEntryIds($nestedId));
         }
 
+        if (version_compare(Craft::$app->getVersion(), '5.8.0', '>=')) {
+            $nestedIds = ContentBlock::find()->ownerId($elementId)->site('*')->ids();
+            foreach ($nestedIds as $nestedId) {
+                $ids[] = $nestedId;
+                $ids = array_merge($ids, $this->getNestedEntryIds($nestedId));
+            }
+        }
+
         return $ids;
     }
 
@@ -221,8 +231,20 @@ class ElementmapRenderer extends Component
             ->leftJoin('{{%elements}} e', '[[r.' . $tocol . ']] = [[e.id]]')
             ->where($conditions);
 
-
         $elements = $query->all();
+
+        // Replace content blocks with their owning elements.
+        if (version_compare(Craft::$app->getVersion(), '5.8.0', '>=')) {
+            foreach ($elements as $i => $element) {
+                if ($element['type'] === 'craft\\elements\\ContentBlock') {
+                    // get owning element for content blocks
+                    $block = Craft::$app->getElements()->getElementById($element['id']);
+                    $owner = $block->getOwner();
+                    $elements[$i]['type'] = $owner::class;
+                    $elements[$i]['id'] = $owner->id;
+                }
+            }
+        }
 
         $elements = $this->groupByType($elements);
 
