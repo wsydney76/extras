@@ -17,6 +17,7 @@ use craft\events\ElementIndexTableAttributeEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterCpNavItemsEvent;
 use craft\events\RegisterElementActionsEvent;
+use craft\events\RegisterElementSourcesEvent;
 use craft\events\RegisterElementTableAttributesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\Html;
@@ -464,5 +465,36 @@ class BaseModule extends Module
         ];
 
         Craft::getLogger()->dispatcher->targets[] = new MonologTarget($config);
+    }
+
+    protected function registerNestedElementSourcesForRelation(string $section, string $relatedSection, string $fieldHandle): void
+    {
+        Event::on(
+            Entry::class,
+            Element::EVENT_REGISTER_SOURCES,
+            function(RegisterElementSourcesEvent $event) use ($section, $relatedSection, $fieldHandle): void {
+
+                $section = Craft::$app->entries->getSectionByHandle($section);
+
+                foreach ($event->sources as &$source) {
+                    if (isset($source['key']) && $source['key'] === "section:{$section->uid}") {
+                        $source['nested'] = Entry::find()
+                            ->section($relatedSection)
+                            ->orderBy('title')
+                            ->collect()
+                            ->map(fn($entry) => [
+                                'key' => "nested-{$section->handle}-{$entry->uid}",
+                                'label' => $entry->title,
+                                'criteria' => [
+                                    'sectionId' => $section->id,
+                                    'editable' => true,
+                                    $fieldHandle => $entry->id
+                                ],
+                            ]
+                            )->toArray();
+                    }
+                }
+            }
+        );
     }
 }
