@@ -407,6 +407,12 @@ Check if entries still validate. Useful after config changes or updated validati
 ddev craft _extras/quality/validate
 ```
 
+Set missing mimetypes for assets. This is useful after upgrading to Craft 5.8, as it introduced a new mimetype detection mechanism that may not have been applied to existing assets.
+
+```bash
+ddev craft _extras/quality/set-missing-mimetypes
+```
+
 Craft 5 migration, detect merge candidates for field instances. Superseded by Craft's own migration tool.
 
 ```bash

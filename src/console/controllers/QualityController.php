@@ -84,7 +84,7 @@ class QualityController extends Controller
         Console::output("Checking all live elements for runtime errors...");
 
 
-        $elements =  $this->commerce ? $this->getProductsFromParams() : $this->getEntriesFromParams();
+        $elements = $this->commerce ? $this->getProductsFromParams() : $this->getEntriesFromParams();
 
         $client = Craft::createGuzzleClient();
 
@@ -238,7 +238,7 @@ class QualityController extends Controller
         }
 
         Console::output('---------------------------');
-        Console::output("Total: " . $totalCount );
+        Console::output("Total: " . $totalCount);
 
 
         return ExitCode::OK;
@@ -307,7 +307,7 @@ class QualityController extends Controller
             $query->section($this->section);
         }
 
-      return $query->all();
+        return $query->all();
     }
 
     protected function getProductsFromParams(): array
@@ -322,7 +322,7 @@ class QualityController extends Controller
             $this->type = explode(',', $this->type);
             // check valid section
             foreach ($this->type as $type) {
-                if (! Plugin::getInstance()->getProductTypes()->getProductTypeByHandle($type)) {
+                if (!Plugin::getInstance()->getProductTypes()->getProductTypeByHandle($type)) {
                     Console::error("Type $type not found.");
                     return [];
                 }
@@ -332,7 +332,72 @@ class QualityController extends Controller
         }
 
         return $query->all();
+    }
+    
+    public function actionSetMissingMimetypes(): int
+    {
+        $lookup = [
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'svg' => 'image/svg+xml',
+            'avif' => 'image/avif',
+            'tiff' => 'image/tiff',
+            'tif' => 'image/tiff',
+            'bmp' => 'image/bmp',
+            'ico' => 'image/x-icon',
+            'pdf' => 'application/pdf',
+            'mp4' => 'video/mp4',
+            'mov' => 'video/quicktime',
+            'avi' => 'video/x-msvideo',
+            'wmv' => 'video/x-ms-wmv',
+            'mkv' => 'video/x-matroska',
+            'mp3' => 'audio/mpeg',
+            'wav' => 'audio/wav',
+            'ogg' => 'audio/ogg',
+            'webm' => 'video/webm',
+            // Add more as needed
+        ];
 
+        $assets = Asset::find()
+            ->where(['mimetype' => null])
+            ->orderBy('id')
+            ->all();
+
+        Console::output(count($assets) . ' assets found without mimetype set.');
+
+        $missingMimetypes = [];
+
+        foreach ($assets as $i => $asset) {
+            $filename = $asset->filename;
+            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            $mimetype = $lookup[$ext] ?? null;
+
+            Console::stdout(($i + 1) . '/' . count($assets) . ': ' . $filename);
+
+            if ($mimetype) {
+                $asset->mimetype = $mimetype;
+                if (!Craft::$app->getElements()->saveElement($asset)) {
+                    Console::error(' Error saving asset: ' . json_encode($asset->getErrors()));
+                } else {
+                    Console::output(' => ' . $mimetype);
+                }
+            } else {
+                Console::output(' => No mimetype found for extension: ' . $ext);
+                $missingMimetypes[] = $filename;
+            }
+        }
+
+        if (!empty($missingMimetypes)) {
+            Console::output("Assets with missing mimetypes:");
+            foreach ($missingMimetypes as $missing) {
+                Console::output(" - $missing");
+            }
+        }
+
+        return ExitCode::OK;
     }
 
 }
