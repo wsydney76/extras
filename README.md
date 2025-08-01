@@ -58,6 +58,19 @@ Also, things may break in future versions of Craft, including minor versions, as
 
 No warranty, no support, no liability.
 
+## Updates
+
+Update :2025-07-31: Provisionally added support for detecting relationships via the new Content Block field.
+
+Update: 2025-04-14: Started some cleanup, simplified some code, removed some unused stuff, added some settings and permission checks. Not yet fully tested, but should (mostly) work.
+
+Update: 2025-04-19: Added the Draft Package utility.
+
+Update: 2025-04-22: Added cross-site validation.
+
+Also pushed a Craft 5 version of the [Content Overview Plugin](https://github.com/wsydney76/craft-contentoverview/tree/craft5), that should work with this version.
+
+
 ### Relationships
 
 Forked from the abandoned elementmaps plugin.
@@ -79,20 +92,6 @@ In complex multi-site, multi-user, Commerce settings or deeply nested content mo
 Also, it can only detect relationships in the `relations` database table, so it won't work for links created by reference tags, or in CKEditor inline links.
 
 Only handles Craft's own element types, Products/Variants from Craft Commerce, and (on special request) the Campaign element type from Campaign plugin.
-
-
-
-### Updates
-
-Update 2025-07-31: Provisionally added support for detecting relationships via the new Content Block field.
-
-Update: 2025-04-14: Started some cleanup, simplified some code, removed some unused stuff, added some settings and permission checks. Not yet fully tested, but should (mostly) work. 
-
-Update: 2025-04-19: Added the Draft Package utility.
-
-Update: 2025-04-22: Added cross-site validation.
-
-Also pushed a Craft 5 version of the [Content Overview Plugin](https://github.com/wsydney76/craft-contentoverview/tree/craft5), that should work with this version.
 
 
 ### Drafts Helpers
