@@ -80,6 +80,12 @@ Also, it can only detect relationships in the `relations` database table, so it 
 
 Only handles Craft's own element types, Products/Variants from Craft Commerce, and (on special request) the Campaign element type from Campaign plugin.
 
+
+
+### Updates
+
+Update 2025-07-31: Provisionally added support for detecting relationships via the new Content Block field.
+
 Update: 2025-04-14: Started some cleanup, simplified some code, removed some unused stuff, added some settings and permission checks. Not yet fully tested, but should (mostly) work. 
 
 Update: 2025-04-19: Added the Draft Package utility.
