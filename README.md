@@ -81,9 +81,17 @@ Show relationships between elements.
 
 ![Relationships Sidebar](screenshots/relationships1.jpg)    
 
+Display icons, colors, nested entry types, link to main element or nested entry. Display image thumbnails.
+
+![Relationships Example 2](screenshots/relationships3.jpg)
+
+Also display drafts, with draft creator.
+
 </div>
 
 ![Relationships Element Index](screenshots/relationships2.jpg)
+
+
 
 Note: While this is actually the most used feature, it is currently only used/tested in limited use cases.
 
