@@ -7,6 +7,8 @@
 
 namespace wsydney76\extras\services;
 
+use benf\neo\elements\Block;
+use benf\neo\elements\db\BlockQuery;
 use Craft;
 use craft\base\Element;
 use craft\base\ElementInterface;
@@ -48,6 +50,7 @@ class ElementmapRenderer extends Component
         'craft\commerce\elements\Product' => 'getProductElements',
         'craft\commerce\elements\Variant' => 'getVariantElements',
         'putyourlightson\campaign\elements\CampaignElement' => 'getCampaignElements',
+        'benf\neo\elements\Block' => 'getNeoBlockElements'
     ];
 
     const ELEMENT_TYPE_SORT_MAP = [
@@ -61,6 +64,7 @@ class ElementmapRenderer extends Component
         'craft\commerce\elements\Product' => '30',
         'craft\commerce\elements\Variant' => '35',
         'putyourlightson\campaign\elements\CampaignElement' => '40',
+        'benf\neo\elements\Block' => '02'
     ];
 
     public const EVENT_ELEMENT_MAP_DATA = 'elementmap_data';
@@ -155,6 +159,15 @@ class ElementmapRenderer extends Component
         foreach ($nestedIds as $nestedId) {
             $ids[] = $nestedId;
             $ids = array_merge($ids, $this->getNestedEntryIds($nestedId));
+        }
+
+        // Also check for Neo Blocks
+        if (Craft::$app->plugins->isPluginEnabled('neo')) {
+            $nestedIds = Block::find()->ownerId($elementId)->site('*')->ids();
+            foreach ($nestedIds as $nestedId) {
+                $ids[] = $nestedId;
+                $ids = array_merge($ids, $this->getNestedEntryIds($nestedId));
+            }
         }
 
         if (version_compare(Craft::$app->getVersion(), '5.8.0', '>=')) {
@@ -585,7 +598,7 @@ class ElementmapRenderer extends Component
                 'id' => $element->id,
                 'icon' => $icon,
                 'color' => 'var(--black)',
-                'title' => ($topLevelElement->title ?? $topLevelElement->name ?? $topLevelElement->id) . $this->getExtraText($topLevelElement,  'Address'),
+                'title' => ($topLevelElement->title ?? $topLevelElement->name ?? $topLevelElement->id) . $this->getExtraText($topLevelElement,  $title),
                 'url' => $topLevelElement->cpEditUrl,
                 'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)] . $sectionName,
                 'canView' => $element->canView($this->user)
@@ -595,6 +608,73 @@ class ElementmapRenderer extends Component
         return $results;
     }
 
+    private function getNeoBlockElements($elementIds, $siteId)
+    {
+
+
+        $elements = $this->getElementsForType(
+            new BlockQuery('benf\\neo\\elements\\Block'),
+            $elementIds,
+            $siteId);
+
+        $results = [];
+
+        // $linkToNestedElement = $this->settings->linkToNestedElement;
+
+
+
+        /** @var Entry $element */
+        foreach ($elements as $element) {
+
+            $title = $element->title;
+
+            $topLevelElement = $element->getRootOwner();
+
+            // TODO: Cleanup, this is a mess...
+            $sectionName = 'n/a';
+
+            /*if ($element instanceof Entry) {
+                if ($element->section) {
+                    $sectionName = Craft::t('site', $element->section->name);
+                } else {
+                    $topLevelElement = $element->getRootOwner();
+
+                    if ($topLevelElement) {
+                        $title = $topLevelElement->title . ' -> ' . ($title ?: $this->getNestedElementText($element));
+                        if ($topLevelElement instanceof Entry && $topLevelElement->section) {
+                            $sectionName = Craft::t('site', $topLevelElement->section->name) . ' -> ' . Craft::t('site', $element->type->name);
+                        } elseif ($topLevelElement instanceof Product) {
+                            $sectionName = Craft::t('site', $topLevelElement->type->name);
+                        } elseif ($topLevelElement instanceof CampaignElement) {
+                            $sectionName = Craft::t('site', $topLevelElement->getCampaignType()->name);
+                        } elseif ($topLevelElement instanceof User) {
+                            $title = $topLevelElement->name . ' -> ' . $this->getNestedElementText($element);
+                        }
+
+                    } else {
+                        $sectionName = ' -> ' . $element->type->name;
+                    }
+                }
+            }*/
+
+
+            $icon = 'wand';
+
+            $color = 'var(--black)';
+
+            $results[] = [
+                'id' => $element->id,
+                'icon' => $icon,
+                'color' => $color,
+                'title' => ($topLevelElement->title ?? $topLevelElement->name ?? $topLevelElement->id) . $this->getExtraText($topLevelElement,  'Neo'),
+                'url' => $topLevelElement->cpEditUrl,
+                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)] . $sectionName,
+                'canView' => $element->canView($this->user)
+            ];
+        }
+
+        return $results;
+    }
 
     /**
      * Retrieves globalset elements based on a set of IDs.
