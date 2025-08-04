@@ -490,7 +490,7 @@ class ElementmapRenderer extends Component
         /** @var Entry $element */
         foreach ($elements as $element) {
 
-            $rootOwner = $element->getRootOwner();
+            $rootOwner = $this->getRootOwner($element);
             $title = $this->getTitleForElement($element, $rootOwner);
 
             $icon = $element instanceof Entry && $element->type->icon ?
@@ -527,7 +527,7 @@ class ElementmapRenderer extends Component
         /** @var Entry $element */
         foreach ($elements as $element) {
 
-            $rootOwner = $element->getRootOwner();
+            $rootOwner = $this->getRootOwner($element);
             if (Craft::$app->plugins->isPluginEnabled('commerce') && $rootOwner instanceof Order) {
                 continue;
             }
@@ -563,7 +563,7 @@ class ElementmapRenderer extends Component
         /** @var Entry $element */
         foreach ($elements as $element) {
 
-            $rootOwner = $element->getRootOwner();
+            $rootOwner = $this->getRootOwner($element);
             $title = $this->getTitleForElement($element, $rootOwner);
 
             $results[] = [
@@ -884,5 +884,10 @@ class ElementmapRenderer extends Component
         }
 
         return $title . $this->getExtraText($rootOwner, $rootOwner->section->name ?? $rootOwner->type->name ?? '');
+    }
+
+    protected function getRootOwner(ElementInterface $element): ElementInterface
+    {
+        return $this->settings->showRootOwner ? $element->getRootOwner() : $element;
     }
 }

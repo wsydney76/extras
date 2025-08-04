@@ -60,6 +60,18 @@
 
     <div style="margin-top:24px; margin-left: 48px;">
         {{ forms.lightswitchField({
+            label: 'Show root owners?'|t('_extras'),
+            name: 'showRootOwner',
+            on: settings.showRootOwner,
+            onLabel: 'Show root owners for nested elements'|t('_extras'),
+            offLabel: 'Show nested element only'|t('_extras'),
+            tip: 'Showing root owners improves user experience significantly, but adds a lot of overhead.'|t('_extras'),
+            warning: config.showRootOwner is defined ? _self.configWarning('showRootOwner'),
+        }) }}
+    </div>
+
+    <div style="margin-top:24px; margin-left: 48px;">
+        {{ forms.lightswitchField({
             label: 'Show revisions?'|t('_extras'),
             name: 'showRevisions',
             on: settings.showRevisions,

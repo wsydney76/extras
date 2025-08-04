@@ -60,7 +60,9 @@ No warranty, no support, no liability.
 
 ## Updates
 
-Update :2025-07-31: Provisionally added support for detecting relationships via the new Content Block field.
+Update: 2025-08-04: Started refactoring Elementmap (relationships) code, added Neo support. Work in progress.
+
+Update: 2025-07-31: Provisionally added support for detecting relationships via the new Content Block field.
 
 Update: 2025-04-14: Started some cleanup, simplified some code, removed some unused stuff, added some settings and permission checks. Not yet fully tested, but should (mostly) work.
 
