@@ -14,14 +14,13 @@ use craft\base\Element;
 use craft\base\ElementInterface;
 use craft\commerce\elements\db\ProductQuery;
 use craft\commerce\elements\db\VariantQuery;
-use craft\commerce\elements\Product;
+use craft\commerce\elements\Order;
 use craft\db\Query;
 use craft\elements\Address;
 use craft\elements\ContentBlock;
 use craft\elements\db\AddressQuery;
 use craft\elements\db\AssetQuery;
 use craft\elements\db\CategoryQuery;
-use craft\elements\db\ElementQuery;
 use craft\elements\db\EntryQuery;
 use craft\elements\db\GlobalSetQuery;
 use craft\elements\db\TagQuery;
@@ -43,7 +42,7 @@ class ElementmapRenderer extends Component
         'craft\elements\Entry' => 'getEntryElements',
         'craft\elements\GlobalSet' => 'getGlobalSetElements',
         'craft\elements\Category' => 'getCategoryElements',
-        'craft\elements\Tag' => 'getTagElements',
+        // 'craft\elements\Tag' => 'getTagElements',
         'craft\elements\Asset' => 'getAssetElements',
         'craft\elements\User' => 'getUserElements',
         'craft\elements\Address' => 'getAddressElements',
@@ -446,7 +445,6 @@ class ElementmapRenderer extends Component
 
         // Find all elements that have any of these elements as targets.
         $relationships = $this->getRelationships($targets, $siteId, true);
-
         // Retrieve the underlying elements from the relationships.
         return $this->getElementMapData($relationships, $siteId);
     }
@@ -492,37 +490,8 @@ class ElementmapRenderer extends Component
         /** @var Entry $element */
         foreach ($elements as $element) {
 
-            $title = $element->title;
-
-            // TODO: Cleanup, this is a mess...
-            $sectionName = 'n/a';
-
-            $topLevelElement = $element;
-
-            if ($element instanceof Entry) {
-                if ($element->section) {
-                    $sectionName = Craft::t('site', $element->section->name);
-                } else {
-                    $topLevelElement = $element->getRootOwner();
-
-                    if ($topLevelElement) {
-                        $title = $topLevelElement->title . ' -> ' . ($title ?: $this->getNestedElementText($element));
-                        if ($topLevelElement instanceof Entry && $topLevelElement->section) {
-                            $sectionName = Craft::t('site', $topLevelElement->section->name) . ' -> ' . Craft::t('site', $element->type->name);
-                        } elseif ($topLevelElement instanceof Product) {
-                            $sectionName = Craft::t('site', $topLevelElement->type->name);
-                        } elseif ($topLevelElement instanceof CampaignElement) {
-                            $sectionName = Craft::t('site', $topLevelElement->getCampaignType()->name);
-                        } elseif ($topLevelElement instanceof User) {
-                            $title = $topLevelElement->name . ' -> ' . $this->getNestedElementText($element);
-                        }
-
-                    } else {
-                        $sectionName = ' -> ' . $element->type->name;
-                    }
-                }
-            }
-
+            $rootOwner = $element->getRootOwner();
+            $title = $this->getTitleForElement($element, $rootOwner);
 
             $icon = $element instanceof Entry && $element->type->icon ?
                 "@appicons/{$element->type->icon}.svg" :
@@ -536,9 +505,9 @@ class ElementmapRenderer extends Component
                 'id' => $element->id,
                 'icon' => $icon,
                 'color' => $color,
-                'title' => $title . $this->getExtraText($topLevelElement, $topLevelElement->type->name ?? 'n/a'),
-                'url' => $linkToNestedElement ? $element->cpEditUrl : $topLevelElement->cpEditUrl,
-                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)] . $sectionName,
+                'title' => $title,
+                'url' => $linkToNestedElement ? $element->cpEditUrl : $rootOwner->cpEditUrl,
+                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)],
                 'canView' => $element->canView($this->user)
             ];
         }
@@ -558,49 +527,21 @@ class ElementmapRenderer extends Component
         /** @var Entry $element */
         foreach ($elements as $element) {
 
-            $title = $element->title;
+            $rootOwner = $element->getRootOwner();
+            if (Craft::$app->plugins->isPluginEnabled('commerce') && $rootOwner instanceof Order) {
+                continue;
+            }
 
-            // TODO: Cleanup, this is a mess...
-            $sectionName = 'n/a';
-
-            $topLevelElement = $element->getRootOwner();
-
-            /*if ($element instanceof Entry) {
-                if ($element->section) {
-                    $sectionName = Craft::t('site', $element->section->name);
-                } else {
-                    $topLevelElement = $element->getRootOwner();
-
-                    if ($topLevelElement) {
-                        $title = $topLevelElement->title . ' -> ' . ($title ?: $this->getNestedElementText($element));
-                        if ($topLevelElement instanceof Entry && $topLevelElement->section) {
-                            $sectionName = Craft::t('site', $topLevelElement->section->name) . ' -> ' . Craft::t('site', $element->type->name);
-                        } elseif ($topLevelElement instanceof Product) {
-                            $sectionName = Craft::t('site', $topLevelElement->type->name);
-                        } elseif ($topLevelElement instanceof CampaignElement) {
-                            $sectionName = Craft::t('site', $topLevelElement->getCampaignType()->name);
-                        } elseif ($topLevelElement instanceof User) {
-                            $title = $topLevelElement->name . ' -> ' . $this->getNestedElementText($element);
-                        }
-
-                    } else {
-                        $sectionName = ' -> ' . $element->type->name;
-                    }
-                }
-            }*/
-
-
-            $icon =
-                '@appicons/gear.svg';
+            $title = $this->getTitleForElement($element, $rootOwner);
 
 
             $results[] = [
                 'id' => $element->id,
-                'icon' => $icon,
+                'icon' => '@appicons/map-location.svg',
                 'color' => 'var(--black)',
-                'title' => ($topLevelElement->title ?? $topLevelElement->name ?? $topLevelElement->id) . $this->getExtraText($topLevelElement,  $title),
-                'url' => $topLevelElement->cpEditUrl,
-                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)] . $sectionName,
+                'title' => $title,
+                'url' => $rootOwner->cpEditUrl,
+                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)],
                 'canView' => $element->canView($this->user)
             ];
         }
@@ -619,56 +560,19 @@ class ElementmapRenderer extends Component
 
         $results = [];
 
-        // $linkToNestedElement = $this->settings->linkToNestedElement;
-
-
-
         /** @var Entry $element */
         foreach ($elements as $element) {
 
-            $title = $element->title;
-
-            $topLevelElement = $element->getRootOwner();
-
-            // TODO: Cleanup, this is a mess...
-            $sectionName = 'n/a';
-
-            /*if ($element instanceof Entry) {
-                if ($element->section) {
-                    $sectionName = Craft::t('site', $element->section->name);
-                } else {
-                    $topLevelElement = $element->getRootOwner();
-
-                    if ($topLevelElement) {
-                        $title = $topLevelElement->title . ' -> ' . ($title ?: $this->getNestedElementText($element));
-                        if ($topLevelElement instanceof Entry && $topLevelElement->section) {
-                            $sectionName = Craft::t('site', $topLevelElement->section->name) . ' -> ' . Craft::t('site', $element->type->name);
-                        } elseif ($topLevelElement instanceof Product) {
-                            $sectionName = Craft::t('site', $topLevelElement->type->name);
-                        } elseif ($topLevelElement instanceof CampaignElement) {
-                            $sectionName = Craft::t('site', $topLevelElement->getCampaignType()->name);
-                        } elseif ($topLevelElement instanceof User) {
-                            $title = $topLevelElement->name . ' -> ' . $this->getNestedElementText($element);
-                        }
-
-                    } else {
-                        $sectionName = ' -> ' . $element->type->name;
-                    }
-                }
-            }*/
-
-
-            $icon = 'wand';
-
-            $color = 'var(--black)';
+            $rootOwner = $element->getRootOwner();
+            $title = $this->getTitleForElement($element, $rootOwner);
 
             $results[] = [
                 'id' => $element->id,
-                'icon' => $icon,
-                'color' => $color,
-                'title' => ($topLevelElement->title ?? $topLevelElement->name ?? $topLevelElement->id) . $this->getExtraText($topLevelElement,  'Neo'),
-                'url' => $topLevelElement->cpEditUrl,
-                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)] . $sectionName,
+                'icon' => '@appicons/square-n.svg',
+                'color' => 'var(--black)',
+                'title' => $title,
+                'url' => $rootOwner->cpEditUrl,
+                'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)],
                 'canView' => $element->canView($this->user)
             ];
         }
@@ -692,13 +596,14 @@ class ElementmapRenderer extends Component
         foreach ($elements as $element) {
             $results[] = [
                 'id' => $element->id,
-                'icon' => '@vendor/craftcms/cms/src/icons/globe.svg',
+                'icon' => '@appicons/globe.svg',
                 'title' => $element->name,
                 'url' => $element->cpEditUrl,
                 'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)],
                 'canView' => $element->canView($this->user)
             ];
         }
+
         return $results;
     }
 
@@ -719,7 +624,7 @@ class ElementmapRenderer extends Component
         foreach ($elements as $element) {
             $results[] = [
                 'id' => $element->id,
-                'icon' => '@vendor/craftcms/cms/src/icons/folder-open.svg',
+                'icon' => '@appicons/folder-open.svg',
                 'title' => $element->title,
                 'url' => $element->cpEditUrl,
                 'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)],
@@ -731,6 +636,8 @@ class ElementmapRenderer extends Component
 
     /**
      * Retrieves tag elements based on a set of IDs.
+     *
+     * Unused for now
      *
      * @param $elementIds The IDs of the tags to retrieve.
      * @param $siteId The ID of the site to use as the context for element data.
@@ -769,8 +676,6 @@ class ElementmapRenderer extends Component
         $criteria->siteId = $siteId;
         $elements = $criteria->all();
 
-        $imageBaseUrl = '/index.php?p=' . Craft::$app->config->general->cpTrigger . '/actions/assets/thumb&width=32&height=32&uid=';
-
         $results = [];
         foreach ($elements as $element) {
             $volumeName = $element->volume->name;
@@ -804,7 +709,7 @@ class ElementmapRenderer extends Component
         foreach ($elements as $element) {
             $results[] = [
                 'id' => $element->id,
-                'icon' => '@appicons/user.svg',
+                'icon' => '@appicons/user-vneck.svg',
                 'title' => $element->name,
                 'url' => $element->cpEditUrl,
                 'sort' => self::ELEMENT_TYPE_SORT_MAP[get_class($element)],
@@ -933,6 +838,10 @@ class ElementmapRenderer extends Component
             $parts[] = Craft::t('_extras', 'Revision') . ' ' . $element->revisionNum;
         }
 
+        if (!$parts) {
+            return '';
+        }
+
         return ' (' . implode(', ', $parts) . ')';
     }
 
@@ -954,9 +863,26 @@ class ElementmapRenderer extends Component
 
             $text = $fieldName ? ($fieldName . '/' . $element->type->name) : $element->type->name;
         } catch (Exception $e) {
-            // Tested for entries and variants, but may not work for all nested element types
-            $text = 'n/a';
+            // May not work for all nested element types
+            $text = '';
         }
         return $text;
+    }
+
+    protected function getTitleForElement(ElementInterface $element, ?ElementInterface $rootOwner = null): string
+    {
+        $title = $element->title;
+
+        if (!$rootOwner) {
+            $rootOwner = $element;
+        }
+
+        if ($rootOwner->id != $element->id) {
+            $nestedElementText = $this->getNestedElementText($element);
+            $title = ($rootOwner->title ?? $rootOwner->name ?? $rootOwner->id) .
+                ($nestedElementText ? (' -> ' . $nestedElementText) : '');
+        }
+
+        return $title . $this->getExtraText($rootOwner, $rootOwner->section->name ?? $rootOwner->type->name ?? '');
     }
 }

@@ -7,7 +7,9 @@ use craft\base\Element;
 use craft\base\Event;
 use craft\commerce\elements\Product;
 use craft\elements\Asset;
+use craft\elements\Category;
 use craft\elements\Entry;
+use craft\elements\User;
 use craft\events\DefineAttributeHtmlEvent;
 use craft\events\DefineHtmlEvent;
 use craft\events\RegisterElementTableAttributesEvent;
@@ -50,16 +52,23 @@ class Elementmap
                     $event->html .= $this->renderMap($event->sender, 'entry');;
                 }
             );
-//            Event::on(
-//                Category::class,
-//                Category::EVENT_DEFINE_SIDEBAR_HTML,
-//                function(DefineHtmlEvent $event) {
-//                    $event->html .= $this->renderMap($event->sender, 'category');;
-//                }
-//            );
+            Event::on(
+                Category::class,
+                Category::EVENT_DEFINE_SIDEBAR_HTML,
+                function(DefineHtmlEvent $event) {
+                    $event->html .= $this->renderMap($event->sender, 'category');;
+                }
+            );
             Event::on(
                 Asset::class,
                 Asset::EVENT_DEFINE_SIDEBAR_HTML,
+                function(DefineHtmlEvent $event) {
+                    $event->html .= $this->renderMap($event->sender, 'asset');;
+                }
+            );
+            Event::on(
+                User::class,
+                User::EVENT_DEFINE_SIDEBAR_HTML,
                 function(DefineHtmlEvent $event) {
                     $event->html .= $this->renderMap($event->sender, 'asset');;
                 }
