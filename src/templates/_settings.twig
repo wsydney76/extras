@@ -17,71 +17,6 @@
     }) }}
 
     {{ forms.lightswitchField({
-        label: 'Enable Elementmap'|t('_extras'),
-        name: 'enableElementmap',
-        on: settings.enableElementmap,
-        onLabel: 'Show relationships'|t('_extras'),
-        warning: config.enableElementmap is defined ? _self.configWarning('enableElementmap')
-    }) }}
-
-    <div style="margin-left: 48px;">
-        {{ forms.lightswitchField({
-            label: 'Look for relationships on which site?'|t('_extras'),
-            name: 'showAllSites',
-            on: settings.showAllSites,
-            onLabel: 'On all sites'|t('_extras'),
-            offLabel: 'On active site only'|t('_extras'),
-            warning: config.showAllSites is defined ? _self.configWarning('showAllSites'),
-        }) }}
-    </div>
-
-    <div style="margin-top:24px; margin-left: 48px;">
-        {{ forms.lightswitchField({
-            label: 'Show image thumbnails?'|t('_extras'),
-            name: 'showThumbnails',
-            on: settings.showThumbnails,
-            onLabel: 'Show small thumbnails for link to image assets'|t('_extras'),
-            offLabel: 'Show icon'|t('_extras'),
-            tip: 'This slows down performance significantly, so disable it if a lot of images are related to an element.'|t('_extras'),
-            warning: config.showThumbnails is defined ? _self.configWarning('showThumbnails'),
-        }) }}
-    </div>
-
-    <div style="margin-top: 24px; margin-left: 48px;">
-        {{ forms.lightswitchField({
-            label: 'Where the link for a found relationship to a nested element should point to'|t('_extras'),
-            name: 'linkToNestedElement',
-            on: settings.linkToNestedElement,
-            onLabel: 'Link to nested element'|t('_extras'),
-            offLabel: 'Link to top level element'|t('_extras'),
-            warning: config.linkToNestedElement is defined ? _self.configWarning('linkToNestedElement')
-        }) }}
-    </div>
-
-    <div style="margin-top:24px; margin-left: 48px;">
-        {{ forms.lightswitchField({
-            label: 'Show root owners?'|t('_extras'),
-            name: 'showRootOwner',
-            on: settings.showRootOwner,
-            onLabel: 'Show root owners for nested elements'|t('_extras'),
-            offLabel: 'Show nested element only'|t('_extras'),
-            tip: 'Showing root owners improves user experience significantly, but adds a lot of overhead.'|t('_extras'),
-            warning: config.showRootOwner is defined ? _self.configWarning('showRootOwner'),
-        }) }}
-    </div>
-
-    <div style="margin-top:24px; margin-left: 48px;">
-        {{ forms.lightswitchField({
-            label: 'Show revisions?'|t('_extras'),
-            name: 'showRevisions',
-            on: settings.showRevisions,
-            onLabel: 'Also show revisions'|t('_extras'),
-            offLabel: 'Show canonical elements and drafts'|t('_extras'),
-            warning: config.showRevisions is defined ? _self.configWarning('showRevisions'),
-        }) }}
-    </div>
-
-    {{ forms.lightswitchField({
         label: 'Enable dashboard widgets'|t('_extras'),
         name: 'enableWidgets',
         on: settings.enableWidgets,
@@ -426,6 +361,78 @@
         warning: config.diffMergeThreshold is defined ? _self.configWarning('diffMergeThreshold')
     }) }}
 
+</div>
+
+<div id="deprecated">
+
+    <div style="font-weight: bold; margin-bottom: 24px;">
+        This is deprecated in favor of the separate <a target="_blank" href="https://github.com/wsydney76/craft-elementmap5">Elementmap 5</a> plugin.
+    </div>
+
+    {{ forms.lightswitchField({
+        label: 'Enable Elementmap'|t('_extras'),
+        name: 'enableElementmap',
+        on: settings.enableElementmap,
+        onLabel: 'Show relationships'|t('_extras'),
+        warning: config.enableElementmap is defined ? _self.configWarning('enableElementmap')
+    }) }}
+
+    <div style="margin-left: 48px;">
+        {{ forms.lightswitchField({
+            label: 'Look for relationships on which site?'|t('_extras'),
+            name: 'showAllSites',
+            on: settings.showAllSites,
+            onLabel: 'On all sites'|t('_extras'),
+            offLabel: 'On active site only'|t('_extras'),
+            warning: config.showAllSites is defined ? _self.configWarning('showAllSites'),
+        }) }}
+    </div>
+
+    <div style="margin-top:24px; margin-left: 48px;">
+        {{ forms.lightswitchField({
+            label: 'Show image thumbnails?'|t('_extras'),
+            name: 'showThumbnails',
+            on: settings.showThumbnails,
+            onLabel: 'Show small thumbnails for link to image assets'|t('_extras'),
+            offLabel: 'Show icon'|t('_extras'),
+            tip: 'This slows down performance significantly, so disable it if a lot of images are related to an element.'|t('_extras'),
+            warning: config.showThumbnails is defined ? _self.configWarning('showThumbnails'),
+        }) }}
+    </div>
+
+    <div style="margin-top: 24px; margin-left: 48px;">
+        {{ forms.lightswitchField({
+            label: 'Where the link for a found relationship to a nested element should point to'|t('_extras'),
+            name: 'linkToNestedElement',
+            on: settings.linkToNestedElement,
+            onLabel: 'Link to nested element'|t('_extras'),
+            offLabel: 'Link to top level element'|t('_extras'),
+            warning: config.linkToNestedElement is defined ? _self.configWarning('linkToNestedElement')
+        }) }}
+    </div>
+
+    <div style="margin-top:24px; margin-left: 48px;">
+        {{ forms.lightswitchField({
+            label: 'Show root owners?'|t('_extras'),
+            name: 'showRootOwner',
+            on: settings.showRootOwner,
+            onLabel: 'Show root owners for nested elements'|t('_extras'),
+            offLabel: 'Show nested element only'|t('_extras'),
+            tip: 'Showing root owners improves user experience significantly, but adds a lot of overhead.'|t('_extras'),
+            warning: config.showRootOwner is defined ? _self.configWarning('showRootOwner'),
+        }) }}
+    </div>
+
+    <div style="margin-top:24px; margin-left: 48px;">
+        {{ forms.lightswitchField({
+            label: 'Show revisions?'|t('_extras'),
+            name: 'showRevisions',
+            on: settings.showRevisions,
+            onLabel: 'Also show revisions'|t('_extras'),
+            offLabel: 'Show canonical elements and drafts'|t('_extras'),
+            warning: config.showRevisions is defined ? _self.configWarning('showRevisions'),
+        }) }}
+    </div>
 </div>
 
 

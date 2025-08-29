@@ -60,6 +60,8 @@ No warranty, no support, no liability.
 
 ## Updates
 
+Update: 2025-08-29: Deprecated Element map functionality in favor of the separate [Elementmap 5](https://github.com/wsydney76/craft-elementmap5) plugin. Added CLI command for the Draft Package utility.
+
 Update: 2025-08-04: Started refactoring Elementmap (relationships) code, added Neo support. Work in progress.
 
 Update: 2025-07-31: Provisionally added support for detecting relationships via the new Content Block field.
@@ -603,6 +605,14 @@ Craft does not allow newly created entries to be the target of a relation, so if
 * Create and save a new entry in a `disabled` state
 * Now other entries can point to this entry
 * Create a new draft for this entry, set to `enabled`
+
+There is also a CLI command to publish all drafts in a package:
+
+```bash
+ddev craft _extras/draft-package/apply <draftPackageSlug> [--onsuccess=detach|delete] [--backupdb] [--interactive=0]
+
+ddev craft _extras/draft-package/apply my-draft-package --onsuccess=detach --backupdb --interactive=0
+```
 
 ### Live Preview
 
