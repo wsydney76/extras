@@ -60,6 +60,8 @@ No warranty, no support, no liability.
 
 ## Updates
 
+Update: 2025-08-30: Added `asset()` twig function to mimic Symfony's asset() function.
+
 Update: 2025-08-29: Deprecated Element map functionality in favor of the separate [Elementmap 5](https://github.com/wsydney76/craft-elementmap5) plugin. Added CLI command for the Draft Package utility.
 
 Update: 2025-08-04: Started refactoring Elementmap (relationships) code, added Neo support. Work in progress.
@@ -225,6 +227,15 @@ Specify params for twig files, with type checking, defaults, get query params et
 {{ postalCountryName('FR', 'es') }} // -> FRANCE
 
 ```
+
+#### Asset function
+
+This works like Craft’s `url()` function but mimics Symfony’s asset() function, enabling PhpStorm’s Symfony plugin to provide autocompletion for file paths and preventing `url()` parameters from being flagged as errors.
+
+```twig
+<link rel="stylesheet" href="{{ asset('dist/css/simple.css') }}">
+```
+
 ### Misc
 
 #### Element index sidebar

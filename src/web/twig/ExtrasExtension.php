@@ -6,6 +6,7 @@ use CommerceGuys\Addressing\Country\Country;
 use CommerceGuys\Addressing\Exception\UnknownCountryException;
 use Craft;
 use craft\errors\SiteNotFoundException;
+use craft\helpers\UrlHelper;
 use craft\web\twig\Environment;
 use Exception;
 use InvalidArgumentException;
@@ -40,6 +41,7 @@ class ExtrasExtension extends AbstractExtension
             new TwigFunction('extraParams', $this->extraParams(...), ['needs_environment' => true, 'needs_context' => true]),
             new TwigFunction('country', $this->country(...)),
             new TwigFunction('postalCountryName', $this->postalCountryName(...)),
+            new TwigFunction('asset', $this->asset(...)),
         ];
     }
 
@@ -264,6 +266,16 @@ class ExtrasExtension extends AbstractExtension
         return implode(',', $extraParams);
     }
 
+    /**
+     * Mimics Symfony asset() function
+     *
+     * @param string $path
+     * @return string
+     */
+    public function asset(string $path): string
+    {
+        return UrlHelper::url($path);
+    }
 
     /* ========================================================================== */
     /* = Twig filters                                                           = */
