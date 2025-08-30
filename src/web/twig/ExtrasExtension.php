@@ -274,7 +274,7 @@ class ExtrasExtension extends AbstractExtension
      */
     public function asset(string $path): string
     {
-        return UrlHelper::url($path);
+        return UrlHelper::url(str_starts_with($path, '/') ? $path : '/' . $path);
     }
 
     /* ========================================================================== */
