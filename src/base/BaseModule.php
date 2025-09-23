@@ -407,6 +407,14 @@ class BaseModule extends Module
                     );
                 }
             });
+        Event::on(
+            Entry::class,
+            Element::EVENT_DEFINE_INLINE_ATTRIBUTE_INPUT_HTML, function(DefineAttributeHtmlEvent $event) use ($attribute) {
+            if ($event->attribute === $attribute) {
+                $event->html = $event->sender->getAttributeHtml($attribute);
+                $event->handled = true;
+            }
+        });
     }
 
     protected function setAssetIndexImageColumn(string $attribute, ?string $fieldHandle, string $label, array $transform): void
@@ -444,6 +452,15 @@ class BaseModule extends Module
 
 
                     // Prevent further processing
+                    $event->handled = true;
+                }
+            });
+
+            Event::on(
+            Asset::class,
+            Element::EVENT_DEFINE_INLINE_ATTRIBUTE_INPUT_HTML, function(DefineAttributeHtmlEvent $event) use ($attribute) {
+                if ($event->attribute === $attribute) {
+                    $event->html = $event->sender->getAttributeHtml($attribute);
                     $event->handled = true;
                 }
             });
