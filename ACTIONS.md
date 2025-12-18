@@ -19,6 +19,7 @@ The `Actions` component allows you to make asynchronous requests to Craft CMS we
     - [Using Additional Data](#using-additional-data)
     - [Rendering Twig Templates](#rendering-twig-templates)
 - [Notices System](#notices-system)
+- [Alpine JS Browser History Management](#alpine-js-browser-history-management)
 
 ---
 
