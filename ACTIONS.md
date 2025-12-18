@@ -307,12 +307,27 @@ Inside of Alpine JS components, you can use the following methods to manage brow
 Note: These function have to be called with `call(this, ...)` in order to bind the Alpine JS component context, and read/update the components properties.
 
 ```javascript
-window.Actions.pushState.call(this, searchParams);
+window.Actions.pushState.call(this, searchParams, deleteExisting = false);
 ```
 * `this` refers to the Alpine JS component context
-* `searchParams` is an array containing the param names to be pushed to the URL history.
+* `searchParams` can be:
+  - An array of param names: `['q', 'scope']`
+  - An object with default values: `{q: '', scope: 'product'}`
+* `deleteExisting` (Boolean, default: `false`): When `true`, clears all existing URL query parameters before applying `searchParams`.
 
 Call this when the component state has changed by user interaction, and you want to update the URL accordingly.
+
+Examples:
+```javascript
+// Standard usage (keeps existing params that aren't listed)
+window.Actions.pushState.call(this, ['q', 'scope']);
+
+// Object format with defaults
+window.Actions.pushState.call(this, {q: '', scope: 'product'});
+
+// Clear all existing query params, then apply these
+window.Actions.pushState.call(this, ['q', 'scope'], true);
+```
 
 ### popState
 
@@ -320,13 +335,16 @@ Call this when the component state has changed by user interaction, and you want
 window.Actions.popState.call(this, searchParams, callback);
 ```
 * `this` refers to the Alpine JS component context
-* `searchParams` is  an array containing the param names to be read from the URL history.
+* `searchParams` can be:
+  - An array of param names: `['q', 'scope']` (sets to empty string if not in URL)
+  - An object with default values: `{q: '', scope: 'product'}` (uses default if not in URL)
 * `callback` is a function that will be called after the state has been popped.
 
 Call this inside of an `onpopstate` event listener in order to restore the component state when the user navigates back/forward in browser history.
 
 ### Example
 
+**Using array format:**
 ```html
 <div x-data="searchWidget({...})"
      @popstate.window="popState"
@@ -337,6 +355,24 @@ Call this inside of an `onpopstate` event listener in order to restore the compo
 Alpine.data('searchWidget', ({ q, html }) => ({
     q,
     searchParams: ['q'],
+
+    fetch(updateHistory = true) {
+        updateHistory && window.Actions.pushState.call(this, this.searchParams);
+        // do something
+    },
+
+    popState() {
+        window.Actions.popState.call(this, this.searchParams, () => this.fetch(false));
+    },
+}));
+```
+
+**Using object format with default values:**
+```javascript
+Alpine.data('searchWidget', ({ q, scope, html }) => ({
+    q,
+    scope: 'product',
+    searchParams: {q: '', scope: 'product'},
 
     fetch(updateHistory = true) {
         updateHistory && window.Actions.pushState.call(this, this.searchParams);

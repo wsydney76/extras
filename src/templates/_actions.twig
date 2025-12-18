@@ -176,12 +176,29 @@ window.Actions.error = function(message) {
 }
 
 /*
-Alpine specific, window.Actions.pushState.call(this, ['q', 'scope'])
+Alpine specific:
+- window.Actions.pushState.call(this, ['q', 'scope'])
+- window.Actions.pushState.call(this, {q: '', scope: 'product'})
+- To clear existing query params first: window.Actions.pushState.call(this, ['q', 'scope'], true)
 */
 
-window.Actions.pushState = function(params) {
+window.Actions.pushState = function(params, deleteExisting = false) {
     const url = new URL(window.location);
-    params.forEach((param) => {
+
+    // Optionally clear all existing search params
+    if (deleteExisting) {
+        url.search = '';
+    }
+
+    // Handle both array and object formats
+    let paramList = [];
+    if (Array.isArray(params)) {
+        paramList = params;
+    } else {
+        paramList = Object.keys(params);
+    }
+
+    paramList.forEach((param) => {
         const value = this[param] ?? '';
         if (value) {
             url.searchParams.set(param, value);
@@ -193,13 +210,25 @@ window.Actions.pushState = function(params) {
 }
 
 /*
-Alpine specific, window.Actions.popState.call(this, ['q', 'scope'], () => this.fetch(false));
+Alpine specific:
+- window.Actions.popState.call(this, ['q', 'scope'], () => this.fetch(false))
+- window.Actions.popState.call(this, {q: '', scope: 'product'}, () => this.fetch(false))
 */
 window.Actions.popState = function (params, callback) {
     const search = new URLSearchParams(window.location.search);
-    params.forEach((param) => {
-        this[param] = search.get(param) || '';
-    });
+
+    // Handle both array and object formats
+    if (Array.isArray(params)) {
+        params.forEach((param) => {
+            this[param] = search.get(param) || '';
+        });
+    } else {
+        // params is an object with default values
+        for (const [param, defaultValue] of Object.entries(params)) {
+            this[param] = search.get(param) || defaultValue || '';
+        }
+    }
+
     if (typeof callback === 'function') {
         callback(false);
     }
