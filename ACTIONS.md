@@ -296,3 +296,54 @@ The `Actions` component includes a built-in system for displaying notifications 
 Actions.success(data.message)
 Actions.error(data.message)
 ````
+
+## Alpine JS Browser History Management
+
+Inside of Alpine JS components, you can use the following methods to manage browser history:
+
+### pushState
+
+Note: These function have to be called with `call(this, ...)` in order to bind the Alpine JS component context, and read/update the components properties.
+
+```javascript
+window.Actions.pushState.call(this, searchParams);
+```
+* `this` refers to the Alpine JS component context
+* `searchParams` is an array containing the param names to be pushed to the URL history.
+
+Call this when the component state has changed by user interaction, and you want to update the URL accordingly.
+
+### popState
+
+```javascript
+window.Actions.popState.call(this, searchParams, callback);
+```
+* `this` refers to the Alpine JS component context
+* `searchParams` is  an array containing the param names to be read from the URL history.
+* `callback` is a function that will be called after the state has been popped.
+
+Call this inside of an `onpopstate` event listener in order to restore the component state when the user navigates back/forward in browser history.
+
+### Example
+
+```html
+<div x-data="searchWidget({...})"
+     @popstate.window="popState"
+    >
+```
+
+```javascript
+Alpine.data('searchWidget', ({ q, html }) => ({
+    q,
+    searchParams: ['q'],
+
+    fetch(updateHistory = true) {
+        updateHistory && window.Actions.pushState.call(this, this.searchParams);
+        // do something
+    },
+
+    popState() {
+        window.Actions.popState.call(this, this.searchParams, () => this.fetch(false));
+    },
+}));
+```

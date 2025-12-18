@@ -175,6 +175,36 @@ window.Actions.error = function(message) {
     window.Actions.notice({type: 'error', text: message})
 }
 
+/*
+Alpine specific, window.Actions.pushState.call(this, ['q', 'scope'])
+*/
+
+window.Actions.pushState = function(params) {
+    const url = new URL(window.location);
+    params.forEach((param) => {
+        const value = this[param] ?? '';
+        if (value) {
+            url.searchParams.set(param, value);
+        } else {
+            url.searchParams.delete(param);
+        }
+    });
+    window.history.pushState({}, '', url);
+}
+
+/*
+Alpine specific, window.Actions.popState.call(this, ['q', 'scope'], () => this.fetch(false));
+*/
+window.Actions.popState = function (params, callback) {
+    const search = new URLSearchParams(window.location.search);
+    params.forEach((param) => {
+        this[param] = search.get(param) || '';
+    });
+    if (typeof callback === 'function') {
+        callback(false);
+    }
+}
+
 class NoticesHandler {
     constructor() {
         this.notices = [];
