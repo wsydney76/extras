@@ -111,4 +111,24 @@ class FieldsController extends Controller
 
         return ExitCode::OK;
     }
+
+    public function actionResaveAll()
+    {
+
+        if (!$this->confirm("This will resave ALL fields. Continue?")) {
+            Console::output("Aborted.");
+            return;
+        }
+
+        $fieldsService = Craft::$app->getFields();
+        $fields = $fieldsService->getAllFields();
+
+        $total = count($fields);
+        foreach ($fields as $index => $field) {
+            $status = $fieldsService->saveField($field) ? 'OK' : 'Error';
+            $this->stdout(($index + 1) . "/{$total} Resaving {$field->name}: {$status}" . PHP_EOL);
+        }
+
+        $this->stdout('All fields resaved.' . PHP_EOL);
+    }
 }
