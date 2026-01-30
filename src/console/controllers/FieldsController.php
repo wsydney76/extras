@@ -7,6 +7,7 @@ use craft\console\Controller;
 use craft\fieldlayoutelements\CustomField;
 use craft\fields\BaseRelationField;
 use craft\helpers\Console;
+use Throwable;
 use wsydney76\extras\ExtrasPlugin;
 use yii\console\ExitCode;
 
@@ -112,6 +113,13 @@ class FieldsController extends Controller
         return ExitCode::OK;
     }
 
+    /**
+     * Resave all fields
+     *
+     * Run this command after upgrading Craft to ensure all field settings are up to date.
+     *
+     * @throws Throwable
+     */
     public function actionResaveAll()
     {
 
