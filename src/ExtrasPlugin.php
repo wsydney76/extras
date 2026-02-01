@@ -16,6 +16,7 @@ use craft\elements\Entry;
 use craft\events\DefineBehaviorsEvent;
 use craft\events\DefineElementHtmlEvent;
 use craft\events\DefineFieldLayoutElementsEvent;
+use craft\events\DefineMenuItemsEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterConditionRulesEvent;
 use craft\events\RegisterElementActionsEvent;
@@ -167,7 +168,7 @@ class ExtrasPlugin extends Plugin
     private function initSidebarVisibility(): void
     {
         if ($this->getSettings()->enableSidebarVisibility) {
-            if(version_compare(Craft::$app->getVersion(), '5.8', 'ge')) {
+            if (version_compare(Craft::$app->getVersion(), '5.8', 'ge')) {
                 // Core feature in Craft 5.8+
                 return;
             }
@@ -352,6 +353,26 @@ class ExtrasPlugin extends Plugin
 
                         $event->html = $this->insertViewLink($event->html, $viewLinkHtml);
                     }
+                }
+            );
+        }
+
+        if ($this->getSettings()->enableFullScreenEditMenuItem) {
+            if (version_compare(Craft::$app->getVersion(), '5.9', '<')) {
+                // Core feature in Craft < 5.9+ (title is no longer hyperlinked)
+                return;
+            }
+
+            Event::on(
+                Element::class,
+                Element::EVENT_DEFINE_ACTION_MENU_ITEMS,
+                function(DefineMenuItemsEvent $event) {
+                    $event->items[] = [
+                        'label' => Craft::t('_extras', 'Open in full-screen editor'),
+                        'url' => $event->sender->getCpEditUrl(),
+                        'icon' => 'pen-to-square',
+                        // 'description' => Craft::t('_extras', 'Opens the element in a full-screen editor instead of a slide-out.'),
+                    ];
                 }
             );
         }

@@ -84,7 +84,7 @@ return [
     'Enable dashboard widgets' => 'Dashboard-Widgets aktivieren',
     'Enable dashboard widgets.' => 'Dashboard widgets aktivieren.',
     'Enable draft helpers like hints about existing drafts and compare feature.' => 'Aktivieren Sie Hilfen wie Hinweise auf vorhandene Entwürfe und die Vergleichsfunktion.',
-    'Enable draft helpers' => 'Draft helper aktivieren',
+    'Enable draft helpers' => 'Draft-Helper aktivieren',
     'Enable element actions like Copy reference tag for entries' => 'Elementaktionen wie Kopieren des Referenz-Tags für Einträge aktivieren',
     'Enable element field layout elements like Instructions' => 'Aktivieren Sie Elementfeld-Layoutelemente wie Anweisungen',
     'Enable getOwnerPath() method, Owner Path entries index column' => 'Aktivieren der Methode getOwnerPath(), Indexspalte "Owner Path entries',
@@ -107,6 +107,7 @@ return [
     'Ignore case difference' => 'Unterschiede in der Groß-/Kleinschreibung ignorieren',
     'Ignore whitespace difference' => 'Whitespace-Unterschied ignorieren',
     'Ignored in Craft 5.8+ (core feature)' => 'Ignoriert in Craft 5.8+ (Corefunktion)',
+    'Ignored in Craft < 5.9 (core feature)' => 'Ignoriert in Craft < 5.9 (Corefunktion)',
     'Include provisional drafts in package' => 'Provisorische Entwürfe im Paket einschließen',
     'Incoming Relationships' => 'Eingehende Beziehungen',
     'Instruction' => 'Anleitung',
@@ -212,4 +213,9 @@ return [
     '{count,plural,=1{Open provisional draft} other{Open provisional drafts}}' => '{count,plural,=1{Offener provisorischer Entwurf} other{Offene provisorische Entwürfe}}',
     '{count} provisional draft(s) by other users' => '{count} provisorische Entwurf/Entwürfe von anderen Benutzern',
     '{count} regular draft(s) by other users' => '{count} reguläre Entwürfe von anderen Benutzern',
-];
+    'Enable Full-Screen Edit Menu Item' => 'Vollbild-Bearbeitungsmenüpunkt aktivieren',
+    'Enable a menu item in relations fields that opens the element in a full-screen editor instead of slideout.' => 'Aktivieren Sie einen Menüpunkt in Beziehungsfeldern, der das Element in einem Vollbild-Editor anstelle eines Slideouts öffnet.',
+    'Open in full-screen editor' => 'Im Vollbild-Editor öffnen',
+    'Opens the element in a full-screen editor instead of a slide-out.' => 'Öffnet das Element in einem Vollbild-Editor anstelle eines Slide-outs.',
+
+    ];

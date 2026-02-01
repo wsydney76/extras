@@ -25,6 +25,8 @@ class Settings extends Model
     public bool $enableWidgets = false;
     public bool $enableDraftHelpers = false;
     public bool $enableCollectionMakros = false;
+
+    public bool $enableFullScreenEditMenuItem = false;
     public bool $enableElementActions = false;
     public bool $enableFieldLayoutElements = false;
 

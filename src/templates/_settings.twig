@@ -29,7 +29,17 @@
         name: 'enableDraftHelpers',
         on: settings.enableDraftHelpers,
         onLabel: 'Enable draft helpers like hints about existing drafts and compare feature.'|t('_extras'),
-        warning: config.enableDraftHelpers is defined ? _self.configWarning('enableDraftHelpers')
+        warning: (config.enableDraftHelpers is defined ? _self.configWarning('enableDraftHelpers')) ~
+        'Ignored in Craft < 5.9 (core feature)'|t('_extras'),
+    }) }}
+
+    {{ forms.lightswitchField({
+        label: 'Enable Full-Screen Edit Menu Item'|t('_extras'),
+        name: 'enableFullScreenEditMenuItem',
+        on: settings.enableFullScreenEditMenuItem,
+        onLabel: 'Enable a menu item in relations fields that opens the element in a full-screen editor instead of slideout.'|t('_extras'),
+
+        warning: config.enableFullScreenEditMenuItem is defined ? _self.configWarning('enableFullScreenEditMenuItem')
     }) }}
 
     {{ forms.lightswitchField({
