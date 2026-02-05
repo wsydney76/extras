@@ -64,6 +64,7 @@ use wsydney76\extras\web\twig\ExtrasExtension;
 use wsydney76\extras\web\twig\StylesExtension;
 use wsydney76\extras\widgets\MyProvisionsalDraftsWidget;
 use function sprintf;
+use function ucfirst;
 use function version_compare;
 
 /**
@@ -376,7 +377,9 @@ class ExtrasPlugin extends Plugin
                     }
 
                     $newItem = [
-                        'label' => Craft::t('_extras', 'Edit entry in a new tab'),
+                        'label' => ucfirst(Craft::t('_extras', 'Edit {type} in a new tab', [
+                            'type' => $element::lowerDisplayName(),
+                        ])),
                         'url' => $element->getCpEditUrl(),
                         'icon' => 'pen-to-square',
                         'attributes' => [

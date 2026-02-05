@@ -48,6 +48,7 @@ return [
     'Draft' => 'Entwurf',
     'Drafts cannot be applied because of errors.' => 'Entwürfe können aufgrund von Fehlern nicht angewendet werden.',
     'Edit' => 'Edit',
+    'Edit {type} in a new tab' => '{type} in einem neuen Tab bearbeiten',
     'Edited' => 'Bearbeitet',
     'Element drafts are part of a package if they have a relation to an element that belongs to this section' => 'Element-Entwürfe sind Teil eines Pakets, wenn sie eine Beziehung zu einem Element haben, das zu dieser Sektion gehört',
     'Enable Action Routes' => 'Action Routes aktivieren',
