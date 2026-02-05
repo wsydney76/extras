@@ -367,9 +367,17 @@ class ExtrasPlugin extends Plugin
                 Element::class,
                 Element::EVENT_DEFINE_ACTION_MENU_ITEMS,
                 function(DefineMenuItemsEvent $event) {
+                    /** @var Element $element */
+                    $element = $event->sender;
+
+                    // Only show if the current user can save the element
+                    if (!Craft::$app->getElements()->canSave($element)) {
+                        return;
+                    }
+
                     $event->items[] = [
                         'label' => Craft::t('_extras', 'Open in full-screen editor'),
-                        'url' => $event->sender->getCpEditUrl(),
+                        'url' => $element->getCpEditUrl(),
                         'icon' => 'pen-to-square',
                         // 'description' => Craft::t('_extras', 'Opens the element in a full-screen editor instead of a slide-out.'),
                     ];
