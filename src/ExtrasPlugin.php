@@ -375,12 +375,29 @@ class ExtrasPlugin extends Plugin
                         return;
                     }
 
-                    $event->items[] = [
-                        'label' => Craft::t('_extras', 'Open in full-screen editor'),
+                    $newItem = [
+                        'label' => Craft::t('_extras', 'Edit entry in a new tab'),
                         'url' => $element->getCpEditUrl(),
                         'icon' => 'pen-to-square',
+                        'attributes' => [
+                            'target' => '_blank',
+                        ],
                         // 'description' => Craft::t('_extras', 'Opens the element in a full-screen editor instead of a slide-out.'),
                     ];
+
+                    $inserted = false;
+                    foreach ($event->items as $index => $item) {
+                        $id = $item['id'] ?? null;
+                        if (is_string($id) && str_starts_with($id, 'action-edit')) {
+                            array_splice($event->items, $index + 1, 0, [$newItem]);
+                            $inserted = true;
+                            break;
+                        }
+                    }
+
+                    if (!$inserted) {
+                        $event->items[] = $newItem;
+                    }
                 }
             );
         }
