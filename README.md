@@ -552,6 +552,103 @@ In `composer.json` require: `"php-ffmpeg/php-ffmpeg": "^1.1",`.
 
 Signature `public function createVideoPoster(Asset $video, int $fromSeconds = 1, bool $replace = false, string $posterField = 'videoPoster'): bool`
 
+### Helpers
+
+#### ElementHelper
+
+`wsydney76\extras\helpers\ElementHelper` provides utility methods for saving elements while bypassing Craft's automatic timestamp updates.
+
+##### `saveWithoutDateUpdated()`
+
+Saves an element without modifying its `dateUpdated` timestamp. Useful for background operations, content corrections, or re-saves triggered by migrations/console commands where you don't want to affect the element's last-modified date.
+
+```php
+use wsydney76\extras\helpers\ElementHelper;
+use craft\elements\Entry;
+
+$entry = Entry::find()->id(123)->one();
+
+// Modify a field value without bumping dateUpdated
+$entry->setFieldValue('someField', 'new value');
+
+ElementHelper::saveWithoutDateUpdated($entry);
+```
+
+All parameters:
+
+```php
+ElementHelper::saveWithoutDateUpdated(
+    element: $entry,
+    runValidation: false,   // skip validation for performance
+    propagate: true,        // propagate save to other sites
+    updateSearchIndex: false // skip search index update
+);
+```
+
+Returns `true` on success, `false` if the underlying `saveElement()` call fails.
+
+##### Practical example: re-saving entries via console command
+
+```php
+use wsydney76\extras\helpers\ElementHelper;
+use craft\elements\Entry;
+
+$entries = Entry::find()->section('news')->all();
+
+foreach ($entries as $entry) {
+    $entry->setFieldValue('migratedField', transform($entry));
+    if (!ElementHelper::saveWithoutDateUpdated($entry)) {
+        Craft::error("Failed to save entry {$entry->id}", __METHOD__);
+    }
+}
+```
+
+##### `setDateUpdated()`
+
+Directly writes a `dateUpdated` value to the `elements` table for a given element. Useful when you need to restore or explicitly set the timestamp after a save, without going through the full element save cycle.
+
+```php
+use wsydney76\extras\helpers\ElementHelper;
+use craft\elements\Entry;
+
+$entry = Entry::find()->id(123)->one();
+
+ElementHelper::setDateUpdated(new \DateTime('2024-01-01 12:00:00'), $entry);
+```
+
+If `null` is passed, no update is performed.
+
+##### `setDateCreated()`
+
+Directly writes a `dateCreated` value to the `elements` table. Useful when importing or migrating content where the original creation date should be preserved.
+
+```php
+use wsydney76\extras\helpers\ElementHelper;
+use craft\elements\Entry;
+
+$entry = Entry::find()->id(123)->one();
+
+ElementHelper::setDateCreated(new \DateTime('2020-06-15 09:00:00'), $entry);
+```
+
+If `null` is passed, no update is performed.
+
+##### Practical example: import with original timestamps
+
+```php
+use wsydney76\extras\helpers\ElementHelper;
+
+foreach ($importData as $data) {
+    $entry = new Entry();
+    // ... populate $entry from $data ...
+
+    Craft::$app->getElements()->saveElement($entry);
+
+    ElementHelper::setDateCreated(new \DateTime($data['createdAt']), $entry);
+    ElementHelper::setDateUpdated(new \DateTime($data['updatedAt']), $entry);
+}
+```
+
 ### Base module
 
 A module class can extend this one to register components in a unified way without using complex event listeners.
