@@ -1,0 +1,247 @@
+{% macro display(element, type, heading, include='') %}
+
+    {% set include = include|split(',') %}
+
+    {% set elementRecord = create('\\craft\\records\\Element') %}
+    {% set entryRecord = create('\\craft\\records\\Entry') %}
+    {% set userRecord = create('\\craft\\records\\User') %}
+    {% set assetRecord = create('\\craft\\records\\Asset') %}
+    {% set elementsSitesRecord = create('\\craft\\records\\Element_SiteSettings') %}
+
+    <hr>
+
+    <details open>
+        <summary style="cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;">
+            <span class="details-arrow" style="font-size: 0.8em; transition: transform 0.2s;">&#9654;</span>
+            <h2 style="display: inline; margin: 0;">{{ heading }} ({{ element.id }})</h2>
+        </summary>
+
+        <div style="display:flex; flex-wrap: wrap; gap: 24px;">
+            <div>
+                <h3>elements</h3>
+                {% set record = elementRecord.findOne(element.id) %}
+                {{ _self.renderArray(record.attributes) }}
+                {% if record.draftId %}
+                    <h4>drafts</h4>
+                    {% set draft = craft.app.db.createCommand(
+                        'SELECT * FROM {{%drafts}} WHERE [[id]] = :draftId',
+                        {':draftId': element.draftId}
+                    ).queryOne() %}
+                    {{ _self.renderArray(draft) }}
+                {% endif %}
+                {% if record.revisionId %}
+                    <h4>revisions</h4>
+                    {% set revision = craft.app.db.createCommand(
+                        'SELECT * FROM {{%revisions}} WHERE [[id]] = :revisionId',
+                        {':revisionId': element.revisionId}
+                    ).queryOne() %}
+                    {{ _self.renderArray(revision) }}
+                {% endif %}
+
+                {% if 'changed' in include %}
+                    {% set changedAttributes = craft.app.db.createCommand(
+                        'SELECT * FROM {{%changedattributes}} WHERE [[elementId]] = :elementId AND [[siteId]] = :siteId',
+                        {':elementId': element.id, ':siteId': element.siteId}
+                    ).queryAll() %}
+                    {% if changedAttributes %}
+                        <h4>changedattributes</h4>
+                        {{ _self.renderArray(changedAttributes) }}
+                    {% endif %}
+
+                    {% set changedFields = craft.app.db.createCommand(
+                        'SELECT * FROM {{%changedfields}} WHERE [[elementId]] = :elementId AND [[siteId]] = :siteId',
+                        {':elementId': element.id, ':siteId': element.siteId}
+                    ).queryAll() %}
+                    {% if changedFields %}
+                        <h4>changedfields</h4>
+                        {{ _self.renderArray(changedFields) }}
+                    {% endif %}
+                {% endif %}
+
+            </div>
+
+            {% switch type %}
+
+            {% case "entry" %}
+
+                <div>
+                    <h3>entries</h3>
+                    {{ _self.renderArray(entryRecord.findOne(element.id).attributes) }}
+                    {% set authors =  craft.app.db.createCommand(
+                        'SELECT * FROM {{%entries_authors}} WHERE [[entryId]] = :entryId',
+                        {':entryId': element.id}
+                    ).queryAll() %}
+                    {% if authors %}
+                        <h4>users</h4>
+                        {{ _self.renderArray(authors) }}
+                    {% endif %}
+                </div>
+
+            {% case "user" %}
+
+                <div>
+                    <h3>users</h3>
+                    {{ _self.renderArray(userRecord.findOne(element.id).attributes) }}
+                </div>
+
+            {% case "asset" %}
+
+                <div>
+                    <h3>assets</h3>
+                    {{ _self.renderArray(assetRecord.findOne(element.id).attributes) }}
+
+                    <h4>assets_sites</h4>
+                    {% set altRecord = craft.app.db.createCommand(
+                        'SELECT * FROM {{%assets_sites}} WHERE [[assetId]] = :elementId AND [[siteId]] = :siteId',
+                        {':elementId': element.id, ':siteId': element.siteId}
+                    ).queryOne() %}
+                    {{ _self.renderArray(altRecord) }}
+
+                </div>
+            {% endswitch %}
+
+            <div>
+                <h3>elements_sites</h3>
+                {% set record = elementsSitesRecord.findOne({elementId: element.id, siteId: element.siteId}) %}
+                {{ _self.renderArray(record.attributes) }}
+            </div>
+
+            <div>
+                <h3>relations</h3>
+                {% set relations = craft.app.db.createCommand(
+                    'SELECT * FROM {{%relations}} WHERE [[sourceId]] = :sourceId AND ([[sourceSiteId]] IS NULL OR [[sourceSiteId]] = :siteId)',
+                    {':sourceId': element.id, ':siteId': element.siteId}
+                ).queryAll() %}
+                {{ _self.renderArray(relations) }}
+            </div>
+
+            {% if 'searchindex' in include %}
+                <div>
+                    <h3>searchindex</h3>
+
+                    {% set records = craft.app.db.createCommand(
+                        'SELECT * FROM {{%searchindex}} WHERE [[elementId]] = :elementId AND [[siteId]] = :siteId',
+                        {':elementId': element.id, ':siteId': element.siteId}
+                    ).queryAll() %}
+                    {{ _self.renderArray(records) }}
+
+                </div>
+            {% endif %}
+
+        </div>
+    </details>
+{% endmacro %}
+
+{# AI generated #}
+{% macro renderArray(data) %}
+    {% if data is iterable %}
+        {% if data|length > 0 %}
+            <table style="border-collapse: collapse; font-size: 12px; font-family: monospace; width: 100%;">
+                {% for key, value in data %}
+                    <tr style="border-bottom: 1px solid #e0e0e0;">
+                        <th style="text-align: left; padding: 2px 8px 2px 2px; color: #555; white-space: nowrap; vertical-align: top; font-weight: bold;"
+                            title="{{ key }}">
+                            {%- if key matches '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i' -%}
+                                {{ key|slice(0, 8) }}&hellip;:
+                            {%- else -%}
+                                {{ key }}:
+                            {%- endif -%}
+                        </th>
+                        <td style="padding: 2px; vertical-align: top; width: 100%;">
+                            {% if value is iterable %}
+                                {{ _self.renderArray(value) }}
+                            {% elseif value is null %}
+                                <em style="color: #aaa;">null</em>
+                            {% elseif value is same as(true) %}
+                                <span style="color: green;">true</span>
+                            {% elseif value is same as(false) %}
+                                <span style="color: #c00;">false</span>
+                            {% elseif value matches '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i' %}
+                                <span title="{{ value }}">{{ value|slice(0, 8) }}&hellip;</span>
+                            {% else %}
+                                {% if value|length > 40 %}
+                                    <span title="{{ value }}">{{ value|slice(0, 40) }}&hellip;</span>
+                                {% else %}
+                                    {{ value }}
+                                {% endif %}
+                                {% if key in ['sectionId', 'typeId', 'siteId', 'sourceSiteId', 'fieldId', 'volumeId', 'folderId'] and value %}
+                                    {% set _lookupName = null %}
+                                    {% if key == 'siteId' or key == 'sourceSiteId' %}
+                                        {% set _obj = craft.app.sites.getSiteById(value) %}
+                                        {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
+                                    {% elseif key == 'sectionId' %}
+                                        {% set _obj = craft.app.entries.getSectionById(value) %}
+                                        {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
+                                    {% elseif key == 'typeId' %}
+                                        {% set _obj = craft.app.entries.getEntryTypeById(value) %}
+                                        {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
+                                    {% elseif key == 'fieldId' %}
+                                        {% set _obj = craft.app.fields.getFieldById(value) %}
+                                        {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
+                                    {% elseif key == 'volumeId' %}
+                                        {% set _obj = craft.app.volumes.getVolumeById(value) %}
+                                        {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
+                                    {% elseif key == 'folderId' %}
+                                        {% set _obj = craft.app.assets.getFolderById(value) %}
+                                        {% if _obj %}{% set _lookupName = _obj.path %}{% endif %}
+                                    {% endif %}
+                                    {% if _lookupName %}
+                                        <span style="color: #aaa;">({{ _lookupName }})</span>
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <em style="color: #aaa;">(empty)</em>
+        {% endif %}
+    {% elseif data is null %}
+        <em style="color: #aaa;">null</em>
+    {% else %}
+        {{ data }}
+    {% endif %}
+{% endmacro %}
+
+{% macro richText(element, field) %}
+    {# @var data \craft\ckeditor\data\FieldData #}
+    <hr>
+    <details open>
+        <summary style="cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;">
+            <span class="details-arrow" style="font-size: 0.8em; transition: transform 0.2s;">&#9654;</span>
+            <h2 style="display: inline; margin: 0;">Rich Text ({{ field }})</h2>
+        </summary>
+
+        {% set data = element.getFieldValue(field) %}
+
+        <h4>Raw content</h4>
+
+        <div style="margin:12px; padding:8px; border: 1px solid #333; background-color: #eeeeee">
+            {{ data.rawContent }}
+        </div>
+
+        <h4>Chunks</h4>
+
+        <div style="margin-left: 12px;">
+            {% for chunk in data.chunks %}
+                {% if chunk.type == 'markup' %}
+
+                    <h5>Markup</h5>
+                    <div style="margin:12px; padding:8px; border: 1px solid #333; background-color: #eeeeee">
+                        {{ chunk }}
+                    </div>
+
+                {% else %}
+                    <h5>Entry</h5>
+
+                    {{ _self.display(chunk.entry, 'entry', 'Nested entry') }}
+
+
+                {% endif %}
+
+            {% endfor %}
+        </div>
+
+    </details>
+{% endmacro %}

@@ -728,6 +728,83 @@ The 'Inspect' live preview dumps the entry and nested entry data incl JSON custo
 
 ![Inspect](screenshots/inspect.jpg)
 
+### Macros
+
+#### storage.twig
+
+Debugging macros for inspecting an element's raw database storage. Useful in live preview templates, test templates, or during development to understand how Craft stores element data.
+
+Import the macro file:
+
+```twig
+{% import '@extras/_macros/storage.twig' as storage %}
+```
+
+##### `display(element, type, heading, include='')`
+
+Renders a collapsible `<details>` block showing the raw database records for an element. Always shows the `elements`, `elements_sites`, and `relations` tables. The `type` parameter controls which type-specific table is shown alongside.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `element` | element | The element to inspect |
+| `type` | string | Element type: `entry`, `user`, or `asset` |
+| `heading` | string | Label shown in the section heading |
+| `include` | string | Optional comma-separated list of extra sections to include: `changed`, `searchindex` |
+
+Extra sections:
+
+- `changed` — shows `changedattributes` and `changedfields` tables (useful for inspecting draft changes)
+- `searchindex` — shows the `searchindex` table for the element/site combination
+
+If the element is a draft, the `drafts` record is shown automatically. If it is a revision, the `revisions` record is shown.
+
+```twig
+{% import '@extras/_macros/storage.twig' as storage %}
+
+{# Basic entry #}
+{{ storage.display(entry, 'entry', 'My Entry') }}
+
+{# With changed fields and search index #}
+{{ storage.display(entry, 'entry', 'My Entry', 'changed,searchindex') }}
+
+{# Asset #}
+{{ storage.display(asset, 'asset', 'My Asset') }}
+
+{# User #}
+{{ storage.display(currentUser, 'user', 'Current User') }}
+```
+
+##### `richText(element, field)`
+
+Renders a collapsible `<details>` block showing the raw CKEditor field data for an element, including the raw content string and each parsed chunk (markup or nested entry). Nested entries are displayed recursively using `display()`.
+
+Requires the CKEditor plugin.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `element` | element | The element whose field value is inspected |
+| `field` | string | The field handle of the CKEditor field |
+
+```twig
+{% import '@extras/_macros/storage.twig' as storage %}
+
+{{ storage.richText(entry, 'bodyContent') }}
+```
+
+##### Typical usage in a debug/inspect template
+
+```twig
+{% import '@extras/_macros/storage.twig' as storage %}
+
+{{ storage.display(entry, 'entry', 'Entry', 'changed') }}
+
+{% for nestedEntry in entry.myMatrixField.all() %}
+    {{ storage.display(nestedEntry, 'entry', 'Nested: ' ~ nestedEntry.type.name) }}
+{% endfor %}
+
+{{ storage.richText(entry, 'bodyContent') }}
+```
+
 ### JavaScript Actions
 
 Call web controller actions via JavaScript and display success or error notices.
