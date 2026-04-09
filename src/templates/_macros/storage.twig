@@ -4,8 +4,8 @@
     {% set heading = config.heading ?? type|capitalize %}
     {% set level = config.level ?? 1 %}
     {% set include = config.include ?? '' %}
-    
-    {% set handledIds =_globals.get('handledIds')  %}
+
+    {% set handledIds =_globals.get('handledIds') %}
     {% if handledIds == null %}
         {% do _globals.set('handledIds', []) %}
     {% endif %}
@@ -54,14 +54,14 @@
                             {% for child in fieldElements %}
                                 {# Only queue elements not yet handled or already queued #}
                                 {% if child.id not in _globals.get('handledIds') %}
-                                    {#{% set handledIds = handledIds|merge([child.id]) %}#}
+                                    {# {% set handledIds = handledIds|merge([child.id]) %} #}
                                     {% set childType = className(child)|split('\\')|last|capitalize %}
                                     {% set toProcess  = toProcess|push({element: child, heading: childType ~ ' Field: ' ~ field.name, level: level + 1}) %}
                                 {% endif %}
                             {% endfor %}
                         {% endif %}
                     {% endif %}
-                    
+
                     {% if 'ContentBlock' in fieldClass %}
                         {% set block = element.getFieldValue(field.handle) %}
                         {% set toProcess  = toProcess|push({element: block, heading: 'ContentBlock Field: ' ~ field.name, level: level + 1}) %}
@@ -91,7 +91,7 @@
     {% set heading = config.heading ?? type|capitalize %}
     {% set level = config.level ?? 1 %}
     {% set include = config.include ?? '' %}
-    
+
     {% set include = include|split(',') %}
 
     {% set elementRecord = create('\\craft\\records\\Element') %}
@@ -107,7 +107,14 @@
     <details open>
         <summary style="cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;">
             <span class="details-arrow" style="font-size: 0.8em; transition: transform 0.2s;">&#9654;</span>
-            <h2 style="display: inline; margin: 0;">Level: {{ level }} ID: {{ element.id }} ElementType: {{ heading }}  {{ element.section.name ?? '' }} Type: {{ element.type.name ?? '-' }}</h2>
+            {% set extraText = '' %}
+            {% if type == 'entry' %}
+                {% set extraText = "/#{element.type.name}" %}
+            {% elseif type == 'asset' %}
+                {#{% set extraText = "/#{element.volume.name}" %}#}
+            {% endif %}
+            <h2 style="display: inline; margin: 0; font-family: sans-serif; font-weight:normal;">Level: {{ level }} ID: {{ element.id }}
+               {{ heading }}  {{ element.section.name ?? '' }}{{ extraText }} </h2>
         </summary>
 
         <div style="display:flex; flex-wrap: wrap; gap: 24px;">
@@ -153,7 +160,7 @@
                 {% endif %}
 
             </div>
-            
+
             {% switch type %}
 
             {% case "entry" %}
@@ -195,12 +202,12 @@
 
             {% case "address" %}
                 {% set address = addressRecord.findOne(element.id) %}
-               {% if address %}
-                   <div>
-                       <h3>addresses</h3>
-                       {{ _self.renderArray(address.attributes) }}
-                   </div>
-               {% endif %}
+                {% if address %}
+                    <div>
+                        <h3>addresses</h3>
+                        {{ _self.renderArray(address.attributes) }}
+                    </div>
+                {% endif %}
 
             {% case "contentblock" %}
                 {% set block = contentBlocksRecord.findOne(element.id) %}
