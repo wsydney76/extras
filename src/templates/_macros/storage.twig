@@ -335,6 +335,7 @@
 {% macro renderContentArray(data) %}
     {% if data is iterable %}
         {% if data|length > 0 %}
+            {% set hasGeneratedFields = false %}
             <table style="border-collapse: collapse; font-size: 12px; font-family: monospace; width: 100%;">
                 {% for key, value in data %}
                     <tr style="border-bottom: 1px solid #e0e0e0;">
@@ -357,6 +358,14 @@
                                             {% endif %}
                                         {% endfor %}
                                     {% endfor %}
+                                    {% if not _fieldName %}
+                                        {% for _gf in (_layoutConfig.generatedFields ?? []) %}
+                                            {% if _gf.uid is defined and _gf.uid == key and _gf.name is defined %}
+                                                {% set _fieldName = _gf.name ~ ' *' %}
+                                                {% set hasGeneratedFields = true %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
                                     {% if _fieldName %}
                                         <span style="color: #888; font-weight: normal;">({{ _fieldName }})</span>
                                     {% endif %}
@@ -388,6 +397,12 @@
                     </tr>
                 {% endfor %}
             </table>
+
+            {% if hasGeneratedFields %}
+                <div style="margin-top: 12px;">
+                    * = Generated field
+                </div>
+            {% endif %}
         {% else %}
             <em style="color: #aaa;">(empty)</em>
         {% endif %}
