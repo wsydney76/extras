@@ -740,16 +740,36 @@ Import the macro file:
 {% import '@extras/_macros/storage.twig' as storage %}
 ```
 
-##### `display(element, type, heading, include='')`
+##### `displayAll(element, config = {})`
 
-Renders a collapsible `<details>` block showing the raw database records for an element. Always shows the `elements`, `elements_sites`, and `relations` tables. The `type` parameter controls which type-specific table is shown alongside.
+Recursively renders an element and all its related/nested elements (matrix fields, entries fields, assets fields, etc.) by walking the field layout. Deduplicates elements to prevent cycles.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `element` | element | The root element to inspect |
+| `config` | object | Optional config object (same keys as `display`) |
+
+```twig
+{% import '@extras/_macros/storage.twig' as storage %}
+
+{# Recursively display entry and all nested/related elements #}
+{{ storage.displayAll(entry) }}
+
+{# With changed fields shown at every level #}
+{{ storage.displayAll(entry, {include: 'changed'}) }}
+```
+
+##### `display(element, config = {})`
+
+Renders a collapsible `<details>` block showing the raw database records for an element. Always shows the `elements`, `elements_sites`, and `relations` tables. The `type` config key controls which type-specific table is shown alongside.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `element` | element | The element to inspect |
-| `type` | string | Element type: `entry`, `user`, or `asset` |
-| `heading` | string | Label shown in the section heading |
-| `include` | string | Optional comma-separated list of extra sections to include: `changed`, `searchindex` |
+| `config.type` | string | Element type: `entry`, `user`, or `asset` (default: inferred from class name) |
+| `config.heading` | string | Label shown in the section heading (default: type name) |
+| `config.level` | int | Nesting level for display (default: `1`) |
+| `config.include` | string | Optional comma-separated list of extra sections to include: `changed`, `searchindex` |
 
 Extra sections:
 
@@ -762,16 +782,16 @@ If the element is a draft, the `drafts` record is shown automatically. If it is 
 {% import '@extras/_macros/storage.twig' as storage %}
 
 {# Basic entry #}
-{{ storage.display(entry, 'entry', 'My Entry') }}
+{{ storage.display(entry, {type: 'entry', heading: 'My Entry'}) }}
 
 {# With changed fields and search index #}
-{{ storage.display(entry, 'entry', 'My Entry', 'changed,searchindex') }}
+{{ storage.display(entry, {type: 'entry', heading: 'My Entry', include: 'changed,searchindex'}) }}
 
 {# Asset #}
-{{ storage.display(asset, 'asset', 'My Asset') }}
+{{ storage.display(asset, {type: 'asset', heading: 'My Asset'}) }}
 
 {# User #}
-{{ storage.display(currentUser, 'user', 'Current User') }}
+{{ storage.display(currentUser, {type: 'user', heading: 'Current User'}) }}
 ```
 
 ##### `richText(element, field)`
@@ -796,10 +816,14 @@ Requires the CKEditor plugin.
 ```twig
 {% import '@extras/_macros/storage.twig' as storage %}
 
-{{ storage.display(entry, 'entry', 'Entry', 'changed') }}
+{# Automatically walk the whole element tree #}
+{{ storage.displayAll(entry, {include: 'changed'}) }}
+
+{# Or display individual elements manually #}
+{{ storage.display(entry, {type: 'entry', heading: 'Entry', include: 'changed'}) }}
 
 {% for nestedEntry in entry.myMatrixField.all() %}
-    {{ storage.display(nestedEntry, 'entry', 'Nested: ' ~ nestedEntry.type.name) }}
+    {{ storage.display(nestedEntry, {type: 'entry', heading: 'Nested: ' ~ nestedEntry.type.name}) }}
 {% endfor %}
 
 {{ storage.richText(entry, 'bodyContent') }}

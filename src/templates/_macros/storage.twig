@@ -1,19 +1,113 @@
-{% macro display(element, type, heading, include='') %}
+{% macro displayAll(element, config = {}) %}
 
+    {% set type = config.type ?? className(element)|split('\\')|last|lower %}
+    {% set heading = config.heading ?? type|capitalize %}
+    {% set level = config.level ?? 1 %}
+    {% set include = config.include ?? '' %}
+    
+    {% set handledIds =_globals.get('handledIds')  %}
+    {% if handledIds == null %}
+        {% do _globals.set('handledIds', []) %}
+    {% endif %}
+
+
+    {# Skip if this element has already been rendered #}
+    {% if element.id not in _globals.get('handledIds') %}
+
+        {# Mark element as handled before recursing to prevent cycles #}
+        {% do _globals.set('handledIds', _globals.get('handledIds')|push(element.id)) %}
+
+        {# 1. Display the element itself #}
+        {{ _self.display(element, {
+            type: type,
+            heading: heading,
+            level: level,
+            include: include
+        }) }}
+
+        {% if (type == 'entry' and not element.section) or level == 1 %}
+            {# 2+3. Inspect the field layout for related elements and matrix nested entries #}
+            {% set fieldLayout = element.getFieldLayout() %}
+            {% if fieldLayout %}
+
+                {# First pass: collect all unique direct children, eagerly marking their IDs.
+               Doing this before recursing means siblings are deduplicated even when the
+               same element appears in multiple fields of the same owner. #}
+                {% set toProcess = [] %}
+
+                {% for field in fieldLayout.getCustomFields() %}
+
+                    {% set fieldClass = className(field) %}
+
+                    {% set isMatrix   = 'Matrix' in fieldClass or 'Address' in fieldClass %}
+                    {% set isRelation = 'Entries'    in fieldClass
+                        or 'Assets'     in fieldClass
+                        or 'Users'      in fieldClass
+                        or 'Categories' in fieldClass
+                        or 'Tags'       in fieldClass %}
+
+
+                    {% if isMatrix or isRelation %}
+                        {% set fieldValue = element.getFieldValue(field.handle) %}
+                        {% if fieldValue is not null %}
+                            {% set fieldElements = fieldValue.all() %}
+                            {% for child in fieldElements %}
+                                {# Only queue elements not yet handled or already queued #}
+                                {% if child.id not in _globals.get('handledIds') %}
+                                    {#{% set handledIds = handledIds|merge([child.id]) %}#}
+                                    {% set childType = className(child)|split('\\')|last|capitalize %}
+                                    {% set toProcess  = toProcess|push({element: child, heading: childType ~ ' Field: ' ~ field.name, level: level + 1}) %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endif %}
+                    
+                    {% if 'ContentBlock' in fieldClass %}
+                        {% set block = element.getFieldValue(field.handle) %}
+                        {% set toProcess  = toProcess|push({element: block, heading: 'ContentBlock Field: ' ~ field.name, level: level + 1}) %}
+                    {% endif %}
+
+                    {% if 'ckeditor' in fieldClass %}
+                        {{ _self.richText(element, field.handle, 'CKEditor', level + 1) }}
+                    {% endif %}
+                {% endfor %}
+
+                {# Second pass: recurse into each collected child.
+               handledIds now contains all direct siblings, so children won't re-display
+               any element that is a sibling of the current level. #}
+                {% for child in toProcess %}
+                    {{ _self.displayAll(child.element, {heading: child.heading, level: child.level, include: include}) }}
+                {% endfor %}
+
+            {% endif %}
+        {% endif %}
+    {% endif %}
+{% endmacro %}
+
+
+{% macro display(element, config = {}) %}
+
+    {% set type = config.type ?? className(element)|split('\\')|last|lower %}
+    {% set heading = config.heading ?? type|capitalize %}
+    {% set level = config.level ?? 1 %}
+    {% set include = config.include ?? '' %}
+    
     {% set include = include|split(',') %}
 
     {% set elementRecord = create('\\craft\\records\\Element') %}
     {% set entryRecord = create('\\craft\\records\\Entry') %}
     {% set userRecord = create('\\craft\\records\\User') %}
     {% set assetRecord = create('\\craft\\records\\Asset') %}
+    {% set addressRecord = create('\\craft\\records\\Address') %}
     {% set elementsSitesRecord = create('\\craft\\records\\Element_SiteSettings') %}
+    {% set contentBlocksRecord = create('\\craft\\records\\ContentBlock') %}
 
     <hr>
 
     <details open>
         <summary style="cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;">
             <span class="details-arrow" style="font-size: 0.8em; transition: transform 0.2s;">&#9654;</span>
-            <h2 style="display: inline; margin: 0;">{{ heading }} ({{ element.id }})</h2>
+            <h2 style="display: inline; margin: 0;">Level: {{ level }} ID: {{ element.id }} ElementType: {{ heading }}  {{ element.section.name ?? '' }} Type: {{ element.type.name ?? '-' }}</h2>
         </summary>
 
         <div style="display:flex; flex-wrap: wrap; gap: 24px;">
@@ -38,7 +132,7 @@
                     {{ _self.renderArray(revision) }}
                 {% endif %}
 
-                {% if 'changed' in include %}
+                {% if 'changed' in include and element.isDraft ?? false %}
                     {% set changedAttributes = craft.app.db.createCommand(
                         'SELECT * FROM {{%changedattributes}} WHERE [[elementId]] = :elementId AND [[siteId]] = :siteId',
                         {':elementId': element.id, ':siteId': element.siteId}
@@ -59,7 +153,7 @@
                 {% endif %}
 
             </div>
-
+            
             {% switch type %}
 
             {% case "entry" %}
@@ -98,6 +192,24 @@
                     {{ _self.renderArray(altRecord) }}
 
                 </div>
+
+            {% case "address" %}
+                {% set address = addressRecord.findOne(element.id) %}
+               {% if address %}
+                   <div>
+                       <h3>addresses</h3>
+                       {{ _self.renderArray(address.attributes) }}
+                   </div>
+               {% endif %}
+
+            {% case "contentblock" %}
+                {% set block = contentBlocksRecord.findOne(element.id) %}
+                {% if block %}
+                    <div>
+                        <h3>contentblocks</h3>
+                        {{ _self.renderArray(block.attributes) }}
+                    </div>
+                {% endif %}
             {% endswitch %}
 
             <div>
@@ -204,13 +316,13 @@
     {% endif %}
 {% endmacro %}
 
-{% macro richText(element, field) %}
+{% macro richText(element, field, heading = '', level = 1) %}
     {# @var data \craft\ckeditor\data\FieldData #}
     <hr>
     <details open>
         <summary style="cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;">
             <span class="details-arrow" style="font-size: 0.8em; transition: transform 0.2s;">&#9654;</span>
-            <h2 style="display: inline; margin: 0;">Rich Text ({{ field }})</h2>
+            <h2 style="display: inline; margin: 0;">{{ heading }} Field: {{ field }}</h2>
         </summary>
 
         {% set data = element.getFieldValue(field) %}
@@ -235,7 +347,7 @@
                 {% else %}
                     <h5>Entry</h5>
 
-                    {{ _self.display(chunk.entry, 'entry', 'Nested entry') }}
+                    {{ _self.display(chunk.entry, {heading: 'Nested entry in CKEditor', level: level}) }}
 
 
                 {% endif %}
