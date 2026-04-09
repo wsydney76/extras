@@ -222,7 +222,15 @@
             <div>
                 <h3>elements_sites</h3>
                 {% set record = elementsSitesRecord.findOne({elementId: element.id, siteId: element.siteId}) %}
-                {{ _self.renderArray(record.attributes) }}
+                {% set attrs = record.attributes %}
+                {% if attrs.content is defined %}
+                    {{ _self.renderArray(attrs|filter((v, k) => k != 'content')) }}
+                    <h4>content</h4>
+                    {% set contentData = attrs.content is iterable ? attrs.content : (attrs.content ? attrs.content|json_decode : null) %}
+                    {{ _self.renderContentArray(contentData) }}
+                {% else %}
+                    {{ _self.renderArray(attrs) }}
+                {% endif %}
             </div>
 
             <div>
@@ -307,6 +315,73 @@
                                     {% if _lookupName %}
                                         <span style="color: #aaa;">({{ _lookupName }})</span>
                                     {% endif %}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <em style="color: #aaa;">(empty)</em>
+        {% endif %}
+    {% elseif data is null %}
+        <em style="color: #aaa;">null</em>
+    {% else %}
+        {{ data }}
+    {% endif %}
+{% endmacro %}
+
+{# AI generated #}
+{% macro renderContentArray(data) %}
+    {% if data is iterable %}
+        {% if data|length > 0 %}
+            <table style="border-collapse: collapse; font-size: 12px; font-family: monospace; width: 100%;">
+                {% for key, value in data %}
+                    <tr style="border-bottom: 1px solid #e0e0e0;">
+                        <th style="text-align: left; padding: 2px 8px 2px 2px; color: #555; white-space: nowrap; vertical-align: top; font-weight: bold;"
+                            title="{{ key }}">
+                            {%- if key matches '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i' -%}
+                                {{ key|slice(0, 8) }}&hellip;
+                                {% set _layoutRow = craft.app.db.createCommand(
+                                    "SELECT [[config]] FROM {{%fieldlayouts}} WHERE [[config]] LIKE :pattern",
+                                    {':pattern': '%' ~ key ~ '%'}
+                                ).queryOne() %}
+                                {% if _layoutRow %}
+                                    {% set _layoutConfig = _layoutRow.config is iterable ? _layoutRow.config : _layoutRow.config|json_decode %}
+                                    {% set _fieldName = null %}
+                                    {% for _tab in (_layoutConfig.tabs ?? []) %}
+                                        {% for _el in (_tab.elements ?? []) %}
+                                            {% if _el.uid is defined and _el.uid == key and _el.fieldUid is defined %}
+                                                {% set _f = craft.app.fields.getFieldByUid(_el.fieldUid) %}
+                                                {% if _f %}{% set _fieldName = _f.name %}{% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                    {% if _fieldName %}
+                                        <span style="color: #888; font-weight: normal;">({{ _fieldName }})</span>
+                                    {% endif %}
+                                {% endif %}
+                                :
+                            {%- else -%}
+                                {{ key }}:
+                            {%- endif -%}
+                        </th>
+                        <td style="padding: 2px; vertical-align: top; width: 100%;">
+                            {% if value is iterable %}
+                                {{ _self.renderArray(value) }}
+                            {% elseif value is null %}
+                                <em style="color: #aaa;">null</em>
+                            {% elseif value is same as(true) %}
+                                <span style="color: green;">true</span>
+                            {% elseif value is same as(false) %}
+                                <span style="color: #c00;">false</span>
+                            {% elseif value matches '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i' %}
+                                <span title="{{ value }}">{{ value|slice(0, 8) }}&hellip;</span>
+                            {% else %}
+                                {% if value|length > 40 %}
+                                    <span title="{{ value }}">{{ value|slice(0, 40) }}&hellip;</span>
+                                {% else %}
+                                    {{ value }}
                                 {% endif %}
                             {% endif %}
                         </td>
