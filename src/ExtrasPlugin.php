@@ -648,5 +648,23 @@ class ExtrasPlugin extends Plugin
                 }
             );
         }
+
+        $enableStoragePreviewTarget = $this->getSettings()->enableStoragePreviewTarget;
+        if (
+            $enableStoragePreviewTarget === 'always' ||
+            ($enableStoragePreviewTarget === 'devMode' && Craft::$app->config->general->devMode)
+        ) {
+            Event::on(
+                Entry::class,
+                Entry::EVENT_REGISTER_PREVIEW_TARGETS,
+                function(RegisterPreviewTargetsEvent $event) {
+                    $event->previewTargets[] = [
+                        'label' => 'Storage',
+                        'refresh' => 1,
+                        'urlFormat' => '@extras/storage?id={id}'
+                    ];
+                }
+            );
+        }
     }
 }

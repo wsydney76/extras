@@ -152,6 +152,19 @@
         warning: config.enableInspectPreviewTarget is defined ? _self.configWarning('enableInspectPreviewTarget')
     }) }}
 
+    {{ forms.selectField({
+        label: 'Enable Storage Preview Target'|t('_extras'),
+        name: 'enableStoragePreviewTarget',
+        value: settings.enableStoragePreviewTarget,
+        options: [
+            {label: 'Never'|t('_extras'), value: 'never'},
+            {label: 'When DevMode is on'|t('_extras'), value: 'devMode'},
+            {label: 'Always'|t('_extras'), value: 'always'}
+        ],
+        instructions: 'Add a preview target that dumps raw database records including related elements.'|t('_extras'),
+        warning: config.enableStoragePreviewTarget is defined ? _self.configWarning('enableStoragePreviewTarget')
+    }) }}
+
 
 </div>
 

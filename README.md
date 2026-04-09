@@ -728,6 +728,8 @@ The 'Inspect' live preview dumps the entry and nested entry data incl JSON custo
 
 ![Inspect](screenshots/inspect.jpg)
 
+The 'Storage' live preview shows the raw database storage for the entry and nested entries, including the `elements`, `elements_sites`, `relations`, and type-specific tables. This is useful for understanding how Craft stores element data, and for debugging issues with drafts, revisions, or changed fields.
+
 ### Macros
 
 #### storage.twig

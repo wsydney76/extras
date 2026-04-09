@@ -1,0 +1,15 @@
+{% import '@extras/_macros/storage.twig' as storage %}
+
+{% if not craft.app.request.isPreview %}
+    {% exit 403 %}
+{% endif %}
+
+
+{% set element = craft.app.elements.elementById(craft.app.request.param('id')) %}
+
+{% if not element %}
+    {% exit 404 %}
+{% endif %}
+
+
+{{ storage.displayAll(element) }}

@@ -54,6 +54,7 @@ class Settings extends Model
 
     // never, devMode, always
     public string $enableInspectPreviewTarget = 'no';
+    public string $enableStoragePreviewTarget = 'no';
 
     public string $diffRendererName = 'Combined';
     public int $diffContext = 1;
