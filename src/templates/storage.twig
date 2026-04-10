@@ -1,6 +1,8 @@
 {% import '@extras/_macros/storage.twig' as storage %}
 
-{% if not craft.app.request.isPreview %}
+{% requireAdmin %}
+
+{% if not craft.app.config.general.devMode %}
     {% exit 403 %}
 {% endif %}
 

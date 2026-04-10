@@ -631,6 +631,15 @@ class ExtrasPlugin extends Plugin
 
     private function initPreviewTargets()
     {
+        if (!Craft::$app->getRequest()->getIsCpRequest()) {
+            return;
+        }
+
+        $currentUser = Craft::$app->getUser()->getIdentity();
+        if (!$currentUser || !$currentUser->admin) {
+            return;
+        }
+
         $enableInspectPreviewTarget = $this->getSettings()->enableInspectPreviewTarget;
         if (
             $enableInspectPreviewTarget === 'always' ||
