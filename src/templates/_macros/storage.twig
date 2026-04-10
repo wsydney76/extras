@@ -370,6 +370,18 @@
                 {% endif %}
             </div>
 
+            {# --- elements_owners — only shown when records exist #}
+            {% set elementOwners = craft.app.db.createCommand(
+                'SELECT * FROM {{%elements_owners}} WHERE [[elementId]] = :elementId',
+                {':elementId': element.id}
+            ).queryAll() %}
+            {% if elementOwners %}
+                <div>
+                    <h3>elements_owners</h3>
+                    {{ _self.renderArray(elementOwners) }}
+                </div>
+            {% endif %}
+
             {# --- relations — outgoing relation rows for this element/site #}
             <div>
                 <h3>relations</h3>
@@ -379,6 +391,8 @@
                 ).queryAll() %}
                 {{ _self.renderArray(relations) }}
             </div>
+
+
 
             {# --- searchindex — optional; included only when "searchindex" is in the include list #}
             {% if 'searchindex' in include %}
