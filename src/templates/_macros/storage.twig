@@ -120,6 +120,10 @@
         {% set variantRecord = create('\\craft\\commerce\\records\\Variant') %}
         {% set purchasableRecord = create('\\craft\\commerce\\records\\Purchasable') %}
         {% set purchasableStoreRecord = create('\\craft\\commerce\\records\\PurchasableStore') %}
+        {% set orderRecord = create('\\craft\\commerce\\records\\Order') %}
+        {% set lineItemRecord = create('\\craft\\commerce\\records\\LineItem') %}
+        {% set transactionRecord = create('\\craft\\commerce\\records\\Transaction') %}
+        {% set orderHistoryRecord = create('\\craft\\commerce\\records\\OrderHistory') %}
     {% endif %}
 
     <hr>
@@ -132,6 +136,8 @@
                 {% set extraText = "/#{element.type.name}" %}
             {% elseif type == 'asset' %}
                 {# {% set extraText = "/#{element.volume.name}" %} #}
+            {% elseif type == 'order' %}
+                {% set extraText = " ##{element.reference ?? element.number|slice(0, 8)}" %}
             {% endif %}
             <h2 style="display: inline; margin: 0; font-family: sans-serif; font-weight:normal;">Level: {{ level }}
                 ID: {{ element.id }}
@@ -255,6 +261,49 @@
                    {# TODO: Multi store #}
                    {{ _self.renderArray(purchasableStoreRecord.findOne({purchasableId: element.id}).attributes, 'purchasable') }}
                </div>
+
+            {% case "order" %}
+                <div>
+                    <h3>orders</h3>
+                    {{ _self.renderArray(orderRecord.findOne(element.id).attributes, 'order') }}
+                </div>
+                <div>
+                    <h3>lineitems</h3>
+                    {% set lineItems = lineItemRecord.findAll({orderId: element.id}) %}
+                    {% if lineItems %}
+                        {% for lineItem in lineItems %}
+                            <h4>Line Item #{{ loop.index }}{% if lineItem.description %}: {{ lineItem.description }}{% endif %}</h4>
+                            {{ _self.renderArray(lineItem.attributes, 'lineitem') }}
+                        {% endfor %}
+                    {% else %}
+                        <em style="color: #aaa;">(no line items)</em>
+                    {% endif %}
+                </div>
+                <div>
+                    <h3>transactions</h3>
+                    {% set transactions = transactionRecord.findAll({orderId: element.id}) %}
+                    {% if transactions %}
+                        {% for transaction in transactions %}
+                            <h4>Transaction #{{ loop.index }}: {{ transaction.type }} / {{ transaction.status }}{% if transaction.amount %} {{ transaction.amount }} {{ transaction.currency }}{% endif %}</h4>
+                            {{ _self.renderArray(transaction.attributes, 'transaction') }}
+                        {% endfor %}
+                    {% else %}
+                        <em style="color: #aaa;">(no transactions)</em>
+                    {% endif %}
+                </div>
+                <div>
+                    <h3>orderhistories</h3>
+                    {% set histories = orderHistoryRecord.findAll({orderId: element.id}) %}
+                    {% if histories %}
+                        {% for history in histories %}
+                            <h4>History #{{ loop.index }}</h4>
+                            {{ _self.renderArray(history.attributes, 'orderhistory') }}
+                        {% endfor %}
+                    {% else %}
+                        <em style="color: #aaa;">(no order history)</em>
+                    {% endif %}
+                </div>
+
             {% endswitch %}
 
             <div>
