@@ -450,6 +450,7 @@
             {% set hasGeneratedFields = false %}
             <table style="border-collapse: collapse; font-size: 12px; font-family: monospace; width: 100%;">
                 {% for key, value in data %}
+                    {% set _currentField = null %}
                     <tr style="border-bottom: 1px solid #e0e0e0;">
                         <th style="text-align: left; padding: 2px 8px 2px 2px; color: #555; white-space: nowrap; vertical-align: top; font-weight: bold;"
                             title="{{ key }}">
@@ -469,9 +470,12 @@
                                                 {% if _el.label is defined and _el.label %}
                                                     {% set _fieldName = _el.label %}
                                                 {% endif %}
-                                                {% if not _fieldName and _el.fieldUid is defined %}
+                                                {% if _el.fieldUid is defined %}
                                                     {% set _f = craft.app.fields.getFieldByUid(_el.fieldUid) %}
-                                                    {% if _f %}{% set _fieldName = _f.name %}{% endif %}
+                                                    {% if _f %}
+                                                        {% if not _fieldName %}{% set _fieldName = _f.name %}{% endif %}
+                                                        {% set _currentField = _f %}
+                                                    {% endif %}
                                                 {% endif %}
                                             {% endif %}
                                         {% endfor %}
@@ -495,7 +499,11 @@
                         </th>
                         <td style="padding: 2px; vertical-align: top; width: 100%;">
                             {% if value is iterable %}
-                                {{ _self.renderArray(value) }}
+                                {% if _currentField and 'Table' in className(_currentField) %}
+                                    {{ _self.renderTableField(value, _currentField) }}
+                                {% else %}
+                                    {{ _self.renderArray(value) }}
+                                {% endif %}
                             {% elseif value is null %}
                                 <em style="color: #aaa;">null</em>
                             {% elseif value is same as(true) %}
@@ -528,6 +536,73 @@
         <em style="color: #aaa;">null</em>
     {% else %}
         {{ data }}
+    {% endif %}
+{% endmacro %}
+
+{# AI generated #}
+{% macro renderTableField(data, field) %}
+    {% set columns = field.columns %}
+    {% set isStatic = field.staticRows ?? false %}
+    {% set defaults = field.defaults ?? [] %}
+    {% if data is iterable and data|length > 0 %}
+        <table style="border-collapse: collapse; font-size: 12px; font-family: monospace; width: 100%;">
+            <thead>
+                <tr style="border-bottom: 2px solid #aaa;">
+                    <th style="text-align: left; padding: 2px 8px 2px 2px; color: #888; white-space: nowrap;">
+                        {%- if isStatic -%}
+                            {{ columns.col1.heading ?? 'Row' }}
+                            <span style="color: #aaa; font-weight: normal;">(col1)</span>
+                        {%- else -%}
+                            #
+                        {%- endif -%}
+                    </th>
+                    {% for colHandle, colDef in columns %}
+                        {# col1 is used as the row label in static-rows mode — skip it as a data column #}
+                        {% if not (isStatic and colHandle == 'col1') %}
+                            <th style="text-align: left; padding: 2px 8px 2px 2px; color: #555; white-space: nowrap;">
+                                {{ colDef.heading ?? colHandle }}
+                                <span style="color: #aaa; font-weight: normal;">({{ colHandle }})</span>
+                            </th>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for rowKey, row in data %}
+                    <tr style="border-bottom: 1px solid #e0e0e0;">
+                        <td style="padding: 2px 8px 2px 2px; color: #888; vertical-align: top; white-space: nowrap;
+                                   {% if not isStatic %}text-align: right;{% endif %}">
+                            {%- if isStatic -%}
+                                {%- set defaultRow = defaults[loop.index0] ?? null -%}
+                                {{- (defaultRow.col1 ?? row.col1 ?? loop.index) -}}
+                            {%- else -%}
+                                {{- loop.index -}}
+                            {%- endif -%}
+                        </td>
+                        {% for colHandle, colDef in columns %}
+                            {% if not (isStatic and colHandle == 'col1') %}
+                                <td style="padding: 2px; vertical-align: top;">
+                                    {% set cellValue = row[colHandle] ?? null %}
+                                    {% if cellValue is null %}
+                                        <em style="color: #aaa;">null</em>
+                                    {% elseif cellValue is same as(true) %}
+                                        <span style="color: green;">true</span>
+                                    {% elseif cellValue is same as(false) %}
+                                        <span style="color: #c00;">false</span>
+                                    {% elseif cellValue|length > 40 %}
+                                        <span title="{{ cellValue }}">{{ cellValue|slice(0, 40) }}&hellip;</span>
+                                    {% else %}
+                                        {{ cellValue }}
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <em style="color: #aaa;">(empty)</em>
     {% endif %}
 {% endmacro %}
 
