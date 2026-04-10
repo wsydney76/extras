@@ -1,23 +1,35 @@
+{#
+  displayAll — Entry point for recursive element inspection.
+  Renders the element itself, then walks its field layout to discover
+  child elements (Matrix/relation fields, ContentBlock fields, rich-text
+  fields) and recurses into each one, avoiding infinite loops via a
+  global "handled" set.
+
+  @param element  Any Craft element (Entry, Asset, Product, Order, …)
+  @param config   Optional overrides: type, heading, level, include
+#}
 {% macro displayAll(element, config = {}) %}
 
+    {# Resolve display options, falling back to sensible defaults derived from the element class name #}
     {% set type = config.type ?? className(element)|split('\\')|last|lower %}
     {% set heading = config.heading ?? type|capitalize %}
     {% set level = config.level ?? 1 %}
     {% set include = config.include ?? '' %}
 
+    {# Initialise the global de-duplication registry on first call #}
     {% set handledIds =_globals.get('handledIds') %}
     {% if handledIds == null %}
         {% do _globals.set('handledIds', []) %}
     {% endif %}
 
-
-    {# Skip if this element has already been rendered #}
+    {# Skip if this element has already been rendered (prevents cycles and duplicates) #}
     {% if element.id not in _globals.get('handledIds') %}
 
-        {# Mark element as handled before recursing to prevent cycles #}
+        {# Register the element *before* recursing so that siblings discovered
+           in the same pass are also deduplicated against each other #}
         {% do _globals.set('handledIds', _globals.get('handledIds')|push(element.id)) %}
 
-        {# 1. Display the element itself #}
+        {# Step 1 — Render the element's own DB rows #}
         {{ _self.display(element, {
             type: type,
             heading: heading,
@@ -25,19 +37,24 @@
             include: include
         }) }}
 
+        {# Step 2 — Recurse into children only for top-level elements or
+           Matrix-nested entries (entries with no section are nested entries) #}
         {% if (type == 'entry' and not element.section) or level == 1 %}
-            {# 2+3. Inspect the field layout for related elements and matrix nested entries #}
             {% set fieldLayout = element.getFieldLayout() %}
             {% if fieldLayout %}
 
-                {# First pass: collect all unique direct children, eagerly marking their IDs.
-               Doing this before recursing means siblings are deduplicated even when the
-               same element appears in multiple fields of the same owner. #}
+                {# --- First pass: collect direct children ---
+                   We queue every child before recursing so that the full sibling
+                   list is marked "handled" before any of them is expanded. This
+                   prevents the same element appearing twice when it is referenced
+                   by more than one field of the same owner. #}
                 {% set toProcess = [] %}
-                
+
+                {# Commerce products carry variants outside the field layout;
+                   add them to the queue manually #}
                 {% if type == 'product' %}
                     {% for variant in element.variants %}
-                        {% set toProcess  = toProcess|push({element: variant, heading: 'Variant', level: level + 1}) %}
+                        {% set toProcess = toProcess|push({element: variant, heading: 'Variant', level: level + 1}) %}
                     {% endfor %}
                 {% endif %}
 
@@ -45,6 +62,7 @@
 
                     {% set fieldClass = className(field) %}
 
+                    {# Determine how to handle this field type #}
                     {% set isMatrix   = 'Matrix' in fieldClass or 'Address' in fieldClass %}
                     {% set isRelation = 'Entries'    in fieldClass
                         or 'Assets'     in fieldClass
@@ -52,7 +70,7 @@
                         or 'Categories' in fieldClass
                         or 'Tags'       in fieldClass %}
 
-
+                    {# Matrix / Address / relation fields — queue each related element #}
                     {% if isMatrix or isRelation %}
                         {% set fieldValue = element.getFieldValue(field.handle) %}
                         {% if fieldValue is not null %}
@@ -60,19 +78,20 @@
                             {% for child in fieldElements %}
                                 {# Only queue elements not yet handled or already queued #}
                                 {% if child.id not in _globals.get('handledIds') %}
-                                    {# {% set handledIds = handledIds|merge([child.id]) %} #}
                                     {% set childType = className(child)|split('\\')|last|capitalize %}
-                                    {% set toProcess  = toProcess|push({element: child, heading: childType ~ ' Field: ' ~ field.name, level: level + 1}) %}
+                                    {% set toProcess = toProcess|push({element: child, heading: childType ~ ' Field: ' ~ field.name, level: level + 1}) %}
                                 {% endif %}
                             {% endfor %}
                         {% endif %}
                     {% endif %}
 
+                    {# ContentBlock field — queue the block element directly #}
                     {% if 'ContentBlock' in fieldClass %}
                         {% set block = element.getFieldValue(field.handle) %}
-                        {% set toProcess  = toProcess|push({element: block, heading: 'ContentBlock Field: ' ~ field.name, level: level + 1}) %}
+                        {% set toProcess = toProcess|push({element: block, heading: 'ContentBlock Field: ' ~ field.name, level: level + 1}) %}
                     {% endif %}
 
+                    {# Rich-text fields — render inline (chunks contain nested entries) #}
                     {% if 'ckeditor' in fieldClass %}
                         {{ _self.richText(element, field.handle, 'CKEditor', level + 1) }}
                     {% endif %}
@@ -86,9 +105,9 @@
                     {% endif %}
                 {% endfor %}
 
-                {# Second pass: recurse into each collected child.
-               handledIds now contains all direct siblings, so children won't re-display
-               any element that is a sibling of the current level. #}
+                {# --- Second pass: recurse ---
+                   All direct siblings are now registered; recursing here means
+                   no child can accidentally re-render a sibling it also references. #}
                 {% for child in toProcess %}
                     {{ _self.displayAll(child.element, {heading: child.heading, level: child.level, include: include}) }}
                 {% endfor %}
@@ -99,15 +118,26 @@
 {% endmacro %}
 
 
+{#
+  display — Renders a single element's raw DB rows inside a collapsible panel.
+  Shows the core `elements` record plus type-specific tables (entries, assets,
+  variants, orders …), the `elements_sites` content blob, and the relations table.
+
+  @param element  The Craft element to inspect
+  @param config   type, heading, level, include (comma-separated extras: "changed,searchindex")
+#}
 {% macro display(element, config = {}) %}
 
+    {# Resolve display options #}
     {% set type = config.type ?? className(element)|split('\\')|last|lower %}
     {% set heading = config.heading ?? type|capitalize %}
     {% set level = config.level ?? 1 %}
     {% set include = config.include ?? '' %}
 
+    {# Convert the comma-separated include string to an array for `in` checks #}
     {% set include = include|split(',') %}
 
+    {# Instantiate AR record classes used for DB lookups throughout this macro #}
     {% set elementRecord = create('\\craft\\records\\Element') %}
     {% set entryRecord = create('\\craft\\records\\Entry') %}
     {% set userRecord = create('\\craft\\records\\User') %}
@@ -115,6 +145,7 @@
     {% set addressRecord = create('\\craft\\records\\Address') %}
     {% set elementsSitesRecord = create('\\craft\\records\\Element_SiteSettings') %}
     {% set contentBlocksRecord = create('\\craft\\records\\ContentBlock') %}
+    {# Only instantiate Commerce records when the plugin is active #}
     {% if craft.app.plugins.pluginEnabled('commerce') %}
         {% set productRecord = create('\\craft\\commerce\\records\\Product') %}
         {% set variantRecord = create('\\craft\\commerce\\records\\Variant') %}
@@ -128,9 +159,11 @@
 
     <hr>
 
+    {# Collapsible panel — open by default so all data is visible on load #}
     <details open>
         <summary style="cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;">
             <span class="details-arrow" style="font-size: 0.8em; transition: transform 0.2s;">&#9654;</span>
+            {# Build a short type-specific suffix for the panel heading #}
             {% set extraText = '' %}
             {% if type == 'entry' %}
                 {% set extraText = "/#{element.type.name}" %}
@@ -145,10 +178,14 @@
         </summary>
 
         <div style="display:flex; flex-wrap: wrap; gap: 24px;">
+
+            {# --- elements table --- always shown for every element type #}
             <div>
                 <h3>elements</h3>
                 {% set record = elementRecord.findOne(element.id) %}
                 {{ _self.renderArray(record.attributes) }}
+
+                {# If this is a draft, also show the drafts row #}
                 {% if record.draftId %}
                     <h4>drafts</h4>
                     {% set draft = craft.app.db.createCommand(
@@ -157,6 +194,8 @@
                     ).queryOne() %}
                     {{ _self.renderArray(draft) }}
                 {% endif %}
+
+                {# If this is a revision, also show the revisions row #}
                 {% if record.revisionId %}
                     <h4>revisions</h4>
                     {% set revision = craft.app.db.createCommand(
@@ -166,6 +205,8 @@
                     {{ _self.renderArray(revision) }}
                 {% endif %}
 
+                {# Optional: show changedattributes / changedfields for drafts
+                   (only when "changed" is present in the include list) #}
                 {% if 'changed' in include and element.isDraft ?? false %}
                     {% set changedAttributes = craft.app.db.createCommand(
                         'SELECT * FROM {{%changedattributes}} WHERE [[elementId]] = :elementId AND [[siteId]] = :siteId',
@@ -188,14 +229,15 @@
 
             </div>
 
+            {# --- Type-specific tables --- #}
             {% switch type %}
 
             {% case "entry" %}
-
+                {# entries table + optional authors join table #}
                 <div>
                     <h3>entries</h3>
                     {{ _self.renderArray(entryRecord.findOne(element.id).attributes) }}
-                    {% set authors =  craft.app.db.createCommand(
+                    {% set authors = craft.app.db.createCommand(
                         'SELECT * FROM {{%entries_authors}} WHERE [[entryId]] = :entryId',
                         {':entryId': element.id}
                     ).queryAll() %}
@@ -206,14 +248,13 @@
                 </div>
 
             {% case "user" %}
-
                 <div>
                     <h3>users</h3>
                     {{ _self.renderArray(userRecord.findOne(element.id).attributes) }}
                 </div>
 
             {% case "asset" %}
-
+                {# assets table + per-site alt-text row from assets_sites #}
                 <div>
                     <h3>assets</h3>
                     {{ _self.renderArray(assetRecord.findOne(element.id).attributes) }}
@@ -252,6 +293,7 @@
                 </div>
 
             {% case "variant" %}
+                {# variants + purchasables (one row) + purchasables_stores (one row per store) #}
                <div>
                    <h3>variants</h3>
                    {{ _self.renderArray(variantRecord.findOne(element.id).attributes, 'variant') }}
@@ -267,6 +309,7 @@
                </div>
 
             {% case "order" %}
+                {# orders + line items + payment transactions + status history #}
                 <div>
                     <h3>orders</h3>
                     {{ _self.renderArray(orderRecord.findOne(element.id).attributes, 'order') }}
@@ -310,10 +353,13 @@
 
             {% endswitch %}
 
+            {# --- elements_sites --- per-site settings and the JSON content blob #}
             <div>
                 <h3>elements_sites</h3>
                 {% set record = elementsSitesRecord.findOne({elementId: element.id, siteId: element.siteId}) %}
                 {% set attrs = record.attributes %}
+                {# If a `content` column exists, decode it and render it through
+                   renderContentArray which resolves UUID field keys to human names #}
                 {% if attrs.content is defined %}
                     {{ _self.renderArray(attrs|merge({content: '--- see below ---'})) }}
                     <h4>content</h4>
@@ -324,6 +370,7 @@
                 {% endif %}
             </div>
 
+            {# --- relations — outgoing relation rows for this element/site #}
             <div>
                 <h3>relations</h3>
                 {% set relations = craft.app.db.createCommand(
@@ -333,6 +380,7 @@
                 {{ _self.renderArray(relations) }}
             </div>
 
+            {# --- searchindex — optional; included only when "searchindex" is in the include list #}
             {% if 'searchindex' in include %}
                 <div>
                     <h3>searchindex</h3>
@@ -350,7 +398,16 @@
     </details>
 {% endmacro %}
 
-{# AI generated #}
+{#
+  renderArray — Generic key/value table renderer.
+  Handles nested iterables recursively.  For well-known FK columns
+  (sectionId, typeId, siteId, …) it looks up the human-readable name
+  and shows it as a greyed-out annotation.
+
+  @param data  Any array/object, or a scalar/null
+  @param type  Optional element type hint used to disambiguate typeId lookups
+               (e.g. 'product' vs entry)
+#}
 {% macro renderArray(data, type = '') %}
     {% if data is iterable %}
         {% if data|length > 0 %}
@@ -359,6 +416,7 @@
                     <tr style="border-bottom: 1px solid #e0e0e0;">
                         <th style="text-align: left; padding: 2px 8px 2px 2px; color: #555; white-space: nowrap; vertical-align: top; font-weight: bold;"
                             title="{{ key }}">
+                            {# Truncate UUID keys to keep the table readable #}
                             {%- if key matches '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i' -%}
                                 {{ key|slice(0, 8) }}&hellip;:
                             {%- else -%}
@@ -367,6 +425,7 @@
                         </th>
                         <td style="padding: 2px; vertical-align: top; width: 100%;">
                             {% if value is iterable %}
+                                {# Nested array — recurse #}
                                 {{ _self.renderArray(value) }}
                             {% elseif value is null %}
                                 <em style="color: #aaa;">null</em>
@@ -375,13 +434,16 @@
                             {% elseif value is same as(false) %}
                                 <span style="color: #c00;">false</span>
                             {% elseif value matches '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i' %}
+                                {# Truncate UUID values too; full UUID in title tooltip #}
                                 <span title="{{ value }}">{{ value|slice(0, 8) }}&hellip;</span>
                             {% else %}
+                                {# Truncate long scalar values and put the full text in a tooltip #}
                                 {% if value|length > 40 %}
                                     <span title="{{ value }}">{{ value|slice(0, 40) }}&hellip;</span>
                                 {% else %}
                                     {{ value }}
                                 {% endif %}
+                                {# For known FK columns, look up and display the human name as a hint #}
                                 {% if key in ['sectionId', 'typeId', 'siteId', 'sourceSiteId', 'fieldId', 'volumeId', 'folderId',
                                     'storeId', 'orderStatusId', 'taxCategoryId', 'shippingCategoryId', 'gatewayId', 'newStatusId', 'prevStatusId'] and value %}
                                     {% set _lookupName = null %}
@@ -392,6 +454,7 @@
                                         {% set _obj = craft.app.entries.getSectionById(value) %}
                                         {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
                                     {% elseif key == 'typeId' %}
+                                       {# Commerce products use a different type registry than entries #}
                                        {% if type == 'product' %}
                                            {% set _obj = craft.app.plugins.plugin('commerce').productTypes.getProductTypeById(value) %}
                                            {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
@@ -443,7 +506,15 @@
     {% endif %}
 {% endmacro %}
 
-{# AI generated #}
+{#
+  renderContentArray — Variant of renderArray for the `elements_sites.content` blob.
+  The content column stores field values keyed by the field-layout-element UUID
+  rather than the field handle.  This macro resolves each UUID to a human name by
+  querying the fieldlayouts config JSON, and delegates Table field values to
+  renderTableField for a proper column-headed table.
+
+  @param data  Decoded content array (UUID → value)
+#}
 {% macro renderContentArray(data) %}
     {% if data is iterable %}
         {% if data|length > 0 %}
@@ -456,20 +527,26 @@
                             title="{{ key }}">
                             {%- if key matches '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i' -%}
                                 {{ key|slice(0, 8) }}&hellip;
+                                {# Look up the field layout that contains this UUID so we can show the field name #}
                                 {% set _layoutRow = craft.app.db.createCommand(
                                     "SELECT [[config]] FROM {{%fieldlayouts}} WHERE [[config]] LIKE :pattern",
                                     {':pattern': '%' ~ key ~ '%'}
                                 ).queryOne() %}
                                 {% if _layoutRow %}
 
+                                    {# Decode the layout config JSON if it arrived as a string #}
                                     {% set _layoutConfig = _layoutRow.config is iterable ? _layoutRow.config : _layoutRow.config|json_decode %}
                                     {% set _fieldName = null %}
+                                    {# Walk tabs → elements to find the matching layout element by UID #}
                                     {% for _tab in (_layoutConfig.tabs ?? []) %}
                                         {% for _el in (_tab.elements ?? []) %}
                                             {% if _el.uid is defined and _el.uid == key %}
+                                                {# Prefer an explicit label on the layout element #}
                                                 {% if _el.label is defined and _el.label %}
                                                     {% set _fieldName = _el.label %}
                                                 {% endif %}
+                                                {# Fall back to the field's own name and store the field object
+                                                   so we can use its type info when rendering the value #}
                                                 {% if _el.fieldUid is defined %}
                                                     {% set _f = craft.app.fields.getFieldByUid(_el.fieldUid) %}
                                                     {% if _f %}
@@ -480,6 +557,7 @@
                                             {% endif %}
                                         {% endfor %}
                                     {% endfor %}
+                                    {# Also check generatedFields (virtual fields not stored in the fields table) #}
                                     {% if not _fieldName %}
                                         {% for _gf in (_layoutConfig.generatedFields ?? []) %}
                                             {% if _gf.uid is defined and _gf.uid == key and _gf.name is defined %}
@@ -499,6 +577,7 @@
                         </th>
                         <td style="padding: 2px; vertical-align: top; width: 100%;">
                             {% if value is iterable %}
+                                {# Table fields get a special columnar renderer; everything else falls back to renderArray #}
                                 {% if _currentField and 'Table' in className(_currentField) %}
                                     {{ _self.renderTableField(value, _currentField) }}
                                 {% else %}
@@ -524,6 +603,7 @@
                 {% endfor %}
             </table>
 
+            {# Footnote explaining the * marker used for generated fields #}
             {% if hasGeneratedFields %}
                 <div style="margin-top: 12px;">
                     * = Generated field
@@ -539,15 +619,25 @@
     {% endif %}
 {% endmacro %}
 
-{# AI generated #}
+{#
+  renderTableField — Renders a Craft Table field value as a proper HTML table
+  with column headings taken from the field definition.
+  Supports both dynamic rows (numbered) and static rows (col1 used as row label).
+
+  @param data   Row array stored in the content blob
+  @param field  The Craft Table field object (provides columns, staticRows, defaults)
+#}
 {% macro renderTableField(data, field) %}
+    {# Extract column definitions and static-rows settings from the field config #}
     {% set columns = field.columns %}
     {% set isStatic = field.staticRows ?? false %}
+    {# Default row labels (used in static mode to fill in col1 from the field definition) #}
     {% set defaults = field.defaults ?? [] %}
     {% if data is iterable and data|length > 0 %}
         <table style="border-collapse: collapse; font-size: 12px; font-family: monospace; width: 100%;">
             <thead>
                 <tr style="border-bottom: 2px solid #aaa;">
+                    {# First column header: row label (static) or row number (dynamic) #}
                     <th style="text-align: left; padding: 2px 8px 2px 2px; color: #888; white-space: nowrap;">
                         {%- if isStatic -%}
                             {{ columns.col1.heading ?? 'Row' }}
@@ -570,9 +660,11 @@
             <tbody>
                 {% for rowKey, row in data %}
                     <tr style="border-bottom: 1px solid #e0e0e0;">
+                        {# Row identifier cell #}
                         <td style="padding: 2px 8px 2px 2px; color: #888; vertical-align: top; white-space: nowrap;
                                    {% if not isStatic %}text-align: right;{% endif %}">
                             {%- if isStatic -%}
+                                {# In static mode, use the field's default col1 label if available #}
                                 {%- set defaultRow = defaults[loop.index0] ?? null -%}
                                 {{- (defaultRow.col1 ?? row.col1 ?? loop.index) -}}
                             {%- else -%}
@@ -583,6 +675,7 @@
                             {% if not (isStatic and colHandle == 'col1') %}
                                 <td style="padding: 2px; vertical-align: top;">
                                     {% set cellValue = row[colHandle] ?? null %}
+                                    {# Render each cell with type-aware formatting #}
                                     {% if cellValue is null %}
                                         <em style="color: #aaa;">null</em>
                                     {% elseif cellValue is same as(true) %}
@@ -606,6 +699,16 @@
     {% endif %}
 {% endmacro %}
 
+{#
+  richText — Renders a CKEditor field value for inspection.
+  Shows the raw HTML stored in the DB, then iterates over each "chunk"
+  (markup segments and nested entries) and renders them individually.
+
+  @param element  Owner element
+  @param field    Field handle
+  @param heading  Label for the panel heading
+  @param level    Current nesting level (used when recursing into nested entries)
+#}
 {% macro richText(element, field, heading = '', level = 1) %}
     {# @var data \craft\ckeditor\data\FieldData #}
     <hr>
@@ -617,12 +720,15 @@
 
         {% set data = element.getFieldValue(field) %}
 
+        {# The raw CKEditor HTML as stored in the DB, before chunk splitting #}
         <h4>Raw content</h4>
 
         <div style="margin:12px; padding:8px; border: 1px solid #333; background-color: #eeeeee">
             {{ data.rawContent }}
         </div>
 
+        {# Chunks: CKEditor splits the content at nested-entry boundaries.
+           Each chunk is either a `markup` segment or an embedded `entry`. #}
         <h4>Chunks</h4>
 
         <div style="margin-left: 12px;">
@@ -635,10 +741,9 @@
                     </div>
 
                 {% else %}
+                    {# Nested entry embedded inside the CKEditor field — render its DB rows #}
                     <h5>Entry</h5>
-
                     {{ _self.display(chunk.entry, {heading: 'Nested entry in CKEditor', level: level}) }}
-
 
                 {% endif %}
 
@@ -648,6 +753,14 @@
     </details>
 {% endmacro %}
 
+{#
+  vizy — Renders a Vizy field value as formatted JSON for inspection.
+
+  @param element  Owner element
+  @param field    Field handle
+  @param heading  Label for the panel heading
+  @param level    Current nesting level (unused here, kept for API consistency)
+#}
 {% macro vizy(element, field, heading = '', level = 1) %}
     {# @var data \verbb\vizy\models\NodeCollection #}
     <hr>
@@ -658,12 +771,21 @@
         </summary>
 
         {% set data = element.getFieldValue(field) %}
+        {# Dump the raw Vizy node tree as pretty-printed JSON #}
         <pre>
 {{ data.getRawNodes()|json_encode(constant('JSON_PRETTY_PRINT')) }}
 </pre>
     </details>
 {% endmacro %}
 
+{#
+  doxter — Renders a Doxter (Markdown) field value for inspection.
+
+  @param element  Owner element
+  @param field    Field handle
+  @param heading  Label for the panel heading
+  @param level    Current nesting level (unused here, kept for API consistency)
+#}
 {% macro doxter(element, field, heading = '', level = 1) %}
     {# @var data \verbb\doxter\fields\Doxter #}
     <hr>
@@ -675,6 +797,7 @@
 
         {% set data = element.getFieldValue(field) %}
 
+        {# Show the raw Markdown source with line breaks preserved #}
         <div style="margin-top: 12px;">
             {{ data.raw|nl2br }}
         </div>
