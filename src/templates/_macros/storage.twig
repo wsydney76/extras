@@ -257,9 +257,13 @@
                    {{ _self.renderArray(variantRecord.findOne(element.id).attributes, 'variant') }}
                    <h3>purchasables</h3>
                    {{ _self.renderArray(purchasableRecord.findOne(element.id).attributes, 'purchasable') }}
-                   <h3>purchasables_store</h3>
-                   {# TODO: Multi store #}
-                   {{ _self.renderArray(purchasableStoreRecord.findOne({purchasableId: element.id}).attributes, 'purchasable') }}
+
+                   {% set purchasableStores = purchasableStoreRecord.findAll({purchasableId: element.id}) %}
+                   {% for purchasableStore in purchasableStores %}
+                       <h3>purchasables_store #{{ loop.index }}</h3>
+                       {{ _self.renderArray(purchasableStore.attributes, 'purchasable') }}
+                   {% endfor %}
+
                </div>
 
             {% case "order" %}
@@ -378,7 +382,8 @@
                                 {% else %}
                                     {{ value }}
                                 {% endif %}
-                                {% if key in ['sectionId', 'typeId', 'siteId', 'sourceSiteId', 'fieldId', 'volumeId', 'folderId'] and value %}
+                                {% if key in ['sectionId', 'typeId', 'siteId', 'sourceSiteId', 'fieldId', 'volumeId', 'folderId',
+                                    'storeId', 'orderStatusId', 'taxCategoryId', 'shippingCategoryId', 'gatewayId', 'newStatusId', 'prevStatusId'] and value %}
                                     {% set _lookupName = null %}
                                     {% if key == 'siteId' or key == 'sourceSiteId' %}
                                         {% set _obj = craft.app.sites.getSiteById(value) %}
@@ -403,6 +408,21 @@
                                     {% elseif key == 'folderId' %}
                                         {% set _obj = craft.app.assets.getFolderById(value) %}
                                         {% if _obj %}{% set _lookupName = _obj.path %}{% endif %}
+                                    {% elseif key == 'storeId' %}
+                                        {% set _obj = craft.app.plugins.plugin('commerce').stores.getStoreById(value) %}
+                                        {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
+                                    {% elseif key == 'orderStatusId' or key == 'newStatusId' or key == 'prevStatusId' %}
+                                        {% set _obj = craft.app.plugins.plugin('commerce').orderStatuses.getOrderStatusById(value) %}
+                                        {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
+                                    {% elseif key == 'taxCategoryId' %}
+                                        {% set _obj = craft.app.plugins.plugin('commerce').taxCategories.getTaxCategoryById(value) %}
+                                        {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
+                                    {% elseif key == 'shippingCategoryId' %}
+                                        {% set _obj = craft.app.plugins.plugin('commerce').shippingCategories.getShippingCategoryById(value) %}
+                                        {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
+                                    {% elseif key == 'gatewayId' %}
+                                        {% set _obj = craft.app.plugins.plugin('commerce').gateways.getGatewayById(value) %}
+                                        {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
                                     {% endif %}
                                     {% if _lookupName %}
                                         <span style="color: #aaa;">({{ _lookupName }})</span>
