@@ -7,7 +7,7 @@
 {% endif %}
 
 
-{% set element = craft.app.elements.elementById(craft.app.request.param('id')) %}
+{% set element = craft.app.elements.elementById(craft.app.request.param('id'), null, craft.app.request.param('siteId')) %}
 
 {% if not element %}
     {% exit 404 %}
