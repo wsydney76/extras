@@ -224,7 +224,7 @@
                 {% set record = elementsSitesRecord.findOne({elementId: element.id, siteId: element.siteId}) %}
                 {% set attrs = record.attributes %}
                 {% if attrs.content is defined %}
-                    {{ _self.renderArray(attrs|filter((v, k) => k != 'content')) }}
+                    {{ _self.renderArray(attrs|merge({content: '--- see below ---'})) }}
                     <h4>content</h4>
                     {% set contentData = attrs.content is iterable ? attrs.content : (attrs.content ? attrs.content|json_decode : null) %}
                     {{ _self.renderContentArray(contentData) }}
@@ -348,13 +348,19 @@
                                     {':pattern': '%' ~ key ~ '%'}
                                 ).queryOne() %}
                                 {% if _layoutRow %}
+
                                     {% set _layoutConfig = _layoutRow.config is iterable ? _layoutRow.config : _layoutRow.config|json_decode %}
                                     {% set _fieldName = null %}
                                     {% for _tab in (_layoutConfig.tabs ?? []) %}
                                         {% for _el in (_tab.elements ?? []) %}
-                                            {% if _el.uid is defined and _el.uid == key and _el.fieldUid is defined %}
-                                                {% set _f = craft.app.fields.getFieldByUid(_el.fieldUid) %}
-                                                {% if _f %}{% set _fieldName = _f.name %}{% endif %}
+                                            {% if _el.uid is defined and _el.uid == key  %}
+                                                {% if _el.label is defined and _el.label %}
+                                                    {% set _fieldName = _el.label %}
+                                                {% endif %}
+                                                {% if not _fieldName and _el.fieldUid is defined %}
+                                                    {% set _f = craft.app.fields.getFieldByUid(_el.fieldUid) %}
+                                                    {% if _f %}{% set _fieldName = _f.name %}{% endif %}
+                                                {% endif %}
                                             {% endif %}
                                         {% endfor %}
                                     {% endfor %}
