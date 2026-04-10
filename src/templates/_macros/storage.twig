@@ -70,6 +70,14 @@
                     {% if 'ckeditor' in fieldClass %}
                         {{ _self.richText(element, field.handle, 'CKEditor', level + 1) }}
                     {% endif %}
+
+                    {% if 'VizyField' in fieldClass %}
+                        {{ _self.vizy(element, field.handle, 'Vizy', level + 1) }}
+                    {% endif %}
+
+                    {% if 'Doxter' in fieldClass %}
+                        {{ _self.doxter(element, field.handle, 'Doxter', level + 1) }}
+                    {% endif %}
                 {% endfor %}
 
                 {# Second pass: recurse into each collected child.
@@ -111,10 +119,11 @@
             {% if type == 'entry' %}
                 {% set extraText = "/#{element.type.name}" %}
             {% elseif type == 'asset' %}
-                {#{% set extraText = "/#{element.volume.name}" %}#}
+                {# {% set extraText = "/#{element.volume.name}" %} #}
             {% endif %}
-            <h2 style="display: inline; margin: 0; font-family: sans-serif; font-weight:normal;">Level: {{ level }} ID: {{ element.id }}
-               {{ heading }}  {{ element.section.name ?? '' }}{{ extraText }} </h2>
+            <h2 style="display: inline; margin: 0; font-family: sans-serif; font-weight:normal;">Level: {{ level }}
+                ID: {{ element.id }}
+                {{ heading }}  {{ element.section.name ?? '' }}{{ extraText }} </h2>
         </summary>
 
         <div style="display:flex; flex-wrap: wrap; gap: 24px;">
@@ -353,7 +362,7 @@
                                     {% set _fieldName = null %}
                                     {% for _tab in (_layoutConfig.tabs ?? []) %}
                                         {% for _el in (_tab.elements ?? []) %}
-                                            {% if _el.uid is defined and _el.uid == key  %}
+                                            {% if _el.uid is defined and _el.uid == key %}
                                                 {% if _el.label is defined and _el.label %}
                                                     {% set _fieldName = _el.label %}
                                                 {% endif %}
@@ -458,5 +467,39 @@
             {% endfor %}
         </div>
 
+    </details>
+{% endmacro %}
+
+{% macro vizy(element, field, heading = '', level = 1) %}
+    {# @var data \verbb\vizy\models\NodeCollection #}
+    <hr>
+    <details open>
+        <summary style="cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;">
+            <span class="details-arrow" style="font-size: 0.8em; transition: transform 0.2s;">&#9654;</span>
+            <h2 style="display: inline; margin: 0;">{{ heading }} Field: {{ field }}</h2>
+        </summary>
+
+        {% set data = element.getFieldValue(field) %}
+        <pre>
+{{ data.getRawNodes()|json_encode(constant('JSON_PRETTY_PRINT')) }}
+</pre>
+    </details>
+{% endmacro %}
+
+{% macro doxter(element, field, heading = '', level = 1) %}
+    {# @var data \verbb\doxter\fields\Doxter #}
+    <hr>
+    <details open>
+        <summary style="cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;">
+            <span class="details-arrow" style="font-size: 0.8em; transition: transform 0.2s;">&#9654;</span>
+            <h2 style="display: inline; margin: 0;">{{ heading }} Field: {{ field }}</h2>
+        </summary>
+
+        {% set data = element.getFieldValue(field) %}
+
+        <div style="margin-top: 12px;">
+            {{ data.raw|nl2br }}
+        </div>
+        
     </details>
 {% endmacro %}
