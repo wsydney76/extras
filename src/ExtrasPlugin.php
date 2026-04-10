@@ -674,6 +674,19 @@ class ExtrasPlugin extends Plugin
                     ];
                 }
             );
+            if (Craft::$app->plugins->isPluginEnabled('commerce')) {
+                Event::on(
+                    Product::class,
+                    Element::EVENT_REGISTER_PREVIEW_TARGETS,
+                    function(RegisterPreviewTargetsEvent $event) {
+                        $event->previewTargets[] = [
+                            'label' => 'Storage',
+                            'refresh' => 1,
+                            'urlFormat' => '@extras/storage?id={id}'
+                        ];
+                    }
+                );
+            }
         }
     }
 }

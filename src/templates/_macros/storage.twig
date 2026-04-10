@@ -34,6 +34,12 @@
                Doing this before recursing means siblings are deduplicated even when the
                same element appears in multiple fields of the same owner. #}
                 {% set toProcess = [] %}
+                
+                {% if type == 'product' %}
+                    {% for variant in element.variants %}
+                        {% set toProcess  = toProcess|push({element: variant, heading: 'Variant', level: level + 1}) %}
+                    {% endfor %}
+                {% endif %}
 
                 {% for field in fieldLayout.getCustomFields() %}
 
@@ -109,6 +115,12 @@
     {% set addressRecord = create('\\craft\\records\\Address') %}
     {% set elementsSitesRecord = create('\\craft\\records\\Element_SiteSettings') %}
     {% set contentBlocksRecord = create('\\craft\\records\\ContentBlock') %}
+    {% if craft.app.plugins.pluginEnabled('commerce') %}
+        {% set productRecord = create('\\craft\\commerce\\records\\Product') %}
+        {% set variantRecord = create('\\craft\\commerce\\records\\Variant') %}
+        {% set purchasableRecord = create('\\craft\\commerce\\records\\Purchasable') %}
+        {% set purchasableStoreRecord = create('\\craft\\commerce\\records\\PurchasableStore') %}
+    {% endif %}
 
     <hr>
 
@@ -226,6 +238,23 @@
                         {{ _self.renderArray(block.attributes) }}
                     </div>
                 {% endif %}
+
+            {% case "product" %}
+                <div>
+                    <h3>products</h3>
+                    {{ _self.renderArray(productRecord.findOne(element.id).attributes, 'product') }}
+                </div>
+
+            {% case "variant" %}
+               <div>
+                   <h3>variants</h3>
+                   {{ _self.renderArray(variantRecord.findOne(element.id).attributes, 'variant') }}
+                   <h3>purchasables</h3>
+                   {{ _self.renderArray(purchasableRecord.findOne(element.id).attributes, 'purchasable') }}
+                   <h3>purchasables_store</h3>
+                   {# TODO: Multi store #}
+                   {{ _self.renderArray(purchasableStoreRecord.findOne({purchasableId: element.id}).attributes, 'purchasable') }}
+               </div>
             {% endswitch %}
 
             <div>
@@ -269,7 +298,7 @@
 {% endmacro %}
 
 {# AI generated #}
-{% macro renderArray(data) %}
+{% macro renderArray(data, type = '') %}
     {% if data is iterable %}
         {% if data|length > 0 %}
             <table style="border-collapse: collapse; font-size: 12px; font-family: monospace; width: 100%;">
@@ -309,8 +338,13 @@
                                         {% set _obj = craft.app.entries.getSectionById(value) %}
                                         {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
                                     {% elseif key == 'typeId' %}
-                                        {% set _obj = craft.app.entries.getEntryTypeById(value) %}
-                                        {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
+                                       {% if type == 'product' %}
+                                           {% set _obj = craft.app.plugins.plugin('commerce').productTypes.getProductTypeById(value) %}
+                                           {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
+                                       {% else %}
+                                           {% set _obj = craft.app.entries.getEntryTypeById(value) %}
+                                           {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
+                                       {% endif %}
                                     {% elseif key == 'fieldId' %}
                                         {% set _obj = craft.app.fields.getFieldById(value) %}
                                         {% if _obj %}{% set _lookupName = _obj.name %}{% endif %}
