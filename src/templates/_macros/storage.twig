@@ -57,6 +57,12 @@
                         {% set toProcess = toProcess|push({element: variant, heading: 'Variant', level: level + 1}) %}
                     {% endfor %}
                 {% endif %}
+                
+                {% if type == 'user' %}
+                    {% for address in element.addresses %}
+                        {% set toProcess = toProcess|push({element: address, heading: 'Address', level: level + 1}) %}
+                    {% endfor %}
+                {% endif %}
 
                 {% for field in fieldLayout.getCustomFields() %}
 
@@ -124,7 +130,7 @@
   @param config   type, heading, level, include (comma-separated extras: "changed,searchindex")
 #}
 {% macro display(element, config = {}) %}
-
+    
     {# Resolve display options #}
     {% set type = config.type ?? className(element)|split('\\')|last|lower %}
     {% set heading = config.heading ?? type|capitalize %}
@@ -173,6 +179,13 @@
                 ID: {{ element.id }}
                 {{ heading }}  {{ element.section.name ?? '' }}{{ extraText }} </h2>
         </summary>
+
+        {# If element is not editable, the current page url is returned instead of an edit link #}
+        {% set cpEditUrl = element.cpEditUrl %}
+        {% if craft.app.config.general.cpTrigger in cpEditUrl and craft.app.elements.canSave(element) %}
+            <a href="{{ cpEditUrl }}">Edit</a>
+        {% endif %}
+
 
         <div style="display:flex; flex-wrap: wrap; gap: 24px;">
 
@@ -444,8 +457,9 @@
                                 <span style="color: green;">true</span>
                             {% elseif value is same as(false) %}
                                 <span style="color: #c00;">false</span>
-                            {% elseif key in ['targetId', 'ownerId'] and value %}
-                                {# Link relation targets and element owners to their storage page #}
+                            {% elseif (key in ['targetId', 'ownerId', 'authorId', 'creatorId', 'customerId', 'orderId', 'purchasableId', 'primaryOwnerId'] or key ends with 'AddressId') and value %}
+                                {# Link relation targets, element owners, authors and creators etc. to their storage page #}
+                                {# TODO: Find a generic way to find relevant keys, some keys ending with Id do not point to elements #}
                                 <a href="{{ siteUrl('@extras/storage', {id: value}) }}" style="font-family: monospace;">{{ value }}</a>
                             {% elseif value matches '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i' %}
                                 {# Truncate UUID values too; full UUID in title tooltip #}
