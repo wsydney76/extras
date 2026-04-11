@@ -63,18 +63,12 @@
                     {% set fieldClass = className(field) %}
 
                     {# Determine how to handle this field type #}
-                    {% set isMatrix   = 'Matrix' in fieldClass or 'Address' in fieldClass %}
-                    {% set isRelation = 'Entries'    in fieldClass
-                        or 'Assets'     in fieldClass
-                        or 'Users'      in fieldClass
-                        or 'Categories' in fieldClass
-                        or 'Tags'       in fieldClass
-                        or 'Products'   in fieldClass
-                        or 'Variants'   in fieldClass
-                    %}
+                    {% set isMatrix = 'Matrix' in fieldClass or 'Address' in fieldClass %}
 
-                    {# Matrix / Address / relation fields — queue each related element #}
-                    {% if isMatrix or isRelation %}
+                    {# Matrix / Address fields — queue each child element for full display.
+                       Relation fields are intentionally excluded: their targets are
+                       linked via targetId in the relations table instead. #}
+                    {% if isMatrix %}
                         {% set fieldValue = element.getFieldValue(field.handle) %}
                         {% if fieldValue is not null %}
                             {% set fieldElements = fieldValue.all() %}
@@ -450,6 +444,9 @@
                                 <span style="color: green;">true</span>
                             {% elseif value is same as(false) %}
                                 <span style="color: #c00;">false</span>
+                            {% elseif key in ['targetId', 'ownerId'] and value %}
+                                {# Link relation targets and element owners to their storage page #}
+                                <a href="{{ siteUrl('@extras/storage', {id: value}) }}" style="font-family: monospace;">{{ value }}</a>
                             {% elseif value matches '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i' %}
                                 {# Truncate UUID values too; full UUID in title tooltip #}
                                 <span title="{{ value }}">{{ value|slice(0, 8) }}&hellip;</span>
@@ -594,9 +591,24 @@
                         </th>
                         <td style="padding: 2px; vertical-align: top; width: 100%;">
                             {% if value is iterable %}
-                                {# Table fields get a special columnar renderer; everything else falls back to renderArray #}
+                                {# Determine field type for specialised rendering #}
+                                {% set _isRelationField = _currentField and (
+                                    'Entries'    in className(_currentField) or
+                                    'Assets'     in className(_currentField) or
+                                    'Users'      in className(_currentField) or
+                                    'Categories' in className(_currentField) or
+                                    'Tags'       in className(_currentField) or
+                                    'Products'   in className(_currentField) or
+                                    'Variants'   in className(_currentField)
+                                ) %}
+                                {# Table fields get a special columnar renderer #}
                                 {% if _currentField and 'Table' in className(_currentField) %}
                                     {{ _self.renderTableField(value, _currentField) }}
+                                {# Relation fields: render each ID as a link instead of recursing #}
+                                {% elseif _isRelationField %}
+                                    {% for _relId in value %}
+                                        <a href="{{ siteUrl('@extras/storage', {id: _relId}) }}" style="font-family: monospace; display: inline-block; margin-right: 6px;">{{ _relId }}</a>
+                                    {% endfor %}
                                 {% else %}
                                     {{ _self.renderArray(value) }}
                                 {% endif %}
