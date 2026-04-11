@@ -423,6 +423,24 @@
 {% endmacro %}
 
 {#
+  elementLink — Renders a link to the storage page for a given element ID.
+  Retrieves the element via craft.app.elements.getElementById to populate
+  the title attribute with the element's title or name.
+
+  @param id     The element ID to link to
+  @param style  Optional additional inline CSS for the anchor tag
+#}
+{% macro elementLink(id, style = '') %}
+    {% set _linkedEl = craft.app.elements.getElementById(id) %}
+    {% set _elTitle = _linkedEl ? (_linkedEl.title ?? _linkedEl.name ?? '') : '' %}
+    <a href="{{ siteUrl('@extras/storage', {id: id}) }}"
+       style="font-family: monospace;{{ style ? ' ' ~ style : '' }}">{{ id }}</a>
+    {% if _elTitle %}
+        <span style="color: #aaa">({{ _elTitle }})</span>
+    {% endif %}
+{% endmacro %}
+
+{#
   renderArray — Generic key/value table renderer.
   Handles nested iterables recursively.  For well-known FK columns
   (sectionId, typeId, siteId, …) it looks up the human-readable name
@@ -433,6 +451,15 @@
                (e.g. 'product' vs entry)
 #}
 {% macro renderArray(data, type = '') %}
+    {# TODO: Find a generic way to find relevant keys, some keys ending with Id do point to elements, some not... #}
+
+    {# Keys, whose values shall be linked to the elements storage page #}
+    {% set elementIdKeys = ['targetId', 'ownerId', 'authorId', 'creatorId', 'customerId', 'orderId', 'purchasableId', 'primaryOwnerId'] %}
+
+    {# Keys, whose values should be annotated with human readable names #}
+    {% set lookupIdKeys = ['sectionId', 'typeId', 'siteId', 'sourceSiteId', 'fieldId', 'volumeId', 'folderId',
+        'storeId', 'orderStatusId', 'taxCategoryId', 'shippingCategoryId', 'gatewayId', 'newStatusId', 'prevStatusId'] %}
+
     {% if data is iterable %}
         {% if data|length > 0 %}
             <table style="border-collapse: collapse; font-size: 12px; font-family: monospace; width: 100%;">
@@ -457,10 +484,9 @@
                                 <span style="color: green;">true</span>
                             {% elseif value is same as(false) %}
                                 <span style="color: #c00;">false</span>
-                            {% elseif (key in ['targetId', 'ownerId', 'authorId', 'creatorId', 'customerId', 'orderId', 'purchasableId', 'primaryOwnerId'] or key ends with 'AddressId') and value %}
+                            {% elseif (key in elementIdKeys or key ends with 'AddressId') and value %}
                                 {# Link relation targets, element owners, authors and creators etc. to their storage page #}
-                                {# TODO: Find a generic way to find relevant keys, some keys ending with Id do not point to elements #}
-                                <a href="{{ siteUrl('@extras/storage', {id: value}) }}" style="font-family: monospace;">{{ value }}</a>
+                                {{ _self.elementLink(value) }}
                             {% elseif value matches '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i' %}
                                 {# Truncate UUID values too; full UUID in title tooltip #}
                                 <span title="{{ value }}">{{ value|slice(0, 8) }}&hellip;</span>
@@ -472,8 +498,7 @@
                                     {{ value }}
                                 {% endif %}
                                 {# For known FK columns, look up and display the human name as a hint #}
-                                {% if key in ['sectionId', 'typeId', 'siteId', 'sourceSiteId', 'fieldId', 'volumeId', 'folderId',
-                                    'storeId', 'orderStatusId', 'taxCategoryId', 'shippingCategoryId', 'gatewayId', 'newStatusId', 'prevStatusId'] and value %}
+                                {% if key in lookupIdKeys and value %}
                                     {% set _lookupName = null %}
                                     {% if key == 'siteId' or key == 'sourceSiteId' %}
                                         {% set _obj = craft.app.sites.getSiteById(value) %}
@@ -621,7 +646,7 @@
                                 {# Relation fields: render each ID as a link instead of recursing #}
                                 {% elseif _isRelationField %}
                                     {% for _relId in value %}
-                                        <a href="{{ siteUrl('@extras/storage', {id: _relId}) }}" style="font-family: monospace; display: inline-block; margin-right: 6px;">{{ _relId }}</a>
+                                        {{ _self.elementLink(_relId, 'display: inline-block; margin-right: 6px;') }}<br>
                                     {% endfor %}
                                 {% else %}
                                     {{ _self.renderArray(value) }}
