@@ -163,7 +163,6 @@
         {% set transactionRecord = create('\\craft\\commerce\\records\\Transaction') %}
         {% set orderHistoryRecord = create('\\craft\\commerce\\records\\OrderHistory') %}
     {% endif %}
-
     <hr>
 
     {# Collapsible panel — open by default so all data is visible on load #}
@@ -183,7 +182,6 @@
                 ID: {{ element.id }}
                 {{ heading }}  {{ element.section.name ?? '' }}{{ extraText }} </h2>
         </summary>
-
         {# If element is not editable, the current page url is returned instead of an edit link #}
         {% set cpEditUrl = element.cpEditUrl %}
         {% if craft.app.config.general.cpTrigger in cpEditUrl and craft.app.elements.canSave(element) %}
@@ -405,6 +403,16 @@
                 <div>
                     <h3>structureelements</h3>
                     {{ _self.renderArray(structureElement) }}
+
+                    <h4>Structure</h4>
+
+                    {{ _self.renderArray({
+                        parent: element.parent ? element.parent.title : null,
+                        prevSibling: element.prevSibling ? element.prevSibling.title  : null,
+                        nextSibling: element.nextSibling ? element.nextSibling.title : null,
+                        children: element.children ? element.children|map(e => e.title)
+                    }) }}
+                    
                 </div>
             {% endif %}
 
@@ -417,9 +425,7 @@
                 ).queryAll() %}
                 {{ _self.renderArray(relations) }}
             </div>
-
-
-
+            
             {# --- searchindex — optional; included only when "searchindex" is in the include list #}
             {% if 'searchindex' in include %}
                 <div>
