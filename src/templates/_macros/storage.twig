@@ -91,7 +91,9 @@
                     {# ContentBlock field — queue the block element directly #}
                     {% if 'ContentBlock' in fieldClass %}
                         {% set block = element.getFieldValue(field.handle) %}
-                        {% set toProcess = toProcess|push({element: block, heading: 'ContentBlock Field: ' ~ field.name, level: level + 1}) %}
+                        {% if block is not null %}
+                            {% set toProcess = toProcess|push({element: block, heading: 'ContentBlock Field: ' ~ field.name, level: level + 1}) %}
+                        {% endif %}
                     {% endif %}
 
                     {# Rich-text fields — render inline (chunks contain nested entries) #}
@@ -112,7 +114,9 @@
                    All direct siblings are now registered; recursing here means
                    no child can accidentally re-render a sibling it also references. #}
                 {% for child in toProcess %}
-                    {{ _self.displayAll(child.element, {heading: child.heading, level: child.level, include: include}) }}
+                    {% if child.element %}
+                        {{ _self.displayAll(child.element, {heading: child.heading, level: child.level, include: include}) }}
+                    {% endif %}
                 {% endfor %}
 
             {% endif %}
@@ -389,6 +393,18 @@
                 <div>
                     <h3>elements_owners</h3>
                     {{ _self.renderArray(elementOwners) }}
+                </div>
+            {% endif %}
+
+            {# --- structureelements — only shown when the element is part of a structure #}
+            {% set structureElement = craft.app.db.createCommand(
+                'SELECT * FROM {{%structureelements}} WHERE [[elementId]] = :elementId',
+                {':elementId': element.id}
+            ).queryOne() %}
+            {% if structureElement %}
+                <div>
+                    <h3>structureelements</h3>
+                    {{ _self.renderArray(structureElement) }}
                 </div>
             {% endif %}
 
