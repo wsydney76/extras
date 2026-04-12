@@ -453,12 +453,17 @@
   @param style  Optional additional inline CSS for the anchor tag
 #}
 {% macro elementLink(id, style = '') %}
-    {% set _linkedEl = craft.app.elements.getElementById(id) %}
-    {% set _elTitle = _linkedEl ? (_linkedEl.title ?? _linkedEl.name ?? '') : '' %}
-    <a href="{{ siteUrl('@extras/storage', {id: id}) }}"
-       style="font-family: monospace;{{ style ? ' ' ~ style : '' }}">{{ id }}</a>
-    {% if _elTitle %}
-        <span style="color: #aaa">({{ _elTitle }})</span>
+    {% if id %}
+        {% set _linkedEl = craft.app.elements.getElementById(id) %}
+        {% set _elTitle = _linkedEl ? (_linkedEl.title ?? '') : '' %}
+        {% if not _elTitle and _linkedEl is instance of('craft\\elements\\User') %}
+            {% set _elTitle = _linkedEl.name %}
+        {% endif %}
+        <a href="{{ siteUrl('@extras/storage', {id: id}) }}"
+           style="font-family: monospace;{{ style ? ' ' ~ style : '' }}">{{ id }}</a>
+        {% if _elTitle %}
+            <span style="color: #aaa">({{ _elTitle }})</span>
+        {% endif %}
     {% endif %}
 {% endmacro %}
 
